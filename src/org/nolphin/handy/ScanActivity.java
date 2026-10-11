@@ -281,6 +281,23 @@ public class ScanActivity extends Activity implements TextureView.SurfaceTexture
                         builder.addTarget(preview);
                         builder.addTarget(reader.getSurface());
                         builder.set(CaptureRequest.CONTROL_MODE, CaptureRequest.CONTROL_MODE_AUTO);
+                        // Kurze Belichtung gegen Verwackeln: Bildrate möglichst fest auf 30 (Handy in der Hand, dunkler Raum)
+                        android.util.Range<Integer>[] fps = chars.get(CameraCharacteristics.CONTROL_AE_AVAILABLE_TARGET_FPS_RANGES);
+                        android.util.Range<Integer> pick = null;
+                        if (fps != null) {
+                            for (android.util.Range<Integer> r : fps) {
+                                if (r.getUpper() >= 30 && (pick == null || r.getLower() > pick.getLower()
+                                        || r.getLower() == pick.getLower() && r.getUpper() < pick.getUpper())) {
+                                    pick = r;
+                                }
+                            }
+                        }
+                        if (pick != null) {
+                            builder.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, pick);
+                        }
+                        if (hasMode(chars.get(CameraCharacteristics.EDGE_AVAILABLE_EDGE_MODES), CaptureRequest.EDGE_MODE_HIGH_QUALITY)) {
+                            builder.set(CaptureRequest.EDGE_MODE, CaptureRequest.EDGE_MODE_HIGH_QUALITY);
+                        }
                         int[] modes = chars.get(CameraCharacteristics.CONTROL_AF_AVAILABLE_MODES);
                         if (hasMode(modes, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE)) {
                             builder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
