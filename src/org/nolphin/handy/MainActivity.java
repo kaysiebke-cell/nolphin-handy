@@ -6,6 +6,7 @@ import android.content.ClipData;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -38,6 +39,7 @@ public class MainActivity extends Activity implements Host {
     private static final String[] TAB_NAMES = { "Start", "Vom PC", "Zum PC", "Verlauf" };
 
     private FrameLayout content;
+    private TextView subtitle;
     private final View[] navItems = new View[4];
     private final Screen[] screens = new Screen[5];
     private int current = -1;
@@ -49,6 +51,7 @@ public class MainActivity extends Activity implements Host {
             if (current >= 0) {
                 screens[current].refresh();
             }
+            updateSubtitle();
             handler.postDelayed(this, 1000);
         }
     };
@@ -66,7 +69,20 @@ public class MainActivity extends Activity implements Host {
             requestPermissions(new String[] { Manifest.permission.POST_NOTIFICATIONS }, 1);
         }
         show(TAB_HOME);
+        updateSubtitle();
         handleIntent(getIntent());
+    }
+
+    private void updateSubtitle() {
+        if (subtitle == null) {
+            return;
+        }
+        if (!Conn.connected(this)) {
+            subtitle.setText("Nicht verbunden");
+        } else {
+            String pc = Conn.pcName(this);
+            subtitle.setText("Verbunden mit " + (pc.isEmpty() ? Conn.host(this) : pc));
+        }
     }
 
     private void buildUi() {
@@ -74,20 +90,36 @@ public class MainActivity extends Activity implements Host {
         root.setOrientation(LinearLayout.VERTICAL);
         root.setBackgroundColor(Ui.bg(this));
 
-        // Kopfleiste
+        // Kopfleiste: Mint-Verlauf mit runden unteren Ecken, App-Symbol, Name und Verbindungsstatus
         LinearLayout top = new LinearLayout(this);
         top.setOrientation(LinearLayout.HORIZONTAL);
         top.setGravity(Gravity.CENTER_VERTICAL);
-        top.setBackgroundColor(Ui.bar(this));
-        top.setElevation(Ui.dp(this, 4));
-        top.setPadding(Ui.dp(this, 16), 0, Ui.dp(this, 8), 0);
-        top.addView(Ui.icon(this, R.drawable.ic_phone, 0xFFB6EE82, 26));
-        TextView title = Ui.label(this, "Nolphin Handy", 19, Color.WHITE, true);
-        title.setPadding(Ui.dp(this, 12), 0, 0, 0);
-        top.addView(title, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
-        ImageView settings = Ui.icon(this, R.drawable.ic_tune, Color.WHITE, 26);
-        settings.setPadding(Ui.dp(this, 10), Ui.dp(this, 10), Ui.dp(this, 10), Ui.dp(this, 10));
-        settings.setLayoutParams(new LinearLayout.LayoutParams(Ui.dp(this, 48), Ui.dp(this, 48)));
+        GradientDrawable barBg = new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,
+                new int[] { Ui.bar(this), Ui.barEnd(this) });
+        float r = Ui.dp(this, 24);
+        barBg.setCornerRadii(new float[] { 0, 0, 0, 0, r, r, r, r });
+        top.setBackground(barBg);
+        top.setElevation(Ui.dp(this, 3));
+        top.setPadding(Ui.dp(this, 16), 0, Ui.dp(this, 12), 0);
+
+        ImageView logo = new ImageView(this);
+        logo.setImageResource(R.mipmap.ic_launcher);
+        top.addView(logo, new LinearLayout.LayoutParams(Ui.dp(this, 40), Ui.dp(this, 40)));
+
+        LinearLayout titles = new LinearLayout(this);
+        titles.setOrientation(LinearLayout.VERTICAL);
+        titles.setPadding(Ui.dp(this, 12), 0, 0, 0);
+        titles.addView(Ui.label(this, "Nolphin Handy", 18, Color.WHITE, true));
+        subtitle = Ui.label(this, "", 12, 0xDDFFFFFF, false);
+        subtitle.setSingleLine(true);
+        subtitle.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        titles.addView(subtitle);
+        top.addView(titles, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
+
+        ImageView settings = Ui.icon(this, R.drawable.ic_tune, Color.WHITE, 22);
+        settings.setBackground(Ui.round(this, 0x33FFFFFF, 22));
+        settings.setPadding(Ui.dp(this, 11), Ui.dp(this, 11), Ui.dp(this, 11), Ui.dp(this, 11));
+        settings.setLayoutParams(new LinearLayout.LayoutParams(Ui.dp(this, 44), Ui.dp(this, 44)));
         settings.setContentDescription("Einstellungen");
         settings.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -96,7 +128,7 @@ public class MainActivity extends Activity implements Host {
             }
         });
         top.addView(settings);
-        root.addView(top, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, Ui.dp(this, 56)));
+        root.addView(top, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, Ui.dp(this, 68)));
 
         content = new FrameLayout(this);
         root.addView(content, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1));
