@@ -5,7 +5,23 @@ import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.SurfaceTexture;
+import android.graphics.ImageFormat;
+import android.graphics.Rect;
 import android.hardware.Camera;
+import android.hardware.camera2.CameraAccessException;
+import android.hardware.camera2.CameraCaptureSession;
+import android.hardware.camera2.CameraCharacteristics;
+import android.hardware.camera2.CameraDevice;
+import android.hardware.camera2.CameraManager;
+import android.hardware.camera2.CaptureRequest;
+import android.hardware.camera2.params.MeteringRectangle;
+import android.hardware.camera2.params.StreamConfigurationMap;
+import android.media.Image;
+import android.media.ImageReader;
+import android.os.Handler;
+import android.os.HandlerThread;
+import android.util.Size;
+import android.view.Surface;
 import android.os.Bundle;
 import android.view.Gravity;
 import android.view.TextureView;
@@ -16,6 +32,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -34,8 +51,17 @@ public class ScanActivity extends Activity implements TextureView.SurfaceTexture
     private TextView hint;
     private TextView diag;
     private int frames;
-    private Camera camera;
-    private Camera.Size previewSize;
+    private Camera camera;               // Rückfall: alte Kamera-Schnittstelle
+    private int pw, ph;                  // Größe der gelesenen Bilder
+    private CameraDevice cam2;
+    private CameraCaptureSession session;
+    private CaptureRequest.Builder builder;
+    private ImageReader reader;
+    private HandlerThread camThread;
+    private Handler camHandler;
+    private CameraCharacteristics chars;
+    private boolean opening;
+    private float lastTapX = 0.5f, lastTapY = 0.5f;
     private String focusMode;
     private final android.os.Handler focusHandler = new android.os.Handler(android.os.Looper.getMainLooper());
     private final Runnable focusTick = new Runnable() {
@@ -60,11 +86,25 @@ public class ScanActivity extends Activity implements TextureView.SurfaceTexture
 
         texture = new TextureView(this);
         texture.setSurfaceTextureListener(this);
+        texture.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, android.view.MotionEvent e) {
+                if (e.getAction() == android.view.MotionEvent.ACTION_DOWN && v.getWidth() > 0 && v.getHeight() > 0) {
+                    lastTapX = e.getX() / v.getWidth();
+                    lastTapY = e.getY() / v.getHeight();
+                }
+                return false;
+            }
+        });
         texture.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                focusNow();
                 Toast.makeText(ScanActivity.this, "Scharfstellen …", Toast.LENGTH_SHORT).show();
+                if (cam2 != null) {
+                    focusAt(lastTapX, lastTapY);
+                } else {
+                    focusNow();
+                }
             }
         });
         root.addView(texture, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
@@ -114,14 +154,288 @@ public class ScanActivity extends Activity implements TextureView.SurfaceTexture
     // ---- Kamera ----------------------------------------------------------------------------
 
     private void openCamera(SurfaceTexture surface) {
-        if (camera != null || checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+        if (camera != null || cam2 != null || opening
+                || checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+            return;
+        }
+        if (!openCamera2(surface)) {
+            openCameraLegacy(surface);
+        }
+    }
+
+    /** Camera2: fortlaufender Autofokus und Scharfstellen an der angetippten Stelle. Gibt false zurück, wenn es nicht geht. */
+    private boolean openCamera2(final SurfaceTexture surface) {
+        try {
+            CameraManager cm = getSystemService(CameraManager.class);
+            String id = null;
+            for (String candidate : cm.getCameraIdList()) {
+                CameraCharacteristics c = cm.getCameraCharacteristics(candidate);
+                Integer facing = c.get(CameraCharacteristics.LENS_FACING);
+                if (facing != null && facing == CameraCharacteristics.LENS_FACING_BACK) {
+                    id = candidate;
+                    chars = c;
+                    break;
+                }
+            }
+            if (id == null) {
+                return false;
+            }
+            StreamConfigurationMap map = chars.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
+            if (map == null) {
+                return false;
+            }
+            Size size = bestSize2(map.getOutputSizes(ImageFormat.YUV_420_888), map.getOutputSizes(SurfaceTexture.class));
+            if (size == null) {
+                return false;
+            }
+            pw = size.getWidth();
+            ph = size.getHeight();
+            camThread = new HandlerThread("scan-camera");
+            camThread.start();
+            camHandler = new Handler(camThread.getLooper());
+            opening = true;
+            cm.openCamera(id, new CameraDevice.StateCallback() {
+                @Override
+                public void onOpened(CameraDevice device) {
+                    cam2 = device;
+                    startSession(surface);
+                }
+
+                @Override
+                public void onDisconnected(CameraDevice device) {
+                    device.close();
+                    cam2 = null;
+                    opening = false;
+                }
+
+                @Override
+                public void onError(CameraDevice device, int error) {
+                    device.close();
+                    cam2 = null;
+                    opening = false;
+                    fallBack(surface);
+                }
+            }, camHandler);
+            return true;
+        } catch (CameraAccessException | RuntimeException e) {
+            opening = false;
+            closeCamera2();
+            return false;
+        }
+    }
+
+    private void fallBack(final SurfaceTexture surface) {
+        closeCamera2();
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (!done) {
+                    openCameraLegacy(surface);
+                }
+            }
+        });
+    }
+
+    private void startSession(final SurfaceTexture surface) {
+        try {
+            surface.setDefaultBufferSize(pw, ph);
+            final Surface preview = new Surface(surface);
+            reader = ImageReader.newInstance(pw, ph, ImageFormat.YUV_420_888, 2);
+            reader.setOnImageAvailableListener(new ImageReader.OnImageAvailableListener() {
+                @Override
+                public void onImageAvailable(ImageReader r) {
+                    Image img = r.acquireLatestImage();
+                    if (img == null) {
+                        return;
+                    }
+                    try {
+                        if (done || !busy.compareAndSet(false, true)) {
+                            return;
+                        }
+                        final int w = img.getWidth(), h = img.getHeight();
+                        Image.Plane plane = img.getPlanes()[0];   // Y = Helligkeit = Graustufenbild
+                        ByteBuffer buf = plane.getBuffer();
+                        int stride = plane.getRowStride();
+                        byte[] gray = new byte[w * h];
+                        for (int y = 0; y < h; y++) {
+                            buf.position(y * stride);
+                            buf.get(gray, y * w, w);
+                        }
+                        submit(gray, w, h);
+                    } catch (RuntimeException e) {
+                        busy.set(false);
+                    } finally {
+                        img.close();
+                    }
+                }
+            }, camHandler);
+            cam2.createCaptureSession(Arrays.asList(preview, reader.getSurface()), new CameraCaptureSession.StateCallback() {
+                @Override
+                public void onConfigured(CameraCaptureSession s) {
+                    if (cam2 == null) {
+                        return;
+                    }
+                    session = s;
+                    try {
+                        builder = cam2.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
+                        builder.addTarget(preview);
+                        builder.addTarget(reader.getSurface());
+                        builder.set(CaptureRequest.CONTROL_MODE, CaptureRequest.CONTROL_MODE_AUTO);
+                        int[] modes = chars.get(CameraCharacteristics.CONTROL_AF_AVAILABLE_MODES);
+                        if (hasMode(modes, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE)) {
+                            builder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
+                        } else if (hasMode(modes, CaptureRequest.CONTROL_AF_MODE_AUTO)) {
+                            builder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_AUTO);
+                        }
+                        s.setRepeatingRequest(builder.build(), null, camHandler);
+                        opening = false;
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                fitPreview();
+                            }
+                        });
+                    } catch (CameraAccessException | RuntimeException e) {
+                        fallBack(surface);
+                    }
+                }
+
+                @Override
+                public void onConfigureFailed(CameraCaptureSession s) {
+                    fallBack(surface);
+                }
+            }, camHandler);
+        } catch (CameraAccessException | RuntimeException e) {
+            fallBack(surface);
+        }
+    }
+
+    private static boolean hasMode(int[] modes, int mode) {
+        if (modes != null) {
+            for (int m : modes) {
+                if (m == mode) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /** Eine Größe nahe 1920x1080, die Bild und Vorschau beide liefern können. */
+    private static Size bestSize2(Size[] yuv, Size[] preview) {
+        Size best = null;
+        long bestScore = Long.MAX_VALUE;
+        if (yuv == null) {
+            return null;
+        }
+        for (Size s : yuv) {
+            boolean ok = preview == null;
+            if (preview != null) {
+                for (Size p : preview) {
+                    if (p.equals(s)) {
+                        ok = true;
+                        break;
+                    }
+                }
+            }
+            if (!ok || s.getWidth() * 9L != s.getHeight() * 16L && s.getWidth() * 3L != s.getHeight() * 4L) {
+                continue;   // nur 16:9 oder 4:3
+            }
+            long score = Math.abs((long) s.getWidth() * s.getHeight() - 1920L * 1080L);
+            if (score < bestScore) {
+                bestScore = score;
+                best = s;
+            }
+        }
+        return best;
+    }
+
+    /** Scharfstellen an der angetippten Stelle (Koordinaten 0 bis 1 in der Ansicht, Hochformat). */
+    private void focusAt(float nx, float ny) {
+        final CameraCaptureSession s = session;
+        final CaptureRequest.Builder b = builder;
+        if (s == null || b == null || chars == null) {
+            return;
+        }
+        try {
+            Rect active = chars.get(CameraCharacteristics.SENSOR_INFO_ACTIVE_ARRAY_SIZE);
+            Integer o = chars.get(CameraCharacteristics.SENSOR_ORIENTATION);
+            if (active == null) {
+                return;
+            }
+            int orientation = o == null ? 90 : o;
+            float fx, fy;   // Punkt im Sensor, 0 bis 1
+            switch (orientation) {
+                case 0:
+                    fx = nx; fy = ny; break;
+                case 180:
+                    fx = 1 - nx; fy = 1 - ny; break;
+                case 270:
+                    fx = 1 - ny; fy = nx; break;
+                default:
+                    fx = ny; fy = 1 - nx; break;
+            }
+            int half = Math.max(active.width(), active.height()) / 14;
+            int cx = active.left + Math.round(fx * active.width());
+            int cy = active.top + Math.round(fy * active.height());
+            Rect r = new Rect(Math.max(active.left, cx - half), Math.max(active.top, cy - half),
+                    Math.min(active.right - 1, cx + half), Math.min(active.bottom - 1, cy + half));
+            MeteringRectangle[] area = { new MeteringRectangle(r, MeteringRectangle.METERING_WEIGHT_MAX - 1) };
+            Integer maxAf = chars.get(CameraCharacteristics.CONTROL_MAX_REGIONS_AF);
+            if (maxAf != null && maxAf > 0) {
+                b.set(CaptureRequest.CONTROL_AF_REGIONS, area);
+            }
+            Integer maxAe = chars.get(CameraCharacteristics.CONTROL_MAX_REGIONS_AE);
+            if (maxAe != null && maxAe > 0) {
+                b.set(CaptureRequest.CONTROL_AE_REGIONS, area);
+            }
+            b.set(CaptureRequest.CONTROL_AF_TRIGGER, CaptureRequest.CONTROL_AF_TRIGGER_CANCEL);
+            s.capture(b.build(), null, camHandler);
+            b.set(CaptureRequest.CONTROL_AF_TRIGGER, CaptureRequest.CONTROL_AF_TRIGGER_IDLE);
+            if (hasMode(chars.get(CameraCharacteristics.CONTROL_AF_AVAILABLE_MODES), CaptureRequest.CONTROL_AF_MODE_AUTO)
+                    && b.get(CaptureRequest.CONTROL_AF_MODE) == CaptureRequest.CONTROL_AF_MODE_AUTO) {
+                b.set(CaptureRequest.CONTROL_AF_TRIGGER, CaptureRequest.CONTROL_AF_TRIGGER_START);
+                s.capture(b.build(), null, camHandler);
+                b.set(CaptureRequest.CONTROL_AF_TRIGGER, CaptureRequest.CONTROL_AF_TRIGGER_IDLE);
+            }
+            s.setRepeatingRequest(b.build(), null, camHandler);
+        } catch (CameraAccessException | RuntimeException ignored) {
+        }
+    }
+
+    private void closeCamera2() {
+        try {
+            if (session != null) {
+                session.close();
+            }
+            if (cam2 != null) {
+                cam2.close();
+            }
+            if (reader != null) {
+                reader.close();
+            }
+        } catch (RuntimeException ignored) {
+        }
+        session = null;
+        cam2 = null;
+        reader = null;
+        builder = null;
+        if (camThread != null) {
+            camThread.quitSafely();
+            camThread = null;
+            camHandler = null;
+        }
+    }
+
+    private void openCameraLegacy(SurfaceTexture surface) {
+        if (camera != null) {
             return;
         }
         try {
             camera = Camera.open();
             Camera.Parameters p = camera.getParameters();
-            previewSize = bestSize(p.getSupportedPreviewSizes());
-            p.setPreviewSize(previewSize.width, previewSize.height);
+            Camera.Size chosen = bestSize(p.getSupportedPreviewSizes());
+            p.setPreviewSize(chosen.width, chosen.height);
             // Barcode-Szene (wenn vorhanden): Nahfokus und Kontrast für Codes
             List<String> scenes = p.getSupportedSceneModes();
             if (scenes != null && scenes.contains(Camera.Parameters.SCENE_MODE_BARCODE)) {
@@ -148,7 +462,9 @@ public class ScanActivity extends Activity implements TextureView.SurfaceTexture
             }
             p.setPreviewFormat(android.graphics.ImageFormat.NV21);
             camera.setParameters(p);
-            previewSize = camera.getParameters().getPreviewSize();   // was die Kamera wirklich liefert
+            Camera.Size real = camera.getParameters().getPreviewSize();   // was die Kamera wirklich liefert
+            pw = real.width;
+            ph = real.height;
             camera.setDisplayOrientation(displayOrientation());
             camera.setPreviewTexture(surface);
             camera.setPreviewCallback(this);
@@ -187,7 +503,7 @@ public class ScanActivity extends Activity implements TextureView.SurfaceTexture
 
     /** Das Bild nicht verzerren: Vorschau im Seitenverhältnis der Kamera in die Mitte setzen. */
     private void fitPreview() {
-        final int pw = previewSize.width, ph = previewSize.height;
+        final int pw = this.pw, ph = this.ph;
         texture.post(new Runnable() {
             @Override
             public void run() {
@@ -231,6 +547,8 @@ public class ScanActivity extends Activity implements TextureView.SurfaceTexture
 
     private void closeCamera() {
         focusHandler.removeCallbacks(focusTick);
+        closeCamera2();
+        opening = false;
         if (camera != null) {
             camera.setPreviewCallback(null);
             try {
@@ -246,16 +564,20 @@ public class ScanActivity extends Activity implements TextureView.SurfaceTexture
 
     @Override
     public void onPreviewFrame(byte[] data, Camera cam) {
-        if (done || previewSize == null || !busy.compareAndSet(false, true)) {
+        if (done || pw == 0 || !busy.compareAndSet(false, true)) {
             return;   // läuft noch ein Lesevorgang: dieses Bild überspringen
         }
-        final int w = previewSize.width, h = previewSize.height;
+        final int w = pw, h = ph;
         if (data.length < w * h) {
             busy.set(false);
             return;
         }
         // NV21: die ersten w*h Bytes sind die Helligkeit, also schon ein Graustufenbild
-        final byte[] gray = Arrays.copyOf(data, w * h);
+        submit(Arrays.copyOf(data, w * h), w, h);
+    }
+
+    /** Liest ein Graustufenbild im Hintergrund; der Aufrufer hat busy schon gesetzt. */
+    private void submit(final byte[] gray, final int w, final int h) {
         worker.execute(new Runnable() {
             @Override
             public void run() {
@@ -365,7 +687,7 @@ public class ScanActivity extends Activity implements TextureView.SurfaceTexture
     @Override
     protected void onResume() {
         super.onResume();
-        if (texture.isAvailable() && camera == null) {
+        if (texture.isAvailable() && camera == null && cam2 == null) {
             openCamera(texture.getSurfaceTexture());
         }
     }

@@ -4,30 +4,49 @@ import android.Manifest;
 import android.app.Activity;
 import android.content.ClipData;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.view.Gravity;
 import android.view.View;
-import android.widget.Button;
+import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-/** Verbindungsstatus und die wenigen Bedienelemente der App. */
-public class MainActivity extends Activity {
-    private static final int PICK_FILES = 7;
+import java.util.ArrayList;
+import java.util.List;
 
-    private TextView statusView;
-    private TextView logView;
-    private Button scanButton, sendButton, disconnectButton, cancelButton;
+/** Hauptseite: Kopfleiste, Inhalt und die Reiter Start, Vom PC, Zum PC, Verlauf (Einstellungen oben rechts). */
+public class MainActivity extends Activity implements Host {
+    private static final int PICK_FILES = 7;
+    private static final int REQ_MEDIA = 31;
+    private static final int PICK_FOLDER = 8;
+    private static final int SAVE_AS = 9;
+
+    private Uri saveSource;
+
+    private static final int[] TAB_ICONS = { R.drawable.ic_home, R.drawable.ic_download, R.drawable.ic_upload,
+            R.drawable.ic_history };
+    private static final String[] TAB_NAMES = { "Start", "Vom PC", "Zum PC", "Verlauf" };
+
+    private FrameLayout content;
+    private final View[] navItems = new View[4];
+    private final Screen[] screens = new Screen[5];
+    private int current = -1;
+    private String error;
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final Runnable refresh = new Runnable() {
         @Override
         public void run() {
-            update();
+            if (current >= 0) {
+                screens[current].refresh();
+            }
             handler.postDelayed(this, 1000);
         }
     };
@@ -35,11 +54,271 @@ public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle state) {
         super.onCreate(state);
+        screens[TAB_HOME] = new HomeScreen(this, this);
+        screens[TAB_FROM_PC] = new FromPcScreen(this, this);
+        screens[TAB_TO_PC] = new ToPcScreen(this, this);
+        screens[TAB_HISTORY] = new HistoryScreen(this, this);
+        screens[TAB_SETTINGS] = new SettingsScreen(this, this);
         buildUi();
         if (Build.VERSION.SDK_INT >= 33) {
             requestPermissions(new String[] { Manifest.permission.POST_NOTIFICATIONS }, 1);
         }
+        show(TAB_HOME);
         handleIntent(getIntent());
+    }
+
+    private void buildUi() {
+        LinearLayout root = new LinearLayout(this);
+        root.setOrientation(LinearLayout.VERTICAL);
+        root.setBackgroundColor(Ui.bg(this));
+
+        // Kopfleiste
+        LinearLayout top = new LinearLayout(this);
+        top.setOrientation(LinearLayout.HORIZONTAL);
+        top.setGravity(Gravity.CENTER_VERTICAL);
+        top.setBackgroundColor(0xFF0B2C47);
+        top.setElevation(Ui.dp(this, 4));
+        top.setPadding(Ui.dp(this, 16), 0, Ui.dp(this, 8), 0);
+        top.addView(Ui.icon(this, R.drawable.ic_phone, 0xFF7FE0D2, 26));
+        TextView title = Ui.label(this, "Nolphin Handy", 19, Color.WHITE, true);
+        title.setPadding(Ui.dp(this, 12), 0, 0, 0);
+        top.addView(title, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
+        ImageView settings = Ui.icon(this, R.drawable.ic_tune, Color.WHITE, 26);
+        settings.setPadding(Ui.dp(this, 10), Ui.dp(this, 10), Ui.dp(this, 10), Ui.dp(this, 10));
+        settings.setLayoutParams(new LinearLayout.LayoutParams(Ui.dp(this, 48), Ui.dp(this, 48)));
+        settings.setContentDescription("Einstellungen");
+        settings.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                show(TAB_SETTINGS);
+            }
+        });
+        top.addView(settings);
+        root.addView(top, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, Ui.dp(this, 56)));
+
+        content = new FrameLayout(this);
+        root.addView(content, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1));
+
+        // Reiter unten
+        LinearLayout nav = new LinearLayout(this);
+        nav.setOrientation(LinearLayout.HORIZONTAL);
+        nav.setBackgroundColor(Ui.surface(this));
+        nav.setElevation(Ui.dp(this, 8));
+        for (int i = 0; i < 4; i++) {
+            final int tab = i;
+            LinearLayout item = new LinearLayout(this);
+            item.setOrientation(LinearLayout.VERTICAL);
+            item.setGravity(Gravity.CENTER);
+            item.setPadding(0, Ui.dp(this, 8), 0, Ui.dp(this, 8));
+            item.addView(Ui.icon(this, TAB_ICONS[i], Ui.dim(this), 24));
+            TextView t = Ui.label(this, TAB_NAMES[i], 11, Ui.dim(this), false);
+            t.setGravity(Gravity.CENTER);
+            item.addView(t);
+            item.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    show(tab);
+                }
+            });
+            navItems[i] = item;
+            nav.addView(item, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
+        }
+        root.addView(nav);
+        setContentView(root);
+        int flags = 0;
+        if (!Ui.dark(this)) {
+            flags |= View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
+        }
+        getWindow().getDecorView().setSystemUiVisibility(flags);
+    }
+
+    // ---- Host --------------------------------------------------------------------------------
+
+    @Override
+    public Activity activity() {
+        return this;
+    }
+
+    @Override
+    public void show(int tab) {
+        current = tab;
+        content.removeAllViews();
+        content.addView(screens[tab].view());
+        screens[tab].onShow();
+        for (int i = 0; i < 4; i++) {
+            boolean on = i == tab;
+            int color = on ? Ui.primary(this) : Ui.dim(this);
+            LinearLayout item = (LinearLayout) navItems[i];
+            ((ImageView) item.getChildAt(0)).setColorFilter(color);
+            ((TextView) item.getChildAt(1)).setTextColor(color);
+            ((TextView) item.getChildAt(1)).setTypeface(on ? android.graphics.Typeface.DEFAULT_BOLD
+                    : android.graphics.Typeface.DEFAULT);
+        }
+    }
+
+    @Override
+    public void scan() {
+        startActivity(new Intent(this, ScanActivity.class));
+    }
+
+    @Override
+    public void pasteLink() {
+        android.content.ClipboardManager cm = getSystemService(android.content.ClipboardManager.class);
+        CharSequence text = null;
+        if (cm != null && cm.hasPrimaryClip() && cm.getPrimaryClip() != null && cm.getPrimaryClip().getItemCount() > 0) {
+            text = cm.getPrimaryClip().getItemAt(0).coerceToText(this);
+        }
+        if (text == null || text.toString().trim().isEmpty()) {
+            Toast.makeText(this, "Die Zwischenablage ist leer. Kopiere am PC in Nolphin den Link (Knopf neben dem Link) und sende ihn dir aufs Handy.",
+                    Toast.LENGTH_LONG).show();
+            return;
+        }
+        error = null;
+        Toast.makeText(this, "Verbinde …", Toast.LENGTH_SHORT).show();
+        Connector.connect(this, text.toString().trim(), connectListener);
+    }
+
+    @Override
+    public void disconnect() {
+        Conn.clear(this);
+        startSync(SyncService.ACTION_STOP, null);
+        error = null;
+        screens[current].onShow();
+    }
+
+    @Override
+    public void cancelTransfer() {
+        startSync(SyncService.ACTION_CANCEL, null);
+    }
+
+    @Override
+    public String error() {
+        return error;
+    }
+
+    @Override
+    public void fetch(RemoteFile file) {
+        Intent i = new Intent(this, SyncService.class).setAction(SyncService.ACTION_FETCH)
+                .putExtra("name", file.name).putExtra("size", file.size).putExtra("dir", file.dir);
+        startForegroundService(i);
+    }
+
+    @Override
+    public void send(List<Uri> uris) {
+        if (uris.isEmpty()) {
+            return;
+        }
+        ClipData clip = ClipData.newUri(getContentResolver(), "Dateien", uris.get(0));
+        for (int i = 1; i < uris.size(); i++) {
+            clip.addItem(new ClipData.Item(uris.get(i)));
+        }
+        Intent svc = new Intent(this, SyncService.class).setAction(SyncService.ACTION_UPLOAD);
+        svc.setClipData(clip);
+        svc.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        startForegroundService(svc);
+        Toast.makeText(this, uris.size() == 1 ? "Wird an den PC gesendet" : uris.size() + " Dateien werden gesendet",
+                Toast.LENGTH_SHORT).show();
+        show(TAB_HOME);
+    }
+
+    @Override
+    public void pickFiles() {
+        Intent pick = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+        pick.addCategory(Intent.CATEGORY_OPENABLE);
+        pick.setType("*/*");
+        pick.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+        startActivityForResult(pick, PICK_FILES);
+    }
+
+    @Override
+    public void pickTargetFolder() {
+        Intent pick = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
+        pick.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                | Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION | Intent.FLAG_GRANT_PREFIX_URI_PERMISSION);
+        startActivityForResult(pick, PICK_FOLDER);
+    }
+
+    @Override
+    public void saveAs(String name, String mime, Uri source) {
+        saveSource = source;
+        Intent create = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+        create.addCategory(Intent.CATEGORY_OPENABLE);
+        create.setType(mime);
+        create.putExtra(Intent.EXTRA_TITLE, name);
+        startActivityForResult(create, SAVE_AS);
+    }
+
+    private void copyTo(Uri from, Uri to) {
+        try (java.io.InputStream in = getContentResolver().openInputStream(from);
+             java.io.OutputStream out = getContentResolver().openOutputStream(to)) {
+            if (in == null || out == null) {
+                throw new java.io.IOException("nicht lesbar");
+            }
+            byte[] buf = new byte[64 * 1024];
+            int n;
+            while ((n = in.read(buf)) > 0) {
+                out.write(buf, 0, n);
+            }
+            Toast.makeText(this, "Gespeichert", Toast.LENGTH_SHORT).show();
+        } catch (Exception e) {
+            Toast.makeText(this, "Speichern fehlgeschlagen: " + e.getClass().getSimpleName(), Toast.LENGTH_LONG).show();
+        }
+    }
+
+    private String mediaPermission() {
+        return Build.VERSION.SDK_INT >= 33 ? Manifest.permission.READ_MEDIA_IMAGES
+                : Manifest.permission.READ_EXTERNAL_STORAGE;
+    }
+
+    @Override
+    public boolean hasMediaAccess() {
+        return checkSelfPermission(mediaPermission()) == PackageManager.PERMISSION_GRANTED;
+    }
+
+    @Override
+    public void requestMediaAccess() {
+        requestPermissions(new String[] { mediaPermission() }, REQ_MEDIA);
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int request, String[] permissions, int[] results) {
+        if (request == REQ_MEDIA && current >= 0) {
+            screens[current].onShow();
+        }
+    }
+
+    // ---- Verbinden und Dienst ------------------------------------------------------------------
+
+    private final Connector.Listener connectListener = new Connector.Listener() {
+        @Override
+        public void onSuccess(Link link) {
+            error = null;
+            Toast.makeText(MainActivity.this, "Mit dem PC verbunden", Toast.LENGTH_SHORT).show();
+            startSync(null, null);
+            screens[current].onShow();
+        }
+
+        @Override
+        public void onFailure(String message) {
+            error = message;
+            screens[current].onShow();
+        }
+    };
+
+    private void handleIntent(Intent intent) {
+        Uri data = intent != null ? intent.getData() : null;
+        if (data != null && "nolphin".equals(data.getScheme())) {
+            error = null;
+            Connector.connect(this, data.toString(), connectListener);
+        }
+    }
+
+    private void startSync(String action, String unused) {
+        Intent i = new Intent(this, SyncService.class);
+        if (action != null) {
+            i.setAction(action);
+        }
+        startForegroundService(i);
     }
 
     @Override
@@ -53,7 +332,11 @@ public class MainActivity extends Activity {
     protected void onResume() {
         super.onResume();
         if (Conn.connected(this)) {
-            startSync(null);   // nach einem Neustart des Handys wieder aufnehmen
+            startSync(null, null);   // nach einem Neustart des Handys wieder aufnehmen
+            Updater.check(getApplicationContext());
+        }
+        if (current >= 0) {
+            screens[current].onShow();
         }
         handler.post(refresh);
     }
@@ -64,177 +347,46 @@ public class MainActivity extends Activity {
         super.onPause();
     }
 
-    private void handleIntent(Intent intent) {
-        Uri data = intent != null ? intent.getData() : null;
-        if (data != null && "nolphin".equals(data.getScheme())) {
-            connectWith(data.toString());
+    @Override
+    public void onBackPressed() {
+        if (current >= 0 && screens[current].onBack()) {
+            return;
         }
-    }
-
-    private String error;
-
-    private final Connector.Listener connectListener = new Connector.Listener() {
-        @Override
-        public void onSuccess(Link link) {
-            error = null;
-            Toast.makeText(MainActivity.this, "Mit dem PC verbunden", Toast.LENGTH_SHORT).show();
-            startSync(null);
-            update();
-        }
-
-        @Override
-        public void onFailure(String message) {
-            error = message;
-            update();
-        }
-    };
-
-    /** Link lesen, am PC prüfen und erst dann speichern. */
-    private void connectWith(String text) {
-        error = null;
-        statusView.setText("Prüfe die Verbindung zum PC …");
-        Connector.connect(this, text, connectListener);
-    }
-
-    private void startSync(String action) {
-        Intent i = new Intent(this, SyncService.class);
-        if (action != null) {
-            i.setAction(action);
-        }
-        startForegroundService(i);
-    }
-
-    private int dp(int v) {
-        return (int) (v * getResources().getDisplayMetrics().density);
-    }
-
-    private Button button(String text, View.OnClickListener l) {
-        Button b = new Button(this);
-        b.setText(text);
-        b.setOnClickListener(l);
-        return b;
-    }
-
-    private void buildUi() {
-        LinearLayout box = new LinearLayout(this);
-        box.setOrientation(LinearLayout.VERTICAL);
-        box.setPadding(dp(20), dp(24), dp(20), dp(24));
-
-        TextView title = new TextView(this);
-        title.setText("Nolphin Handy");
-        title.setTextSize(24);
-        box.addView(title);
-
-        statusView = new TextView(this);
-        statusView.setTextSize(16);
-        statusView.setPadding(0, dp(12), 0, dp(12));
-        box.addView(statusView);
-
-        // Nicht verbunden: nur dieser Knopf
-        scanButton = button("Mit dem PC verbinden (QR-Code scannen)", new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                startActivity(new Intent(MainActivity.this, ScanActivity.class));
-            }
-        });
-        box.addView(scanButton);
-
-        // Verbunden: Dateien senden, Verbindung trennen, laufende Übertragung abbrechen
-        sendButton = button("Dateien an den PC senden …", new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent pick = new Intent(Intent.ACTION_OPEN_DOCUMENT);
-                pick.addCategory(Intent.CATEGORY_OPENABLE);
-                pick.setType("*/*");
-                pick.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
-                startActivityForResult(pick, PICK_FILES);
-            }
-        });
-        box.addView(sendButton);
-        cancelButton = button("Übertragung abbrechen", new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                startSync(SyncService.ACTION_CANCEL);
-            }
-        });
-        box.addView(cancelButton);
-        disconnectButton = button("Verbindung trennen", new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Conn.clear(MainActivity.this);
-                startSync(SyncService.ACTION_STOP);
-                update();
-            }
-        });
-        box.addView(disconnectButton);
-
-        logView = new TextView(this);
-        logView.setTextSize(13);
-        logView.setPadding(0, dp(16), 0, 0);
-        box.addView(logView);
-
-        ScrollView scroll = new ScrollView(this);
-        scroll.addView(box);
-        setContentView(scroll);
-    }
-
-    /** Zeigt nur, was im jeweiligen Zustand Sinn ergibt. */
-    private void update() {
-        boolean connected = Conn.connected(this);
-        if (connected) {
-            String st = SyncService.status;
-            // "Nicht verbunden" gilt kurz nach dem Verbinden, bevor der Dienst läuft
-            if (st.startsWith("Nicht verbunden")) {
-                st = "Verbinde mit dem PC …";
-            }
-            String line = st.contains(Conn.host(this)) ? st : st + "\nPC: " + Conn.host(this);
-            if (!SyncService.transfer.isEmpty()) {
-                line += "\n" + SyncService.transfer;
-            }
-            statusView.setText(line);
+        if (current != TAB_HOME) {
+            show(TAB_HOME);
         } else {
-            statusView.setText("Nicht mit einem PC verbunden.\n"
-                    + "Öffne am PC in Nolphin die Seitenleiste „Handy“ und scanne den QR-Code.");
+            super.onBackPressed();
         }
-        if (error != null) {
-            statusView.setText(statusView.getText() + "\n\n" + error);
-        }
-        scanButton.setVisibility(connected ? View.GONE : View.VISIBLE);
-        sendButton.setVisibility(connected ? View.VISIBLE : View.GONE);
-        disconnectButton.setVisibility(connected ? View.VISIBLE : View.GONE);
-        logView.setVisibility(connected ? View.VISIBLE : View.GONE);
-        cancelButton.setVisibility(connected && !SyncService.transfer.isEmpty() ? View.VISIBLE : View.GONE);
-        logView.setText(SyncService.eventsText());
     }
 
     @Override
     protected void onActivityResult(int request, int result, Intent data) {
         super.onActivityResult(request, result, data);
+        if (request == PICK_FOLDER && result == RESULT_OK && data != null && data.getData() != null) {
+            Uri tree = data.getData();
+            getContentResolver().takePersistableUriPermission(tree,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+            Conn.setTargetTree(this, tree.toString());
+            Toast.makeText(this, "Zielordner gespeichert", Toast.LENGTH_SHORT).show();
+            show(TAB_SETTINGS);
+            return;
+        }
+        if (request == SAVE_AS && result == RESULT_OK && data != null && data.getData() != null && saveSource != null) {
+            copyTo(saveSource, data.getData());
+            return;
+        }
         if (request != PICK_FILES || result != RESULT_OK || data == null) {
             return;
         }
+        List<Uri> uris = new ArrayList<>();
         ClipData clip = data.getClipData();
-        ClipData out = null;
         if (clip != null) {
             for (int i = 0; i < clip.getItemCount(); i++) {
-                Uri u = clip.getItemAt(i).getUri();
-                if (out == null) {
-                    out = ClipData.newUri(getContentResolver(), "Dateien", u);
-                } else {
-                    out.addItem(new ClipData.Item(u));
-                }
+                uris.add(clip.getItemAt(i).getUri());
             }
         } else if (data.getData() != null) {
-            out = ClipData.newUri(getContentResolver(), "Datei", data.getData());
+            uris.add(data.getData());
         }
-        if (out == null) {
-            return;
-        }
-        Intent i = new Intent(this, SyncService.class);
-        i.setAction(SyncService.ACTION_UPLOAD);
-        i.setClipData(out);
-        i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-        startForegroundService(i);
-        Toast.makeText(this, "Wird an den PC gesendet", Toast.LENGTH_SHORT).show();
+        send(uris);
     }
 }

@@ -1,6 +1,16 @@
 # Nolphin Handy (Android-App)
 
-Kleine App für den Handy-Austausch von Nolphin. Sie ist der **Empfänger auf dem Handy**: Legen Sie am PC Dateien in „Zum Handy“, kommen sie von selbst auf das Handy. Dateien vom Handy schicken Sie über das Teilen-Menü an den PC.
+App für den Handy-Austausch von Nolphin, **in beide Richtungen**: Dateien aus dem Ordner „Handy“ am PC kommen aufs Handy, Fotos und Dateien vom Handy gehen an den PC.
+
+## Aufbau der App
+
+Vier Reiter unten, Einstellungen oben rechts; eigenes Design (Karten, Nolphin-Farben, eigenes Symbol, hell und dunkel), ohne Bibliotheken.
+
+* **Start:** großer Status („Verbunden“ / „Nicht verbunden“), Fortschritt einer laufenden Übertragung mit Abbruch, letzte Übertragungen.
+* **Vom PC:** Liste der Dateien aus dem Ordner „Handy“ mit Vorschaubild; Antippen lädt, geladene Dateien lassen sich öffnen und teilen.
+* **Zum PC:** Raster der letzten Fotos (Mehrfachauswahl), „Dateien …“ für andere Dateien, „An den PC senden“ mit Fortschritt. Braucht die Berechtigung „Fotos“ (`READ_MEDIA_IMAGES`, bis Android 12 `READ_EXTERNAL_STORAGE`); ohne sie bleibt die Dateiauswahl.
+* **Verlauf:** alle Übertragungen (bis 200), mit Ergebnis.
+* **Einstellungen:** Verbindung trennen, neue Dateien automatisch laden (aus: erst nach Antippen), Ordner in „Downloads“, Verlauf löschen.
 
 Nur das Android-Framework, **keine Bibliotheken**, kein Gradle. Mindestens Android 10.
 
@@ -12,6 +22,10 @@ Nur das Android-Framework, **keine Bibliotheken**, kein Gradle. Mindestens Andro
 4. Der Schlüssel im Code gilt, solange der Austausch am PC läuft; nach einem Neustart von Nolphin scannen Sie einfach erneut.
 
 Die App lädt neue Dateien nach `Download/Nolphin`. Beim allerersten Verbinden werden bereits vorhandene Dateien nicht geladen.
+
+## Aktualisieren
+
+Hat Nolphin am PC eine neuere App (höhere `versionCode`), zeigt die Startseite „Neue Version“. Ein Tipp auf **Aktualisieren** installiert sie über die alte, ohne Deinstallieren; die Verbindung bleibt. Beim ersten Mal erlaubt man der App einmal „Apps installieren“. Neue Version bereitstellen: `android/build.sh`, danach Nolphin installieren (`sudo ninja -C build install`) oder die APK nach `~/.local/share/nolphin/phone/` kopieren. Die `versionCode` im Manifest muss steigen.
 
 ## Bauen (Entwickler)
 
