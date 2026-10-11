@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="icon_background">#1C5F93</color>
-    <color name="window_bg">#F3F7FA</color>
-    <color name="bar_bg">#0B2C47</color>
+    <!-- Linux-Mint-Grün -->
+    <color name="window_bg">#F2F5F0</color>
+    <color name="bar_bg">#2F6F1A</color>
     <color name="nav_bg">#FFFFFF</color>
 </resources>

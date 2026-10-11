@@ -78,10 +78,10 @@ public class MainActivity extends Activity implements Host {
         LinearLayout top = new LinearLayout(this);
         top.setOrientation(LinearLayout.HORIZONTAL);
         top.setGravity(Gravity.CENTER_VERTICAL);
-        top.setBackgroundColor(0xFF0B2C47);
+        top.setBackgroundColor(Ui.bar(this));
         top.setElevation(Ui.dp(this, 4));
         top.setPadding(Ui.dp(this, 16), 0, Ui.dp(this, 8), 0);
-        top.addView(Ui.icon(this, R.drawable.ic_phone, 0xFF7FE0D2, 26));
+        top.addView(Ui.icon(this, R.drawable.ic_phone, 0xFFB6EE82, 26));
         TextView title = Ui.label(this, "Nolphin Handy", 19, Color.WHITE, true);
         title.setPadding(Ui.dp(this, 12), 0, 0, 0);
         top.addView(title, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));

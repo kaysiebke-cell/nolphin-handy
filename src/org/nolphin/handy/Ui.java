@@ -26,15 +26,16 @@ final class Ui {
                 == Configuration.UI_MODE_NIGHT_YES;
     }
 
-    static int bg(Context c)       { return dark(c) ? 0xFF0E1A24 : 0xFFF3F7FA; }
-    static int surface(Context c)  { return dark(c) ? 0xFF172635 : 0xFFFFFFFF; }
-    static int text(Context c)     { return dark(c) ? 0xFFE8F1F7 : 0xFF0B2C47; }
-    static int dim(Context c)      { return dark(c) ? 0xFF9DB3C4 : 0xFF5A7184; }
-    static int primary(Context c)  { return dark(c) ? 0xFF4AA3D8 : 0xFF1C5F93; }
-    static int accent(Context c)   { return 0xFF1FA59C; }
+    static int bg(Context c)       { return dark(c) ? 0xFF1E1E1E : 0xFFF2F5F0; }
+    static int surface(Context c)  { return dark(c) ? 0xFF2B2B2B : 0xFFFFFFFF; }
+    static int text(Context c)     { return dark(c) ? 0xFFEAEAEA : 0xFF1F2A1B; }
+    static int dim(Context c)      { return dark(c) ? 0xFFA3A3A3 : 0xFF5C6B55; }
+    static int primary(Context c)  { return dark(c) ? 0xFF87CF3E : 0xFF3A8A1E; }
+    static int accent(Context c)   { return 0xFF5AA02C; }
     static int danger(Context c)   { return dark(c) ? 0xFFE57373 : 0xFFC0392B; }
-    static int line(Context c)     { return dark(c) ? 0xFF243645 : 0xFFE1E9EF; }
-    static int chip(Context c)     { return dark(c) ? 0xFF1E3345 : 0xFFE6F0F7; }
+    static int bar(Context c)      { return dark(c) ? 0xFF1F2A1A : 0xFF2F6F1A; }
+    static int line(Context c)     { return dark(c) ? 0xFF3A3A3A : 0xFFE0E7DB; }
+    static int chip(Context c)     { return dark(c) ? 0xFF33402A : 0xFFE4F0D8; }
 
     static int dp(Context c, int v) {
         return Math.round(v * c.getResources().getDisplayMetrics().density);

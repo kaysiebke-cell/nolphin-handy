@@ -50,7 +50,7 @@ final class ToPcScreen implements Screen {
             image.setBackgroundColor(Ui.chip(c));
             addView(image, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
             mark = new View(c);
-            mark.setBackgroundColor(0x661C5F93);
+            mark.setBackgroundColor(0x663A8A1E);
             mark.setVisibility(GONE);
             addView(mark, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
             check = Ui.badge(c, R.drawable.ic_check, Ui.accent(c), 0xFFFFFFFF, 26);
