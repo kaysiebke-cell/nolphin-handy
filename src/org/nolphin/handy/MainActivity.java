@@ -28,6 +28,8 @@ public class MainActivity extends Activity implements Host {
     private static final int REQ_MEDIA = 31;
     private static final int PICK_FOLDER = 8;
     private static final int SAVE_AS = 9;
+    private static final int SYSTEM_SCAN = 10;
+    private long systemScanStart;
 
     private Uri saveSource;
 
@@ -156,9 +158,40 @@ public class MainActivity extends Activity implements Host {
         }
     }
 
+    /**
+     * Zuerst der Scanner des Herstellers (Xiaomi), wenn es ihn gibt: Seine Kamera stellt scharf, die der App nicht.
+     * Liefert er keinen Link, öffnet sich der eigene Scanner.
+     */
     @Override
     public void scan() {
-        startActivity(new Intent(this, ScanActivity.class));
+        Intent system = new Intent("miui.intent.action.scanbarcode").setPackage("com.xiaomi.scanner");
+        systemScanStart = System.currentTimeMillis();
+        try {
+            startActivityForResult(system, SYSTEM_SCAN);
+        } catch (RuntimeException e) {
+            startActivity(new Intent(this, ScanActivity.class));
+        }
+    }
+
+    /** Sucht in der Antwort eines fremden Scanners nach einem Nolphin-Link (Name des Feldes ist unbekannt). */
+    private static String linkIn(Intent data) {
+        if (data == null) {
+            return null;
+        }
+        String d = data.getDataString();
+        if (d != null && (d.startsWith("http://") || d.startsWith("nolphin://"))) {
+            return d;
+        }
+        android.os.Bundle extras = data.getExtras();
+        if (extras != null) {
+            for (String key : extras.keySet()) {
+                Object v = extras.get(key);
+                if (v instanceof String && (((String) v).startsWith("http://") || ((String) v).startsWith("nolphin://"))) {
+                    return (String) v;
+                }
+            }
+        }
+        return null;
     }
 
     @Override
@@ -362,6 +395,18 @@ public class MainActivity extends Activity implements Host {
     @Override
     protected void onActivityResult(int request, int result, Intent data) {
         super.onActivityResult(request, result, data);
+        if (request == SYSTEM_SCAN) {
+            String link = result == RESULT_OK ? linkIn(data) : null;
+            if (link != null) {
+                error = null;
+                Toast.makeText(this, "Verbinde …", Toast.LENGTH_SHORT).show();
+                Connector.connect(this, link, connectListener);
+            } else if (System.currentTimeMillis() - systemScanStart < 1500 || result == RESULT_OK) {
+                // der Scanner des Herstellers lieferte nichts: eigener Scanner
+                startActivity(new Intent(this, ScanActivity.class));
+            }
+            return;
+        }
         if (request == PICK_FOLDER && result == RESULT_OK && data != null && data.getData() != null) {
             Uri tree = data.getData();
             getContentResolver().takePersistableUriPermission(tree,
