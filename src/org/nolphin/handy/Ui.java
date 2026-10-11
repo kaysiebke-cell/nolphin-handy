@@ -30,11 +30,11 @@ final class Ui {
     static int surface(Context c)  { return dark(c) ? 0xFF2B2B2B : 0xFFFFFFFF; }
     static int text(Context c)     { return dark(c) ? 0xFFEAEAEA : 0xFF1F2A1B; }
     static int dim(Context c)      { return dark(c) ? 0xFFA3A3A3 : 0xFF5C6B55; }
-    static int primary(Context c)  { return dark(c) ? 0xFF87CF3E : 0xFF3A8A1E; }
-    static int accent(Context c)   { return 0xFF5AA02C; }
+    static int primary(Context c)  { return dark(c) ? 0xFF87CF3E : 0xFF3F8A21; }
+    static int accent(Context c)   { return dark(c) ? 0xFF87CF3E : 0xFF3F8A21; }
     static int danger(Context c)   { return dark(c) ? 0xFFE57373 : 0xFFC0392B; }
-    static int bar(Context c)      { return dark(c) ? 0xFF1F2A1A : 0xFF2F7A1C; }
-    static int barEnd(Context c)   { return dark(c) ? 0xFF31472A : 0xFF54AE2E; }
+    static int bar(Context c)      { return dark(c) ? 0xFF262626 : 0xFF3F8A21; }
+    static int barEnd(Context c)   { return bar(c); }
     static int line(Context c)     { return dark(c) ? 0xFF3A3A3A : 0xFFE0E7DB; }
     static int chip(Context c)     { return dark(c) ? 0xFF33402A : 0xFFE4F0D8; }
 

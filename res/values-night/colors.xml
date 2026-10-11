@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="window_bg">#1E1E1E</color>
-    <color name="bar_bg">#1F2A1A</color>
+    <color name="bar_bg">#262626</color>
     <color name="nav_bg">#2B2B2B</color>
 </resources>
