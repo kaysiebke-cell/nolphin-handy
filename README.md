@@ -1,7 +1,5 @@
 # Nolphin Handy (Android-App)
 
-Gegenstelle zum Handy-Austausch des Dateimanagers [Nolphin](https://github.com/kaysiebke-cell/nolphin-file-manager). Dieses Repository enthält nur die App; der Server und der QR-Code kommen von Nolphin. `test.sh` braucht den QR-Encoder aus dem Nolphin-Repository (`src/nolphin-qr.c`) und läuft deshalb dort.
-
 Kleine App für den Handy-Austausch von Nolphin. Sie ist der **Empfänger auf dem Handy**: Legen Sie am PC Dateien in „Zum Handy“, kommen sie von selbst auf das Handy. Dateien vom Handy schicken Sie über das Teilen-Menü an den PC.
 
 Nur das Android-Framework, **keine Bibliotheken**, kein Gradle. Mindestens Android 10.
