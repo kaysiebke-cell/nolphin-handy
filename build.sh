@@ -49,14 +49,19 @@ elif [ -z "$KS_PASS" ]; then
 fi
 export NOLPHIN_KS_PASS="$KS_PASS"
 
-javac --release 11 -Xlint:all -cp "$PLATFORM/android.jar" -d "$OUT/classes" $(find "$HERE/src" -name '*.java')
-"$BT/d8" --lib "$PLATFORM/android.jar" --min-api 29 --output "$OUT" $(find "$OUT/classes" -name '*.class')
+# Ressourcen (Symbole, Farben, Themen) übersetzen; aapt2 erzeugt dabei auch R.java
+mkdir -p "$OUT/gen"
+"$BT/aapt2" compile --dir "$HERE/res" -o "$OUT/res.zip"
 "$BT/aapt2" link --manifest "$HERE/AndroidManifest.xml" -I "$PLATFORM/android.jar" \
-    --min-sdk-version 29 --target-sdk-version 34 -o "$OUT/base.apk"
+    --min-sdk-version 29 --target-sdk-version 34 --java "$OUT/gen" -o "$OUT/base.apk" "$OUT/res.zip"
+
+javac --release 11 -Xlint:all -cp "$PLATFORM/android.jar" -d "$OUT/classes" \
+    $(find "$HERE/src" -name '*.java') $(find "$OUT/gen" -name '*.java')
+"$BT/d8" --lib "$PLATFORM/android.jar" --min-api 29 --output "$OUT" $(find "$OUT/classes" -name '*.class')
 (cd "$OUT" && zip -q -j base.apk classes.dex)
 "$BT/zipalign" -f 4 "$OUT/base.apk" "$OUT/aligned.apk"
 "$BT/apksigner" sign --ks "$KS" --ks-pass env:NOLPHIN_KS_PASS --key-pass env:NOLPHIN_KS_PASS \
     --out "$OUT/nolphin-handy.apk" "$OUT/aligned.apk"
 "$BT/apksigner" verify "$OUT/nolphin-handy.apk"
-rm -f "$OUT/base.apk" "$OUT/aligned.apk" "$OUT/nolphin-handy.apk.idsig"
+rm -f "$OUT/base.apk" "$OUT/aligned.apk" "$OUT/res.zip" "$OUT/nolphin-handy.apk.idsig"
 echo "Fertig: $OUT/nolphin-handy.apk"

@@ -14,10 +14,16 @@ final class PcCheck {
     static final class Result {
         final boolean ok;
         final String message;
+        final String pcName;
 
         Result(boolean ok, String message) {
+            this(ok, message, "");
+        }
+
+        Result(boolean ok, String message, String pcName) {
             this.ok = ok;
             this.message = message;
+            this.pcName = pcName;
         }
     }
 
@@ -61,7 +67,8 @@ final class PcCheck {
             if (!body.contains("\"api\":1")) {
                 return new Result(false, "Nolphin am PC hat eine andere Version der Schnittstelle. Bitte App und Nolphin aktualisieren");
             }
-            return new Result(true, "");
+            java.util.regex.Matcher m = java.util.regex.Pattern.compile("\"name\":\"([^\"]*)\"").matcher(body);
+            return new Result(true, "", m.find() ? m.group(1) : "");
         } catch (java.net.SocketTimeoutException e) {
             return new Result(false, "Der PC antwortet nicht. Sind Handy und PC im selben WLAN, und läuft der Austausch in Nolphin?");
         } catch (java.io.IOException e) {

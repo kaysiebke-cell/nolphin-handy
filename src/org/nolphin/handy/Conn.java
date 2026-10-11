@@ -32,18 +32,34 @@ final class Conn {
     }
 
     /** Speichert eine geprüfte Verbindung (siehe Connector). Ein neuer Schlüssel gilt ab sofort. */
-    static void save(Context c, Link link) {
+    static void save(Context c, Link link, String pcName) {
         prefs(c).edit().putString("host", link.authority()).putString("token", link.token)
-                .putLong("expires", link.expires).apply();
+                .putLong("expires", link.expires).putString("pcname", pcName == null ? "" : pcName).apply();
     }
 
-    /** Vor dem Laden fragen, statt neue Dateien vom PC sofort zu laden. */
-    static boolean confirmBeforeDownload(Context c) {
-        return prefs(c).getBoolean("confirm", false);
+    /** Name des PCs (aus /info), leer wenn unbekannt. */
+    static String pcName(Context c) {
+        return prefs(c).getString("pcname", "");
     }
 
-    static void setConfirmBeforeDownload(Context c, boolean value) {
-        prefs(c).edit().putBoolean("confirm", value).apply();
+    /** Neue Dateien vom PC sofort laden (Vorgabe) oder nur anbieten. */
+    static boolean autoLoad(Context c) {
+        return prefs(c).getBoolean("autoload", true);
+    }
+
+    static void setAutoLoad(Context c, boolean value) {
+        prefs(c).edit().putBoolean("autoload", value).apply();
+    }
+
+    /** Unterordner in „Downloads“ für Dateien vom PC (Vorgabe „Nolphin“). */
+    static String folder(Context c) {
+        String name = prefs(c).getString("folder", "Nolphin");
+        name = name.replaceAll("[^\\p{L}\\p{N} _-]", "").trim();
+        return name.isEmpty() ? "Nolphin" : (name.length() > 40 ? name.substring(0, 40) : name);
+    }
+
+    static void setFolder(Context c, String name) {
+        prefs(c).edit().putString("folder", name == null ? "" : name).apply();
     }
 
     /** Dateien, die schon auf dem Handy sind (Name und Größe). */

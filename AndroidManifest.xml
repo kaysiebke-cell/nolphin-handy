@@ -3,8 +3,8 @@
      Nur das Android-Framework, keine Bibliotheken. -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="org.nolphin.handy"
-    android:versionCode="4"
-    android:versionName="1.1">
+    android:versionCode="3"
+    android:versionName="2.1">
 
     <uses-sdk android:minSdkVersion="29" android:targetSdkVersion="34" />
 
@@ -14,11 +14,19 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.CAMERA" />
+    <!-- Zum Aktualisieren der App aus der Version, die Nolphin am PC bereithält. -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <!-- Nur für das Foto-Raster im Reiter „Zum PC“; wird erst dort angefragt. -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
 
     <!-- Der Austausch läuft unverschlüsselt (HTTP) im eigenen WLAN. -->
     <application
         android:label="Nolphin Handy"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:theme="@style/NolphinTheme"
         android:allowBackup="false"
         android:usesCleartextTraffic="true">
 
@@ -63,6 +71,8 @@
                 <data android:mimeType="*/*" />
             </intent-filter>
         </activity>
+
+        <receiver android:name=".Updater$Result" android:exported="false" />
 
         <service
             android:name=".SyncService"
