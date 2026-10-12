@@ -1,3 +1,5 @@
+![Nolphin Handy: im Hintergrund der Dateimanager Nolphin am PC, davor die App auf dem Handy, hell und dunkel. Darunter der Titel und die Zeile: Dateien vom Handy zum PC – und ein Dateimanager für unterwegs.](docs/bilder/titelbild.png)
+
 # Nolphin Handy
 
 Android-App für den Dateiaustausch mit **Nolphin** am PC, in beide Richtungen, und zugleich ein Dateimanager für das Handy.
@@ -182,7 +184,7 @@ Der Test braucht den Nolphin-Quelltext im Nachbarordner `../nolphin-file-manager
 docs/bilder/erzeugen.sh
 ```
 
-Das Skript zeichnet die Seiten aus `docs/bilder/quelle.html` mit Chrome oder Chromium (Beispieldaten, keine echten Dateien) und setzt sie mit `docs/bilder/gif.py` (Python mit Pillow) zu den beiden GIFs `funktionen-hell.gif` und `funktionen-dunkel.gif` zusammen. Die Reihenfolge und die Beschriftungen stehen am Anfang von `gif.py`, die Seiten in `quelle.html` (`#<seite>-<hell|dunkel>`). Die Quelle braucht beim Rendern Internet für die Symbolschrift.
+Das Skript zeichnet das Titelbild (`docs/bilder/titelbild-quelle.html`, mit dem Nolphin-Fenster aus dem Nolphin-Projekt und dem App-Symbol) und die Seiten aus `docs/bilder/quelle.html` mit Chrome oder Chromium (Beispieldaten, keine echten Dateien) und setzt sie mit `docs/bilder/gif.py` (Python mit Pillow) zu den beiden GIFs `funktionen-hell.gif` und `funktionen-dunkel.gif` zusammen. Die Reihenfolge und die Beschriftungen stehen am Anfang von `gif.py`, die Seiten in `quelle.html` (`#<seite>-<hell|dunkel>`). Die Quelle braucht beim Rendern Internet für die Symbolschrift.
 
 ## Aufbau des Quelltexts
 
