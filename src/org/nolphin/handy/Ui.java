@@ -111,8 +111,12 @@ final class Ui {
         }
         b.setBackground(g);
         b.setOnClickListener(l);
+        // Mindesthöhe statt fester Höhe: lange Texte brechen um, ohne unten abgeschnitten zu werden
+        b.setMinHeight(dp(c, 52));
+        b.setMinimumHeight(dp(c, 52));
+        b.setPadding(dp(c, 16), dp(c, 10), dp(c, 16), dp(c, 10));
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT, dp(c, 48));
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
         lp.topMargin = dp(c, 8);
         b.setLayoutParams(lp);
         return b;

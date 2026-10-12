@@ -408,7 +408,7 @@ final class ToPcScreen implements Screen {
                 sendSelected();
             }
         });
-        send.setLayoutParams(new LinearLayout.LayoutParams(Ui.dp(c, 180), Ui.dp(c, 44)));
+        send.setLayoutParams(new LinearLayout.LayoutParams(Ui.dp(c, 180), LinearLayout.LayoutParams.WRAP_CONTENT));
         footer.addView(send);
         footer.setVisibility(View.GONE);
         root.addView(footer);

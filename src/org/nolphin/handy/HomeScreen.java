@@ -113,7 +113,7 @@ final class HomeScreen implements Screen {
                 }
             }));
         } else {
-            status.addView(Ui.button(c, "Mit dem PC verbinden (QR-Code scannen)", true, new View.OnClickListener() {
+            status.addView(Ui.button(c, "QR-Code scannen und verbinden", true, new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
                     host.scan();
@@ -133,7 +133,7 @@ final class HomeScreen implements Screen {
             steps.addView(Ui.label(c, "So geht es", 16, Ui.text(c), true));
             String[] lines = {
                 "1. Am PC in Nolphin links auf „Handy“ klicken",
-                "2. Hier auf „Mit dem PC verbinden“ tippen",
+                "2. Hier auf „QR-Code scannen und verbinden“ tippen",
                 "3. Die Kamera auf den QR-Code halten, zum Scharfstellen aufs Bild tippen",
             };
             for (String l : lines) {
