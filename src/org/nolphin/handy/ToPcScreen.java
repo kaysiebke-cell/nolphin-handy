@@ -1,5 +1,6 @@
 package org.nolphin.handy;
 
+import android.app.AlertDialog;
 import android.content.Context;
 import android.database.Cursor;
 import android.graphics.drawable.Drawable;
@@ -106,6 +107,15 @@ final class ToPcScreen implements Screen {
     private final LinearLayout permCard;
     private final LinearLayout footer;
     private final TextView footerText;
+    private final ImageView newFolder;
+    private final LinearLayout pasteBar;
+    private final TextView pasteText;
+    private static final String[] DOC_FILTERS = { "Alle", "DOC", "XLS", "PDF", "PPT", "Sonstige" };
+    private int docFilter;
+    private final LinearLayout docChips;
+    private final HorizontalScrollView docChipScroll;
+    private List<File> clip;              // zum Einfügen vorgemerkt (Kopieren oder Verschieben)
+    private boolean clipMove;
 
     private int mode = HOME;
     private File dir;                     // im Modus FOLDER
@@ -187,6 +197,18 @@ final class ToPcScreen implements Screen {
         title.setSingleLine(true);
         title.setEllipsize(android.text.TextUtils.TruncateAt.END);
         head.addView(title, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
+        newFolder = Ui.icon(c, R.drawable.ic_newfolder, Ui.primary(c), 24);
+        newFolder.setPadding(Ui.dp(c, 6), Ui.dp(c, 6), Ui.dp(c, 6), Ui.dp(c, 6));
+        newFolder.setLayoutParams(new LinearLayout.LayoutParams(Ui.dp(c, 40), Ui.dp(c, 40)));
+        newFolder.setContentDescription("Neuer Ordner");
+        newFolder.setVisibility(View.GONE);
+        newFolder.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                askNewFolder();
+            }
+        });
+        head.addView(newFolder);
         toggle = Ui.icon(c, useGrid ? R.drawable.ic_list : R.drawable.ic_grid, Ui.primary(c), 24);
         toggle.setPadding(Ui.dp(c, 6), Ui.dp(c, 6), Ui.dp(c, 6), Ui.dp(c, 6));
         toggle.setLayoutParams(new LinearLayout.LayoutParams(Ui.dp(c, 40), Ui.dp(c, 40)));
@@ -292,6 +314,16 @@ final class ToPcScreen implements Screen {
         crumbBar.setVisibility(View.GONE);
         root.addView(crumbBar);
 
+        HorizontalScrollView chipScroll = new HorizontalScrollView(c);
+        chipScroll.setHorizontalScrollBarEnabled(false);
+        docChips = new LinearLayout(c);
+        docChips.setOrientation(LinearLayout.HORIZONTAL);
+        docChips.setPadding(p, Ui.dp(c, 2), p, Ui.dp(c, 8));
+        chipScroll.addView(docChips);
+        chipScroll.setVisibility(View.GONE);
+        docChipScroll = chipScroll;
+        root.addView(chipScroll);
+
         selectBar = new LinearLayout(c);
         selectBar.setOrientation(LinearLayout.HORIZONTAL);
         selectBar.setGravity(Gravity.CENTER_VERTICAL);
@@ -337,7 +369,7 @@ final class ToPcScreen implements Screen {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int i, long id) {
                 Entry e = entries.get(i);
-                if (e.dir) {
+                if (e.dir && selected.isEmpty()) {
                     openFolder(e.file);
                 } else {
                     toggleSelect(e);
@@ -347,12 +379,8 @@ final class ToPcScreen implements Screen {
         grid.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
             @Override
             public boolean onItemLongClick(AdapterView<?> parent, View view, int i, long id) {
-                Entry e = entries.get(i);
-                if (!e.dir) {
-                    toggleSelect(e);
-                    return true;
-                }
-                return false;
+                toggleSelect(entries.get(i));
+                return true;
             }
         });
         body.addView(grid);
@@ -395,23 +423,75 @@ final class ToPcScreen implements Screen {
         body.addView(permCard);
 
         footer = new LinearLayout(c);
-        footer.setOrientation(LinearLayout.HORIZONTAL);
-        footer.setGravity(Gravity.CENTER_VERTICAL);
+        footer.setOrientation(LinearLayout.VERTICAL);
         footer.setBackgroundColor(Ui.surface(c));
         footer.setElevation(Ui.dp(c, 6));
-        footer.setPadding(p, Ui.dp(c, 8), p, Ui.dp(c, 8));
         footerText = Ui.label(c, "", 14, Ui.text(c), true);
-        footer.addView(footerText, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
-        Button send = Ui.button(c, "An den PC senden", true, new View.OnClickListener() {
+        footerText.setPadding(p, Ui.dp(c, 8), p, Ui.dp(c, 2));
+        footer.addView(footerText);
+        LinearLayout actions = new LinearLayout(c);
+        actions.setOrientation(LinearLayout.HORIZONTAL);
+        actions.addView(action(R.drawable.ic_upload, "An PC", false, new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 sendSelected();
             }
-        });
-        send.setLayoutParams(new LinearLayout.LayoutParams(Ui.dp(c, 180), LinearLayout.LayoutParams.WRAP_CONTENT));
-        footer.addView(send);
+        }));
+        actions.addView(action(R.drawable.ic_copy, "Kopieren", false, new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                markClip(false);
+            }
+        }));
+        actions.addView(action(R.drawable.ic_move, "Verschieben", false, new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                markClip(true);
+            }
+        }));
+        actions.addView(action(R.drawable.ic_trash, "Löschen", true, new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                askDelete();
+            }
+        }));
+        actions.addView(action(R.drawable.ic_more, "Mehr", false, new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                more();
+            }
+        }));
+        footer.addView(actions);
         footer.setVisibility(View.GONE);
         root.addView(footer);
+
+        pasteBar = new LinearLayout(c);
+        pasteBar.setOrientation(LinearLayout.HORIZONTAL);
+        pasteBar.setGravity(Gravity.CENTER_VERTICAL);
+        pasteBar.setBackgroundColor(Ui.surface(c));
+        pasteBar.setElevation(Ui.dp(c, 6));
+        pasteBar.setPadding(p, Ui.dp(c, 8), p, Ui.dp(c, 8));
+        pasteText = Ui.label(c, "", 14, Ui.text(c), true);
+        pasteBar.addView(pasteText, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
+        TextView cancelPaste = chip("Abbrechen", new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                clip = null;
+                render();
+            }
+        });
+        pasteBar.addView(cancelPaste);
+        Button here = Ui.button(c, "Hierher", true, new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                pasteHere();
+            }
+        });
+        LinearLayout.LayoutParams hp = new LinearLayout.LayoutParams(Ui.dp(c, 120), LinearLayout.LayoutParams.WRAP_CONTENT);
+        hp.leftMargin = Ui.dp(c, 8);
+        pasteBar.addView(here, hp);
+        pasteBar.setVisibility(View.GONE);
+        root.addView(pasteBar);
 
         applyMode();
     }
@@ -622,13 +702,57 @@ final class ToPcScreen implements Screen {
             case 0: return t + "=" + MediaStore.Files.FileColumns.MEDIA_TYPE_IMAGE;
             case 1: return t + "=" + MediaStore.Files.FileColumns.MEDIA_TYPE_AUDIO;
             case 2: return t + "=" + MediaStore.Files.FileColumns.MEDIA_TYPE_VIDEO;
-            default: return t + "=" + MediaStore.Files.FileColumns.MEDIA_TYPE_NONE + " AND (" + m + " = 'application/pdf'"
-                    + " OR " + m + " LIKE 'text/%' OR " + m + " LIKE 'application/vnd.%' OR " + m + " = 'application/msword'"
-                    + " OR " + m + " = 'application/rtf' OR " + m + " = 'application/zip')";
+            default: return t + "=" + MediaStore.Files.FileColumns.MEDIA_TYPE_NONE + " AND " + m + " IS NOT NULL AND "
+                    + m + " <> 'application/vnd.android.package-archive' AND "
+                    + MediaStore.Files.FileColumns.DATA + " NOT LIKE '%/Android/%' AND "
+                    + MediaStore.Files.FileColumns.DISPLAY_NAME + " NOT LIKE '.%'";
         }
     }
 
     // ---- Navigation --------------------------------------------------------------------------
+
+    private static String docGroup(String name) {
+        String e = Ui.ext(name);
+        switch (e) {
+            case "doc": case "docx": case "odt": case "rtf": case "txt": case "md":
+                return "DOC";
+            case "xls": case "xlsx": case "ods": case "csv":
+                return "XLS";
+            case "pdf":
+                return "PDF";
+            case "ppt": case "pptx": case "odp":
+                return "PPT";
+            default:
+                return "Sonstige";
+        }
+    }
+
+    private boolean passesFilter(Entry e) {
+        return mode != CATEGORY || cat != 3 || docFilter == 0 || docGroup(e.file.getName()).equals(DOC_FILTERS[docFilter]);
+    }
+
+    private void buildDocChips() {
+        docChips.removeAllViews();
+        for (int i = 0; i < DOC_FILTERS.length; i++) {
+            final int k = i;
+            boolean on = i == docFilter;
+            TextView t = Ui.label(c, DOC_FILTERS[i], 15, on ? Ui.primary(c) : Ui.dim(c), true);
+            t.setBackground(on ? Ui.round(c, Ui.chip(c), 18) : Ui.outlined(c, Ui.surface(c)));
+            t.setPadding(Ui.dp(c, 16), Ui.dp(c, 9), Ui.dp(c, 16), Ui.dp(c, 9));
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT);
+            lp.rightMargin = Ui.dp(c, 8);
+            t.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    docFilter = k;
+                    selected.clear();
+                    applyQuery();
+                }
+            });
+            docChips.addView(t, lp);
+        }
+    }
 
     private void resetQuery() {
         root.removeCallbacks(startSearch);
@@ -685,6 +809,7 @@ final class ToPcScreen implements Screen {
         resetQuery();
         mode = CATEGORY;
         cat = k;
+        docFilter = 0;
         loadList();
     }
 
@@ -852,7 +977,11 @@ final class ToPcScreen implements Screen {
                 ++gen;
                 loading = false;
                 entries.clear();
-                entries.addAll(all);
+                for (Entry e : all) {
+                    if (passesFilter(e)) {
+                        entries.add(e);
+                    }
+                }
             }
             render();
             return;
@@ -860,7 +989,7 @@ final class ToPcScreen implements Screen {
         if (mode == CATEGORY || mode == APPS) {
             entries.clear();
             for (Entry e : all) {
-                if (nameOf(e).toLowerCase(Locale.ROOT).contains(q)) {
+                if (nameOf(e).toLowerCase(Locale.ROOT).contains(q) && passesFilter(e)) {
                     entries.add(e);
                 }
             }
@@ -939,9 +1068,7 @@ final class ToPcScreen implements Screen {
 
     private void selectAll() {
         for (Entry e : entries) {
-            if (!e.dir) {
-                selected.put(e.path(), e.size);
-            }
+            selected.put(e.path(), e.size);
         }
         render();
     }
@@ -955,10 +1082,294 @@ final class ToPcScreen implements Screen {
             host.show(Host.TAB_HOME);
             return;
         }
-        List<String> paths = new ArrayList<>(selected.keySet());
+        final List<String> paths = new ArrayList<>(selected.keySet());
         selected.clear();
         render();
-        host.sendPaths(paths);
+        boolean hasDir = false;
+        for (String path : paths) {
+            if (new File(path).isDirectory()) {
+                hasDir = true;
+            }
+        }
+        if (!hasDir) {
+            host.sendPaths(paths);
+            return;
+        }
+        Toast.makeText(c, "Ordner werden gepackt …", Toast.LENGTH_SHORT).show();
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                final List<String> out = new ArrayList<>();
+                String err = null;
+                for (String path : paths) {
+                    File f = new File(path);
+                    try {
+                        out.add(f.isDirectory() ? FileOps.zip(f, c.getCacheDir()).getPath() : path);
+                    } catch (java.io.IOException e) {
+                        err = e.getMessage();
+                    }
+                }
+                final String fe = err;
+                root.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (fe != null) {
+                            Toast.makeText(c, "Packen nicht möglich: " + fe, Toast.LENGTH_LONG).show();
+                        }
+                        host.sendPaths(out);
+                    }
+                });
+            }
+        }, "nolphin-zip").start();
+    }
+
+    // ---- Dateiverwaltung: Kopieren, Verschieben, Löschen, Umbenennen, Neuer Ordner ------------
+
+    private View action(int icon, String text, boolean danger, View.OnClickListener l) {
+        LinearLayout a = new LinearLayout(c);
+        a.setOrientation(LinearLayout.VERTICAL);
+        a.setGravity(Gravity.CENTER);
+        a.setBackground(Ui.pressable(c));
+        a.setPadding(0, Ui.dp(c, 6), 0, Ui.dp(c, 8));
+        int col = danger ? Ui.danger(c) : Ui.primary(c);
+        ImageView i = Ui.icon(c, icon, col, 24);
+        i.setLayoutParams(new LinearLayout.LayoutParams(Ui.dp(c, 24), Ui.dp(c, 24)));
+        a.addView(i);
+        TextView t = Ui.label(c, text, 12, danger ? Ui.danger(c) : Ui.text(c), false);
+        t.setGravity(Gravity.CENTER);
+        t.setSingleLine(true);
+        a.addView(t);
+        a.setOnClickListener(l);
+        a.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
+        return a;
+    }
+
+    private List<File> selectedFiles() {
+        List<File> l = new ArrayList<>();
+        for (String path : selected.keySet()) {
+            l.add(new File(path));
+        }
+        return l;
+    }
+
+    private void reload() {
+        if (!query.isEmpty()) {
+            applyQuery();
+        } else if (mode == FOLDER || mode == CATEGORY || mode == APPS) {
+            loadList();
+        } else {
+            render();
+        }
+    }
+
+    /** Merkt die Auswahl zum Einfügen vor; dann einen Zielordner öffnen und "Hierher" tippen. */
+    private void markClip(boolean move) {
+        if (selected.isEmpty()) {
+            return;
+        }
+        clip = selectedFiles();
+        clipMove = move;
+        selected.clear();
+        Toast.makeText(c, "Zielordner öffnen und „Hierher“ tippen", Toast.LENGTH_LONG).show();
+        if (mode != FOLDER) {
+            goHome();
+        }
+        render();
+    }
+
+    private void pasteHere() {
+        if (clip == null || mode != FOLDER) {
+            return;
+        }
+        final List<File> items = clip;
+        final boolean move = clipMove;
+        final File target = dir;
+        clip = null;
+        render();
+        runOp(move ? "Verschiebe …" : "Kopiere …", new Op() {
+            @Override
+            public String run() {
+                int ok = 0;
+                String err = null;
+                for (File f : items) {
+                    try {
+                        File r = move ? FileOps.moveTo(f, target) : FileOps.copyTo(f, target);
+                        scan(r);
+                        if (move) {
+                            scan(f);
+                        }
+                        ok++;
+                    } catch (java.io.IOException e) {
+                        err = e.getMessage();
+                    }
+                }
+                String done = ok + (ok == 1 ? " Element " : " Elemente ") + (move ? "verschoben" : "kopiert");
+                return err == null ? done : done + ". Fehler: " + err;
+            }
+        });
+    }
+
+    private void askDelete() {
+        if (selected.isEmpty()) {
+            return;
+        }
+        final List<File> items = selectedFiles();
+        String what = items.size() == 1 ? "„" + items.get(0).getName() + "“" : items.size() + " Elemente";
+        new AlertDialog.Builder(host.activity())
+                .setTitle("Löschen?")
+                .setMessage(what + " wird endgültig gelöscht. Das lässt sich nicht rückgängig machen.")
+                .setNegativeButton("Abbrechen", null)
+                .setPositiveButton("Löschen", new android.content.DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(android.content.DialogInterface d, int which) {
+                        selected.clear();
+                        render();
+                        runOp("Lösche …", new Op() {
+                            @Override
+                            public String run() {
+                                int ok = 0;
+                                String err = null;
+                                for (File f : items) {
+                                    try {
+                                        FileOps.deleteTree(f);
+                                        scan(f);
+                                        ok++;
+                                    } catch (java.io.IOException e) {
+                                        err = e.getMessage();
+                                    }
+                                }
+                                String done = ok + (ok == 1 ? " Element " : " Elemente ") + "gelöscht";
+                                return err == null ? done : done + ". Fehler: " + err;
+                            }
+                        });
+                    }
+                }).show();
+    }
+
+    private void more() {
+        if (selected.isEmpty()) {
+            return;
+        }
+        if (selected.size() != 1) {
+            Toast.makeText(c, "Umbenennen und Eigenschaften gehen nur mit einem Element", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        final File f = new File(selected.keySet().iterator().next());
+        new AlertDialog.Builder(host.activity())
+                .setTitle(f.getName())
+                .setItems(new CharSequence[] { "Umbenennen", "Eigenschaften" }, new android.content.DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(android.content.DialogInterface d, int which) {
+                        if (which == 0) {
+                            askRename(f);
+                        } else {
+                            showProperties(f);
+                        }
+                    }
+                }).show();
+    }
+
+    private EditText nameField(String text) {
+        EditText e = new EditText(c);
+        e.setSingleLine(true);
+        e.setText(text);
+        e.setSelectAllOnFocus(true);
+        e.setTextSize(17);
+        return e;
+    }
+
+    private void askRename(final File f) {
+        final EditText e = nameField(f.getName());
+        new AlertDialog.Builder(host.activity())
+                .setTitle("Umbenennen")
+                .setView(e)
+                .setNegativeButton("Abbrechen", null)
+                .setPositiveButton("Umbenennen", new android.content.DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(android.content.DialogInterface d, int which) {
+                        final String n = e.getText().toString();
+                        selected.clear();
+                        runOp("Benenne um …", new Op() {
+                            @Override
+                            public String run() {
+                                try {
+                                    File r = FileOps.rename(f, n);
+                                    scan(f);
+                                    scan(r);
+                                    return "Umbenannt in „" + r.getName() + "“";
+                                } catch (java.io.IOException ex) {
+                                    return "Nicht umbenannt: " + ex.getMessage();
+                                }
+                            }
+                        });
+                    }
+                }).show();
+    }
+
+    private void askNewFolder() {
+        if (mode != FOLDER) {
+            return;
+        }
+        final File parent = dir;
+        final EditText e = nameField("");
+        e.setHint("Name des Ordners");
+        new AlertDialog.Builder(host.activity())
+                .setTitle("Neuer Ordner")
+                .setView(e)
+                .setNegativeButton("Abbrechen", null)
+                .setPositiveButton("Anlegen", new android.content.DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(android.content.DialogInterface d, int which) {
+                        final String n = e.getText().toString();
+                        runOp("Lege an …", new Op() {
+                            @Override
+                            public String run() {
+                                try {
+                                    return "Ordner „" + FileOps.newFolder(parent, n).getName() + "“ angelegt";
+                                } catch (java.io.IOException ex) {
+                                    return "Nicht angelegt: " + ex.getMessage();
+                                }
+                            }
+                        });
+                    }
+                }).show();
+    }
+
+    private void showProperties(File f) {
+        long[] m = f.isDirectory() ? FileOps.measure(f) : new long[] { f.length(), 1 };
+        String text = (f.isDirectory() ? "Ordner" : "Datei") + "\n\nOrt: " + f.getParent()
+                + "\nGröße: " + Ui.size(m[0]) + (f.isDirectory() ? "\nDateien darin: " + m[1] : "")
+                + "\nGeändert: " + new SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.GERMANY).format(new Date(f.lastModified()));
+        new AlertDialog.Builder(host.activity()).setTitle(f.getName()).setMessage(text).setPositiveButton("Schließen", null).show();
+    }
+
+    private interface Op {
+        /** Läuft im Hintergrund; liefert die Meldung für den Nutzer. */
+        String run();
+    }
+
+    private void runOp(final String start, final Op op) {
+        Toast.makeText(c, start, Toast.LENGTH_SHORT).show();
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                final String msg = op.run();
+                root.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        Toast.makeText(c, msg, Toast.LENGTH_LONG).show();
+                        reload();
+                    }
+                });
+            }
+        }, "nolphin-fileops").start();
+    }
+
+    /** Sagt der Galerie und den anderen Apps, dass sich eine Datei geändert hat. */
+    private void scan(File f) {
+        if (f != null && !f.isDirectory()) {
+            android.media.MediaScannerConnection.scanFile(c, new String[] { f.getPath() }, null, null);
+        }
     }
 
     // ---- Screen ------------------------------------------------------------------------------
@@ -1005,6 +1416,9 @@ final class ToPcScreen implements Screen {
             crumbBar.setVisibility(View.GONE);
             selectBar.setVisibility(View.GONE);
             footer.setVisibility(View.GONE);
+            pasteBar.setVisibility(View.GONE);
+            newFolder.setVisibility(View.GONE);
+            docChipScroll.setVisibility(View.GONE);
             toggle.setVisibility(View.GONE);
             back.setVisibility(View.GONE);
             return;
@@ -1042,7 +1456,17 @@ final class ToPcScreen implements Screen {
         for (long s : selected.values()) {
             total += s;
         }
-        footerText.setText(selected.size() + (selected.size() == 1 ? " Datei" : " Dateien") + " · " + Ui.size(total));
+        footerText.setText(selected.size() + (selected.size() == 1 ? " Element" : " Elemente") + (total > 0 ? " · " + Ui.size(total) : ""));
+        pasteBar.setVisibility(clip != null && mode == FOLDER && !sel ? View.VISIBLE : View.GONE);
+        if (clip != null) {
+            pasteText.setText(clip.size() + (clip.size() == 1 ? " Element " : " Elemente ") + (clipMove ? "verschieben" : "kopieren"));
+        }
+        newFolder.setVisibility(mode == FOLDER && !searching ? View.VISIBLE : View.GONE);
+        boolean chips = mode == CATEGORY && cat == 3;
+        docChipScroll.setVisibility(chips ? View.VISIBLE : View.GONE);
+        if (chips) {
+            buildDocChips();
+        }
         adapter.notifyDataSetChanged();
     }
 
