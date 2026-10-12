@@ -327,6 +327,23 @@ public class MainActivity extends Activity implements Host {
     }
 
     @Override
+    public void pickPhotos() {
+        Intent pick;
+        if (Build.VERSION.SDK_INT >= 33) {
+            // Fotoauswahl des Systems: zeigt auch die Cloud-Bilder aus Google Fotos
+            pick = new Intent(android.provider.MediaStore.ACTION_PICK_IMAGES);
+            pick.putExtra(android.provider.MediaStore.EXTRA_PICK_IMAGES_MAX, android.provider.MediaStore.getPickImagesMaxLimit());
+        } else {
+            pick = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+            pick.addCategory(Intent.CATEGORY_OPENABLE);
+            pick.setType("*/*");
+            pick.putExtra(Intent.EXTRA_MIME_TYPES, new String[] { "image/*", "video/*" });
+            pick.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+        }
+        startActivityForResult(pick, PICK_FILES);
+    }
+
+    @Override
     public void pickTargetFolder() {
         Intent pick = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
         pick.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION

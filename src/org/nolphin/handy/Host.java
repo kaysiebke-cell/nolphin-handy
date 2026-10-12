@@ -31,6 +31,9 @@ interface Host {
 
     void pickFiles();
 
+    /** Fotos und Videos aus der Fotoauswahl des Systems wählen; dort erscheinen auch die Bilder aus Google Fotos (Cloud). */
+    void pickPhotos();
+
     /** Dateien des Handy-Speichers (Pfade) an den PC senden. */
     void sendPaths(List<String> paths);
 

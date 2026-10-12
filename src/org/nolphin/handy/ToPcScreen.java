@@ -536,6 +536,22 @@ final class ToPcScreen implements Screen {
                         openApps();
                     }
                 }));
+        Ui.addRow(c, quick, Ui.row(c, R.drawable.ic_image, Ui.iconTint(c), "Google Fotos",
+                "Fotos und Videos aus der Cloud, auch ohne Speicher auf dem Handy", null, new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        ToPcScreen.this.host.pickPhotos();
+                    }
+                }));
+        // Cloud und andere Apps (Google Drive, Google Fotos, Dateien anderer Apps): über die Systemauswahl,
+        // denn deren Daten liegen nicht als Dateien auf dem Handy, sondern hinter einem Dokumentenanbieter.
+        Ui.addRow(c, quick, Ui.row(c, R.drawable.ic_cloud, Ui.iconTint(c), "Cloud und andere Apps",
+                "Google Drive und Dateien anderer Apps", null, new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        ToPcScreen.this.host.pickFiles();
+                    }
+                }));
         homeBox.addView(quick);
         homeBox.addView(heading("Kategorien"));
         LinearLayout cats = Ui.group(c);
