@@ -3,7 +3,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Bilder für die README (Beispieldaten)</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
-<!-- Quelle der README-Bilder. Aufruf: quelle.html#<seite>-<hell|dunkel>. Seiten: start, uebersicht, liste, auswahl, dokumente, einfuegen, vompc, vompcauswahl.
+<!-- Quelle der README-Bilder. Aufruf: quelle.html#<seite>-<hell|dunkel>. Seiten: start, uebersicht, liste, auswahl, dokumente, einfuegen, vompc, vompcauswahl, entpacken, umbenennen, loeschen, analyse, papierkorb.
      Rendern: google-chrome --headless --screenshot=OUT.png --window-size=360,740 --force-device-scale-factor=2 "file:///…/quelle.html#liste-hell" -->
 <style>
 :root{--font:Roboto,"Noto Sans","DejaVu Sans",system-ui,sans-serif}
@@ -61,6 +61,19 @@ body.dunkel .badge{color:#10200A}
 .stor div{flex:1;text-align:center;padding:10px 8px 8px;color:var(--dm);border-bottom:3px solid transparent}.stor .on{color:var(--pr);font-weight:500;border-color:var(--pr)}
 .actions{display:flex;justify-content:flex-end;gap:8px;padding:2px 16px 8px;background:var(--bg);flex:none}
 .cap{font-size:12px;color:var(--dm);text-align:center;padding:6px}
+
+.seg{display:flex;height:14px;border-radius:7px;overflow:hidden;margin:12px 0 10px;gap:2px;background:var(--ln)}.seg i{display:block;height:14px}
+.leg{display:grid;grid-template-columns:1fr 1fr;gap:6px 14px;font-size:13px}.leg div{display:flex;align-items:center;gap:8px;white-space:nowrap}.leg em{width:10px;height:10px;border-radius:2px;flex:none}.leg b{margin-left:auto;font-weight:500}
+.big{font-size:22px;font-weight:500}
+.rb{height:4px;border-radius:2px;background:var(--ln);margin-top:5px}.rb i{display:block;height:4px;border-radius:2px;background:var(--pr)}
+.dlgwrap{position:absolute;left:0;right:0;top:68px;bottom:0;background:rgba(0,0,0,.45);display:flex}
+.dlg{margin:auto 20px;background:var(--sf);border-radius:16px;padding:22px 22px 14px;box-shadow:0 8px 30px rgba(0,0,0,.35);width:100%}
+.dlg h3{margin:0 0 10px;font-size:20px;font-weight:500}.dlg p{margin:0;font-size:15px;line-height:1.45;color:var(--dm)}
+.dlg .acts{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
+.note{padding:12px 14px;border:1px solid var(--ln);border-radius:10px;background:var(--sf);font-size:13px;color:var(--dm);line-height:1.45}
+.rtabs{display:flex;font-size:13px;margin:6px 0 8px}.rtabs div{flex:1;text-align:center;padding:8px 2px 7px;color:var(--dm);border-bottom:3px solid transparent;white-space:nowrap}.rtabs .on{color:var(--pr);font-weight:500;border-color:var(--pr)}
+.fld{border-bottom:1.5px solid var(--ln);padding:8px 0 6px;font-size:15px;margin-bottom:4px}.flb{font-size:12px;color:var(--dm);margin-top:6px}
+.prev{border:1px solid var(--ln);border-radius:10px;padding:10px 12px;font-size:13px;line-height:1.6;margin-top:10px;background:var(--bg)}.prev i{font-style:normal;color:var(--dm);padding:0 6px}
 </style></head>
 <body><div id="root" style="display:contents"></div>
 <script>
@@ -98,5 +111,15 @@ if(page==='einfuegen'){html=app+`<div class="top">${ic('arrow-left')}<span>Ziel<
 ${row('file-text','Notizen.txt','8 B · 12.10.2026')}${row('file-type-pdf','Plan.pdf','412 KB · 11.10.2026')}</div><div class="paste"><span>2 Elemente verschieben</span><div class="bt">Abbrechen</div><div class="bt f">Hierher</div></div>`+nav(2);}
 if(page==='vompcauswahl'){html=app+`<div class="sel">${ic('x')}<span>2 gewählt</span>${ic('checks')}${ic('download')}${ic('share')}${ic('device-floppy')}</div><div class="search" style="padding-left:16px">${ic('search')}Auf dem PC suchen${ic('x')}</div><div class="body">
 ${row('file-type-pdf','Angebot Maler.pdf','214 KB  ·  auf dem Handy',{cb:1,on:1,more:false})}${row('table','Haushalt 2026.xlsx','96 KB  ·  noch nicht geladen',{cb:1,on:1,more:false})}${row('photo','Plan.png','1,1 MB  ·  noch nicht geladen',{cb:0,more:false,th:'#D9B98D,#8E6A3E'})}</div>`+nav(1);}
+
+const dlg=(t,p,b1,b2)=>`<div class="dlgwrap"><div class="dlg"><h3>${t}</h3>${p}<div class="acts"><div class="bt">${b1}</div><div class="bt f">${b2}</div></div></div></div>`;
+if(page==='entpacken'){html=app+`<div class="top">${ic('arrow-left')}<span>Download</span>${ic('folder-plus')}${ic('layout-grid')}</div><div class="body">${row('file-zip','Urlaub.zip','1,2 MB · 12.10.2026')}${row('file-text','Notizen.txt','8 KB · 10.10.2026')}</div>`+dlg('„Urlaub.zip“ entpacken?','<p>Das Archiv enthält 48 Dateien in 6 Ordnern (1,2 MB, entpackt 2,9 MB).<br><br>Ziel: Ordner „Urlaub“ in Download</p>','Abbrechen','Entpacken');}
+if(page==='umbenennen'){html=app+`<div class="top">${ic('arrow-left')}<span>Download</span></div><div class="body"></div>`+`<div class="dlgwrap"><div class="dlg"><h3>3 Dateien umbenennen</h3><div class="rtabs"><div>Ersetzen</div><div class="on">Nummer</div><div>Anhängen</div><div>Groß/Klein</div></div><div class="fld" style="color:var(--dm)">Name davor, zum Beispiel „Urlaub - “</div><div class="flb">Erste Nummer</div><div class="fld">1</div><div class="flb">Anzahl Stellen (001 = 3)</div><div class="fld">3</div><div class="prev">IMG_4711.jpg<i>→</i>001.jpg<br>IMG_4712.jpg<i>→</i>002.jpg<br>IMG_4713.jpg<i>→</i>003.jpg</div><div class="acts"><div class="bt">Abbrechen</div><div class="bt f">Umbenennen</div></div></div></div>`;}
+if(page==='loeschen'){html=app+`<div class="top">${ic('arrow-left')}<span>Dokumente</span>${ic('folder-plus')}${ic('layout-grid')}</div><div class="body">${row('file-type-pdf','Rechnung_Oktober.pdf','214 KB · 12.10.2026')}${row('file-text','Brief Finanzamt.docx','48 KB · 10.10.2026')}</div>`+dlg('In den Papierkorb?','<p>„Rechnung_Oktober.pdf“ wird in den Papierkorb verschoben. Dort bleibt es 30 Tage und lässt sich wiederherstellen.</p>','Abbrechen','In den Papierkorb');}
+if(page==='analyse'){const cols=['#3F8A21','#E0A020','#3B82C4','#9B59B6','#D9534F','#8A9486'],cat=[['Bilder',22,'16 GB'],['Videos',18,'13 GB'],['Audio',9,'7 GB'],['Dokumente',2,'1,4 GB'],['Apps',31,'23 GB'],['Sonstiges',18,'13 GB']];
+const rr=(i,t,sub,p,o={})=>`<div class="r" style="height:66px"><div class="ico ${o.fo?'fo':''}">${ic(i)}</div><div class="x"><div class="t">${t}</div><div class="s">${sub}</div><div class="rb"><i style="width:${p}%"></i></div></div>${ic('chevron-right')}</div>`;
+html=app+`<div class="top">${ic('arrow-left')}<span>Hauptspeicher</span>${ic('refresh')}</div><div class="body"><div class="pad" style="gap:10px"><div class="card"><div class="big">74 GB <span style="font-size:14px;font-weight:400;color:var(--dm)">von 128 GB belegt</span></div><div class="seg">${cat.map((c,i)=>`<i style="width:${c[1]}%;background:${cols[i]}"></i>`).join('')}</div><div class="leg">${cat.map((c,i)=>`<div><em style="background:${cols[i]}"></em>${c[0]}<b>${c[2]}</b></div>`).join('')}</div><p style="font-size:12px;margin-top:10px">Stand: 18:12</p><div class="btn">Dateien ansehen</div></div><div class="sec">GRÖSSTE ORDNER</div><div class="grp">${rr('folder-filled','Android','23 GB',100,{fo:1})}${rr('folder-filled','DCIM','16 GB',70,{fo:1})}${rr('folder-filled','Movies','13 GB',56,{fo:1})}</div></div></div>`+nav(2);}
+if(page==='papierkorb'){const cr=(i,t,s,on,fo)=>`<div class="r ${on?'on':''}"><div class="cb ${on?'on':''}">${on?'✓':''}</div><div class="ico ${fo?'fo':''}">${ic(i)}</div><div class="x"><div class="t">${t}</div><div class="s">${s}</div></div></div>`;
+html=app+`<div class="top">${ic('arrow-left')}<span>Papierkorb</span>${ic('dots-vertical')}</div><div class="body"><div class="pad" style="gap:10px;padding:12px 16px"><div class="note"><b>12 Elemente · 340 MB.</b> Gelöschtes bleibt 30 Tage hier und belegt weiter Platz. Das gilt nur für Löschen in dieser App.</div><div class="grp">${cr('file-type-pdf','Rechnung_Oktober.pdf','Documents · 214 KB · vor 2 Tagen',1)}${cr('photo','Urlaub_007.jpg','Kamera · 3,1 MB · vor 5 Tagen',1)}${cr('folder-filled','Alte Fotos','Pictures · 41 Dateien · vor 9 Tagen',0,1)}${cr('file-text','Notizen.txt','Download · 8 KB · vor 21 Tagen',0)}</div></div></div><div class="paste"><span>2 gewählt</span><div class="bt">Löschen</div><div class="bt f">Zurück</div></div>`+nav(2);}
 document.getElementById('root').outerHTML=html;
 </script></body></html>

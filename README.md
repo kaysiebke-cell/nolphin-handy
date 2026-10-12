@@ -28,6 +28,14 @@ Das Aussehen folgt Linux Mint (Mint-Grün), sachlich und ruhig: flache Listen, e
 |:--:|:--:|:--:|
 | ![Vom PC, hell](docs/bilder/vompc-hell.png) | ![Vom PC mit Auswahl, dunkel](docs/bilder/vompcauswahl-dunkel.png) | ![Start, dunkel](docs/bilder/start-dunkel.png) |
 
+| ZIP entpacken | Mehrere Dateien umbenennen | Löschen in den Papierkorb |
+|:--:|:--:|:--:|
+| ![ZIP entpacken, hell](docs/bilder/entpacken-hell.png) | ![Umbenennen mit Vorschau, hell](docs/bilder/umbenennen-hell.png) | ![In den Papierkorb, hell](docs/bilder/loeschen-hell.png) |
+
+| Speicheranalyse | Papierkorb | Dunkel: Umbenennen, Analyse, Papierkorb |
+|:--:|:--:|:--:|
+| ![Speicheranalyse, hell](docs/bilder/analyse-hell.png) | ![Papierkorb, hell](docs/bilder/papierkorb-hell.png) | ![Papierkorb, dunkel](docs/bilder/papierkorb-dunkel.png) |
+
 ## Wo die Dateien am PC landen
 
 Am PC gibt es **einen** Handy-Ordner: `~/Handy`. In Nolphin stehen links in der Seitenleiste zwei Einträge dafür:
@@ -192,7 +200,7 @@ google-chrome --headless=new --hide-scrollbars --virtual-time-budget=6000 \
   --screenshot=docs/bilder/liste-hell.png "file://$PWD/docs/bilder/quelle.html#liste-hell"
 ```
 
-Seiten: `start`, `uebersicht`, `liste`, `auswahl`, `dokumente`, `einfuegen`, `vompc`, `vompcauswahl`, jeweils mit `-hell` oder `-dunkel`. Die Seite `uebersicht` ist höher: `--window-size=360,900`. Die Quelle braucht beim Rendern Internet für die Symbolschrift.
+Seiten: `start`, `uebersicht`, `liste`, `auswahl`, `dokumente`, `einfuegen`, `vompc`, `vompcauswahl`, `entpacken`, `umbenennen`, `loeschen`, `analyse`, `papierkorb`, jeweils mit `-hell` oder `-dunkel`. Die Seite `uebersicht` ist höher: `--window-size=360,900`. Die Quelle braucht beim Rendern Internet für die Symbolschrift.
 
 ## Aufbau des Quelltexts
 
