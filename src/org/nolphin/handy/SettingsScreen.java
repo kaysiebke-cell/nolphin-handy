@@ -173,6 +173,13 @@ final class SettingsScreen implements Screen {
                 Toast.makeText(c, "Verlauf gelöscht", Toast.LENGTH_SHORT).show();
             }
         }));
+        hist.addView(Ui.button(c, "Zuletzt geöffnete Ordner löschen", false, new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Conn.clearRecents(c);
+                Toast.makeText(c, "Liste der zuletzt geöffneten Ordner gelöscht", Toast.LENGTH_SHORT).show();
+            }
+        }));
         col.addView(hist);
 
         // Über

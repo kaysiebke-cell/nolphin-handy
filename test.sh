@@ -31,7 +31,9 @@ gcc -I"$ROOT/src" -I"$CONFIG_DIR" $(pkg-config --cflags glib-2.0) "$TMP/drv.c" "
     -o "$TMP/drv" $(pkg-config --libs glib-2.0)
 javac --release 11 -d "$TMP/classes" "$HERE/src/org/nolphin/handy/QrDecoder.java" "$HERE/src/org/nolphin/handy/Link.java" \
     "$HERE/src/org/nolphin/handy/FileOps.java" "$HERE/test/org/nolphin/handy/QrDecoderTest.java" \
-    "$HERE/test/org/nolphin/handy/LinkTest.java" "$HERE/test/org/nolphin/handy/FileOpsTest.java"
+    "$HERE/test/org/nolphin/handy/LinkTest.java" "$HERE/test/org/nolphin/handy/FileOpsTest.java" \
+    "$HERE/src/org/nolphin/handy/SortOrder.java" "$HERE/src/org/nolphin/handy/PlaceLists.java" "$HERE/test/org/nolphin/handy/SortTest.java"
 java -cp "$TMP/classes" org.nolphin.handy.LinkTest
 java -cp "$TMP/classes" org.nolphin.handy.FileOpsTest
+java -cp "$TMP/classes" org.nolphin.handy.SortTest
 java -cp "$TMP/classes" org.nolphin.handy.QrDecoderTest "$TMP/drv" "$ROOT/docs/bilder/panel-handy.png" "$HERE/test/resources/echtes-foto.png"

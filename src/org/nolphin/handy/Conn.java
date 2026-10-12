@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 /** Gespeicherte Verbindung zum PC und die Liste der schon geladenen Dateien. */
@@ -82,6 +83,47 @@ final class Conn {
 
     static void setGrid(Context c, boolean value) {
         prefs(c).edit().putBoolean("tiles", value).apply();
+    }
+
+    /** Sortierung der Dateilisten (bleibt gespeichert). */
+    static SortOrder sortOrder(Context c) {
+        SharedPreferences p = prefs(c);
+        return new SortOrder(p.getInt("sortkey", SortOrder.NAME), p.getBoolean("sortasc", true), p.getBoolean("foldersfirst", true));
+    }
+
+    /** Hat der Nutzer schon eine Sortierung gewählt? */
+    static boolean hasSortOrder(Context c) {
+        return prefs(c).contains("sortkey");
+    }
+
+    static void setSortOrder(Context c, SortOrder o) {
+        prefs(c).edit().putInt("sortkey", o.key).putBoolean("sortasc", o.ascending).putBoolean("foldersfirst", o.foldersFirst).apply();
+    }
+
+    /** Favoriten (Ordnerpfade) in der Reihenfolge, in der sie angelegt wurden. */
+    static List<String> favorites(Context c) {
+        return PlaceLists.parse(prefs(c).getString("favorites", ""));
+    }
+
+    static void setFavorites(Context c, List<String> list) {
+        prefs(c).edit().putString("favorites", PlaceLists.join(list)).apply();
+    }
+
+    static boolean isFavorite(Context c, String path) {
+        return favorites(c).contains(path);
+    }
+
+    /** Zuletzt geöffnete Ordner, der neueste zuerst. */
+    static List<String> recents(Context c) {
+        return PlaceLists.parse(prefs(c).getString("recents", ""));
+    }
+
+    static void pushRecent(Context c, String path) {
+        prefs(c).edit().putString("recents", PlaceLists.join(PlaceLists.pushFront(recents(c), path, PlaceLists.MAX_RECENT))).apply();
+    }
+
+    static void clearRecents(Context c) {
+        prefs(c).edit().remove("recents").apply();
     }
 
     /** Dateien, die schon auf dem Handy sind (Name und Größe). */
