@@ -832,7 +832,12 @@ final class ToPcScreen implements Screen {
         row.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View x) {
-                openFolder(v.root);
+                StorageAnalysis.show(host.activity(), v.name, v.root, new StorageAnalysis.Opener() {
+                    @Override
+                    public void openFolder(File dir) {
+                        ToPcScreen.this.openFolder(dir);
+                    }
+                });
             }
         });
         return row;
