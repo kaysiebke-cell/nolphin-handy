@@ -537,7 +537,7 @@ final class ToPcScreen implements Screen {
                     }
                 }));
         Ui.addRow(c, quick, Ui.row(c, R.drawable.ic_image, Ui.iconTint(c), "Google Fotos",
-                "Fotos und Videos aus der Cloud, auch ohne Speicher auf dem Handy", null, new View.OnClickListener() {
+                "Fotos und Videos aus der Cloud", null, new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
                         ToPcScreen.this.host.pickPhotos();
