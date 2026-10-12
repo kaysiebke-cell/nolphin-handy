@@ -90,10 +90,19 @@ Der Eintrag **Apps** zeigt dagegen nur Apps, die ihre Dateien in einem eigenen M
 
 Es gibt zwei Wege. Beide bieten dasselbe.
 
-1. **Ein Element:** Tippen Sie rechts in der Zeile auf **⋮**. Es erscheint ein Menü: An den PC senden, Kopieren, Verschieben, Umbenennen, Eigenschaften, Löschen.
-2. **Mehrere Elemente:** Drücken Sie lange auf ein Element. Es erscheinen Kästchen, und die Leiste oben wird grün. Dort stehen die Funktionen **An PC, Kopieren, Verschieben, Löschen** und **⋮** (Alle auswählen, Umbenennen, Eigenschaften). Tippen Sie weitere Elemente an, um sie zu wählen.
+1. **Ein Element:** Tippen Sie rechts in der Zeile auf **⋮**. Es erscheint ein Menü: An den PC senden, Kopieren, Verschieben, Umbenennen, Eigenschaften, Löschen. Bei einer ZIP-Datei kommen **Entpacken** und **Inhalt ansehen** dazu.
+2. **Mehrere Elemente:** Drücken Sie lange auf ein Element. Es erscheinen Kästchen, und die Leiste oben wird grün. Dort stehen die Funktionen **An PC, Kopieren, Verschieben, Löschen** und **⋮** (Alle auswählen, Umbenennen, Eigenschaften, Als ZIP packen). Tippen Sie weitere Elemente an, um sie zu wählen.
 
 **Kopieren und Verschieben:** Wählen Sie die Elemente, tippen Sie auf Kopieren oder Verschieben, öffnen Sie den Zielordner und tippen Sie unten auf **Hierher**. Gibt es den Namen schon, hängt die App „(2)“ an. Einen Ordner in sich selbst zu kopieren oder zu verschieben lehnt sie ab.
+
+**ZIP entpacken und packen:**
+
+* **Entpacken:** Die App zeigt vorher, was im Archiv steckt (Dateien, Ordner, entpackte Größe), und prüft den freien Platz. Entpackt wird in einen Ordner mit dem Namen des Archivs. Bringt das Archiv schon einen eigenen obersten Ordner mit, wird gleich dort entpackt, es gibt keinen doppelten Ordner. Gibt es den Zielordner schon, fragt die App wie beim Kopieren (beide behalten, überspringen, ersetzen).
+* **Schutz beim Entpacken:** Einträge mit `..`, absolutem Pfad, Laufwerksbuchstaben oder Verknüpfungspfad werden nicht entpackt, die App nennt sie vorher. Entpackt wird in eine Temporärdatei, erst danach unter dem richtigen Namen abgelegt. Ein Archiv, das mehr Daten enthält als angegeben, wird gestoppt (Schutz gegen Zip-Bomben und volle Speicher).
+* **Inhalt ansehen:** Zeigt die Liste der Einträge, ohne etwas zu entpacken.
+* **Als ZIP packen:** Auswahl, dann ⋮, dann „Als ZIP packen“. Das Archiv entsteht im selben Ordner (`Name.zip` oder `Archiv.zip`). Nicht lesbare Dateien kommen nicht ins Archiv, die App nennt sie.
+
+**Mehrere Dateien umbenennen:** Wählen Sie mehrere Dateien, dann ⋮, dann **Umbenennen …**. Vier Reiter: **Ersetzen** (Text suchen und ersetzen), **Nummer** (zum Beispiel `001.jpg`, `002.jpg`, mit Anfang, erster Nummer und Stellenzahl), **Anhängen** (Text vorn und hinten, vor der Endung) und **Groß/Klein**. Eine Vorschau „alt → neu“ zeigt vorher alle Namen. Der Knopf **Umbenennen** bleibt gesperrt, solange es ein Problem gibt (leerer Name, zwei gleiche Namen, ein Name, den es schon gibt, auch bei anderer Groß-/Kleinschreibung wie auf der SD-Karte). Umbenannt wird in zwei Schritten über Zwischennamen, so funktionieren auch Tauschfälle. Geht etwas schief, wird alles zurückgenommen.
 
 **Löschen:** Die App fragt vorher nach. Gelöscht wird **endgültig**. Es gibt keinen Papierkorb.
 
@@ -151,6 +160,7 @@ Der Test läuft ohne Handy und prüft:
 * den **QR-Leser**: 163 Prüfungen (Codes des C-Encoders von Nolphin, gedreht, verzerrt, unscharf, verrauscht, ein Bildschirmfoto und ein echtes dunkles, unscharfes Handyfoto),
 * die **Link-Prüfung**: 34 Prüfungen,
 * die **Sortierung und die Listen für Favoriten und zuletzt geöffnete Orte** (`SortOrder`, `PlaceLists`): 22 Prüfungen (alle vier Schlüssel, beide Richtungen, „Ordner zuerst“, Gleichstand nach Namen, Endungen, Begrenzung und Reihenfolge der Listen, Pfade mit Leerzeichen und Umlauten),
+* **ZIP und Stapelumbenennen** (`ZipOps`, `BatchRename`): 52 Prüfungen (Inhalt lesen, Entpacken mit Umlauten und leeren Ordnern, gemeinsamer Oberordner, unsichere Pfade, Verknüpfungen, Größe über der Angabe, Konflikte, Packen, Vorschau, Tauschfälle, Groß-/Kleinschreibung, Zurücknehmen bei Fehler),
 * die **Dateioperationen** (`FileOps`): 60 Prüfungen für Kopieren, Verschieben (auch über Kopieren und Prüfen), Umbenennen, neuer Ordner, ZIP und Löschen. Dazu die Schutzfälle: Ordner nicht in sich selbst, Namenskonflikte (überspringen, umbenennen, ersetzen, Ordner zusammenführen), Verknüpfungen (nie verfolgt, keine Endlosschleife), nicht lesbare Dateien und Ordner (Rest wird erledigt, Fehler genannt), keine halben Dateien nach Fehler oder Abbruch, Original bleibt bei Fehler oder Abbruch, Fortschritt mit Dateizähler, Abbruch auch beim Löschen, Konfliktliste vorab, Wiederholen nur des Fehlgeschlagenen.
 
 Der Test braucht den Nolphin-Quelltext im Nachbarordner `../nolphin-file-manager-master` (oder `NOLPHIN_ROOT`), außerdem `gcc` und GLib.
@@ -175,6 +185,7 @@ Seiten: `start`, `uebersicht`, `liste`, `auswahl`, `dokumente`, `einfuegen`, `vo
 | `HomeScreen`, `FromPcScreen`, `ToPcScreen`, `HistoryScreen`, `SettingsScreen` | Die Bildschirme |
 | `SortOrder`, `PlaceLists` | Sortierreihenfolge, Favoriten und zuletzt geöffnete Orte (ohne Android, getestet) |
 | `ToPcTabs`, `DualScreen` | Reiter „Zum PC“ mit einem oder zwei Fenstern |
+| `ZipOps`, `BatchRename` | ZIP entpacken und packen, Stapelumbenennen mit Vorschau (ohne Android, getestet) |
 | `FileOps` | Kopieren, Verschieben, Löschen, Umbenennen, ZIP (sicher, mit Ergebnisliste, Abbruch und Konfliktregeln) |
 | `Ui` | Farben (hell und dunkel), Symbole, Listenzeilen |
 | `Thumbs` | Vorschaubilder (Foto, Video, Albumbild, PDF, App-Symbol) |
