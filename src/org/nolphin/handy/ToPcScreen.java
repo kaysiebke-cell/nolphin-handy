@@ -115,6 +115,10 @@ final class ToPcScreen implements Screen {
             "ppt", "pptx", "odp", "epub", "zip", "rar", "7z", "step", "stp", "stl", "obj", "3mf", "dxf", "dwg", "iges", "igs" };
     private static final String[] DOC_FILTERS = { "Alle", "DOC", "XLS", "PDF", "PPT", "Sonstige" };
     private int docFilter;
+    private static final String[] STORAGE = { "Beides", "Intern", "SD-Karte" };
+    private int storage;                  // 0 beide Speicher, 1 intern, 2 SD-Karte
+    private final LinearLayout storageRow;
+    private final View storageLine;
     private final LinearLayout docChips;
     private final HorizontalScrollView docChipScroll;
     private List<File> clip;              // zum Einfügen vorgemerkt (Kopieren oder Verschieben)
@@ -328,6 +332,16 @@ final class ToPcScreen implements Screen {
         chipScroll.setVisibility(View.GONE);
         docChipScroll = chipScroll;
         root.addView(chipScroll);
+
+        storageRow = new LinearLayout(c);
+        storageRow.setOrientation(LinearLayout.HORIZONTAL);
+        storageRow.setBackgroundColor(Ui.bg(c));
+        storageRow.setPadding(Ui.dp(c, 8), 0, Ui.dp(c, 8), 0);
+        storageRow.setVisibility(View.GONE);
+        root.addView(storageRow);
+        storageLine = divider();
+        storageLine.setVisibility(View.GONE);
+        root.addView(storageLine);
 
         // Auswahl: die Leiste oben wird grün und zeigt die Funktionen (wie im Systemmanager)
         selectBar = new LinearLayout(c);
@@ -720,8 +734,57 @@ final class ToPcScreen implements Screen {
         }
     }
 
+    private boolean onCard(File f) {
+        Vol v = volumeOf(f);
+        return v != null && v.card;
+    }
+
+    private boolean passesStorage(File f) {
+        return storage == 0 || (storage == 2) == onCard(f);
+    }
+
+    private boolean hasCard() {
+        for (Vol v : vols) {
+            if (v.card) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private boolean passesFilter(Entry e) {
+        if (mode == CATEGORY && !passesStorage(e.file)) {
+            return false;
+        }
         return mode != CATEGORY || cat != 3 || docFilter == 0 || docGroup(e.file.getName()).equals(DOC_FILTERS[docFilter]);
+    }
+
+    /** Schalter Beides / Intern / SD-Karte: einfache Reiter wie bei den Dokumenten. */
+    private void buildStorageRow() {
+        storageRow.removeAllViews();
+        for (int i = 0; i < STORAGE.length; i++) {
+            final int k = i;
+            boolean on = i == storage;
+            LinearLayout tab = new LinearLayout(c);
+            tab.setOrientation(LinearLayout.VERTICAL);
+            tab.setBackground(Ui.pressable(c));
+            TextView t = Ui.label(c, STORAGE[i], 14, on ? Ui.primary(c) : Ui.dim(c), on);
+            t.setGravity(Gravity.CENTER);
+            t.setPadding(Ui.dp(c, 8), Ui.dp(c, 10), Ui.dp(c, 8), Ui.dp(c, 8));
+            tab.addView(t);
+            View bar = new View(c);
+            bar.setBackgroundColor(on ? Ui.primary(c) : 0x00000000);
+            tab.addView(bar, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, Ui.dp(c, 3)));
+            tab.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    storage = k;
+                    selected.clear();
+                    applyQuery();
+                }
+            });
+            storageRow.addView(tab, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
+        }
     }
 
     private void buildDocChips() {
@@ -1005,7 +1068,9 @@ final class ToPcScreen implements Screen {
             roots.add(dir);
         } else {
             for (Vol v : vols) {
-                roots.add(v.root);
+                if (storage == 0 || (storage == 2) == v.card) {
+                    roots.add(v.root);
+                }
             }
         }
         new Thread(new Runnable() {
@@ -1439,6 +1504,8 @@ final class ToPcScreen implements Screen {
             pasteBar.setVisibility(View.GONE);
             newFolder.setVisibility(View.GONE);
             docChipScroll.setVisibility(View.GONE);
+            storageRow.setVisibility(View.GONE);
+            storageLine.setVisibility(View.GONE);
             toggle.setVisibility(View.GONE);
             back.setVisibility(View.GONE);
             return;
@@ -1481,6 +1548,12 @@ final class ToPcScreen implements Screen {
             pasteText.setText(clip.size() + (clip.size() == 1 ? " Element " : " Elemente ") + (clipMove ? "verschieben" : "kopieren"));
         }
         newFolder.setVisibility(mode == FOLDER && !searching ? View.VISIBLE : View.GONE);
+        boolean showStorage = hasCard() && (mode == CATEGORY || (mode == HOME && searching));
+        storageRow.setVisibility(showStorage ? View.VISIBLE : View.GONE);
+        storageLine.setVisibility(showStorage ? View.VISIBLE : View.GONE);
+        if (showStorage) {
+            buildStorageRow();
+        }
         boolean chips = mode == CATEGORY && cat == 3;
         docChipScroll.setVisibility(chips ? View.VISIBLE : View.GONE);
         if (chips) {
