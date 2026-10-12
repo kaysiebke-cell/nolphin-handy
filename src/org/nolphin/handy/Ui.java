@@ -86,6 +86,9 @@ final class Ui {
         // Klare serifenlose Schrift; „medium“ statt fett, das bleibt ruhiger und besser lesbar
         t.setTypeface(android.graphics.Typeface.create(bold ? "sans-serif-medium" : "sans-serif",
                 android.graphics.Typeface.NORMAL));
+        // Etwas mehr Buchstaben- und Zeilenabstand: leichter zu lesen, besonders bei Legasthenie
+        t.setLetterSpacing(0.02f);
+        t.setLineSpacing(dp(c, 2), 1f);
         return t;
     }
 
@@ -282,7 +285,7 @@ final class Ui {
                 new android.graphics.drawable.Drawable[] { fill, ln });
         ld.setLayerHeight(1, Math.max(1, dp(c, 1) / 2 + 1));
         ld.setLayerGravity(1, Gravity.BOTTOM | Gravity.FILL_HORIZONTAL);
-        ld.setLayerInsetStart(1, dp(c, 72));
+        ld.setLayerInsetStart(1, dp(c, 76));
         android.graphics.drawable.Drawable press = pressable(c);
         if (press == null) {
             return ld;
@@ -332,84 +335,92 @@ final class Ui {
         }
     }
 
-    /** Dateisymbol als Blatt mit Eselsohr und farbigem Etikett, auf dem die Endung steht (PDF, DOCX …). */
+    /** Ordnersymbol: gleiche Kachelform wie die Dateisymbole, damit die Liste ruhig und einheitlich wirkt. */
+    static android.graphics.drawable.Drawable folderIcon(Context c) {
+        return new TypeIcon(c, null);
+    }
+
+    /** Dateisymbol: klare Kachel mit der Endung in großen Buchstaben (PDF, DOCX …), Farbe nach Dateiart. */
     static android.graphics.drawable.Drawable typeIcon(Context c, String ext) {
         return new TypeIcon(c, ext);
     }
 
     private static final class TypeIcon extends android.graphics.drawable.Drawable {
-        private final String label;
-        private final int band;
-        private final int page;
-        private final int edge;
+        private final String label;   // null = Ordner
+        private final int accent;
+        private final int fill;
         private final float density;
         private final android.graphics.Paint paint = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
-        private final android.graphics.Path path = new android.graphics.Path();
+        private final android.graphics.Path glyph;
 
         TypeIcon(Context c, String ext) {
-            String e = ext.toUpperCase(Locale.ROOT);
-            label = e.length() > 4 ? e.substring(0, 4) : e;
-            band = typeColor(ext);
-            page = dark(c) ? 0xFF3A3A3A : 0xFFFFFFFF;
-            edge = dark(c) ? 0xFF5A5A5A : 0xFFB9BFB5;
+            boolean night = dark(c);
+            int base;
+            if (ext == null) {
+                label = null;
+                base = folder(c);
+                glyph = new android.graphics.Path();
+                // Ordner (24er-Raster): Reiter links oben, Körper darunter
+                glyph.moveTo(3, 7); glyph.lineTo(3, 18); glyph.lineTo(21, 18); glyph.lineTo(21, 9);
+                glyph.lineTo(11.5f, 9); glyph.lineTo(9.5f, 6); glyph.lineTo(4, 6); glyph.close();
+            } else {
+                String e = ext.toUpperCase(Locale.ROOT);
+                label = e.isEmpty() ? "?" : e.length() > 4 ? e.substring(0, 4) : e;
+                base = typeColor(ext);
+                glyph = null;
+            }
+            // Schrift und Rand in kräftiger Farbe, Fläche nur ganz leicht getönt (hoher Kontrast)
+            accent = night ? blend(base, 0xFFFFFFFF, 0.35f) : blend(base, 0xFF000000, 0.15f);
+            fill = blend(surface(c), base, night ? 0.22f : 0.12f);
             density = c.getResources().getDisplayMetrics().density;
+        }
+
+        private static int blend(int a, int b, float t) {
+            int r = Math.round(Color.red(a) * (1 - t) + Color.red(b) * t);
+            int g = Math.round(Color.green(a) * (1 - t) + Color.green(b) * t);
+            int bl = Math.round(Color.blue(a) * (1 - t) + Color.blue(b) * t);
+            return Color.rgb(r, g, bl);
         }
 
         @Override
         public void draw(android.graphics.Canvas cv) {
             android.graphics.Rect b = getBounds();
-            float h = b.height() * 0.92f;
-            float w = h * 0.78f;
-            float x = b.left + (b.width() - w) / 2f;
-            float y = b.top + (b.height() - h) / 2f;
-            float fold = w * 0.28f;
-            float r = 2 * density;
-            path.reset();
-            path.moveTo(x + r, y);
-            path.lineTo(x + w - fold, y);
-            path.lineTo(x + w, y + fold);
-            path.lineTo(x + w, y + h - r);
-            path.quadTo(x + w, y + h, x + w - r, y + h);
-            path.lineTo(x + r, y + h);
-            path.quadTo(x, y + h, x, y + h - r);
-            path.lineTo(x, y + r);
-            path.quadTo(x, y, x + r, y);
-            path.close();
+            float side = Math.min(b.width(), b.height());
+            float x = b.left + (b.width() - side) / 2f;
+            float y = b.top + (b.height() - side) / 2f;
+            float stroke = Math.max(1.5f, 1.5f * density);
+            float r = side * 0.16f;
             paint.setStyle(android.graphics.Paint.Style.FILL);
-            paint.setColor(page);
-            cv.drawPath(path, paint);
+            paint.setColor(fill);
+            cv.drawRoundRect(x, y, x + side, y + side, r, r, paint);
             paint.setStyle(android.graphics.Paint.Style.STROKE);
-            paint.setStrokeWidth(Math.max(1f, density));
-            paint.setColor(edge);
-            cv.drawPath(path, paint);
-            // Eselsohr
-            path.reset();
-            path.moveTo(x + w - fold, y);
-            path.lineTo(x + w - fold, y + fold);
-            path.lineTo(x + w, y + fold);
-            cv.drawPath(path, paint);
-            // Etikett mit Endung, ragt links etwas über das Blatt
-            float bh = h * 0.30f;
-            float by = y + h * 0.52f;
-            float bx = x - w * 0.10f;
-            float bw = w * 0.92f;
-            paint.setStyle(android.graphics.Paint.Style.FILL);
-            paint.setColor(band);
-            cv.drawRoundRect(bx, by, bx + bw, by + bh, r, r, paint);
-            if (!label.isEmpty()) {
-                paint.setColor(Color.WHITE);
-                paint.setTypeface(android.graphics.Typeface.create("sans-serif-medium",
-                        android.graphics.Typeface.NORMAL));
-                paint.setTextAlign(android.graphics.Paint.Align.CENTER);
-                float ts = bh * 0.62f;
-                paint.setTextSize(ts);
-                float tw = paint.measureText(label);
-                if (tw > bw * 0.88f) {
-                    paint.setTextSize(ts * bw * 0.88f / tw);
-                }
-                android.graphics.Paint.FontMetrics fm = paint.getFontMetrics();
-                cv.drawText(label, bx + bw / 2f, by + bh / 2f - (fm.ascent + fm.descent) / 2f, paint);
+            paint.setStrokeWidth(stroke);
+            paint.setColor(accent);
+            float h = stroke / 2f;
+            cv.drawRoundRect(x + h, y + h, x + side - h, y + side - h, r, r, paint);
+            if (glyph != null) {
+                cv.save();
+                cv.translate(x + side * 0.16f, y + side * 0.16f);
+                float k = side * 0.68f / 24f;
+                cv.scale(k, k);
+                paint.setStyle(android.graphics.Paint.Style.FILL);
+                paint.setColor(accent);
+                cv.drawPath(glyph, paint);
+                cv.restore();
+                return;
             }
+            paint.setStyle(android.graphics.Paint.Style.FILL);
+            paint.setColor(accent);
+            paint.setTypeface(android.graphics.Typeface.create("sans-serif", android.graphics.Typeface.BOLD));
+            paint.setTextAlign(android.graphics.Paint.Align.CENTER);
+            float ts = side * (label.length() <= 3 ? 0.34f : 0.27f);
+            paint.setTextSize(ts);
+            float tw = paint.measureText(label);
+            if (tw > side * 0.84f) {
+                paint.setTextSize(ts * side * 0.84f / tw);
+            }
+            android.graphics.Paint.FontMetrics fm = paint.getFontMetrics();
+            cv.drawText(label, x + side / 2f, y + side / 2f - (fm.ascent + fm.descent) / 2f, paint);
         }
 
         @Override

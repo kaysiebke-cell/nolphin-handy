@@ -1122,6 +1122,15 @@ final class ToPcScreen implements Screen {
 
     // ---- Kacheln und Zeilen ------------------------------------------------------------------
 
+    /** Ordnerkachel im gleichen Stil wie die Dateisymbole. */
+    private ImageView folderTile48() {
+        ImageView v = new ImageView(c);
+        v.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        v.setImageDrawable(Ui.folderIcon(c));
+        v.setPadding(Ui.dp(c, 2), Ui.dp(c, 2), Ui.dp(c, 2), Ui.dp(c, 2));
+        return v;
+    }
+
     private ImageView symbol(int res, int color) {
         ImageView v = new ImageView(c);
         v.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
@@ -1173,16 +1182,16 @@ final class ToPcScreen implements Screen {
             }
         }
         if (e.dir) {
-            return symbol(R.drawable.ic_folder, Ui.folder(c));
+            return folderTile48();
         }
         String x = Ui.ext(e.file.getName());
         final ImageView v = new ImageView(c);
         v.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
-        v.setPadding(Ui.dp(c, 4), Ui.dp(c, 2), Ui.dp(c, 4), Ui.dp(c, 2));
+        v.setPadding(Ui.dp(c, 2), Ui.dp(c, 2), Ui.dp(c, 2), Ui.dp(c, 2));
         v.setImageDrawable(Ui.typeIcon(c, x));
         String kind = isImage(x) ? "image" : isVideo(x) ? "video" : x.equals("apk") ? "apk" : null;
         if (kind != null) {
-            v.setBackground(Ui.round(c, 0x00000000, 6));
+            v.setBackground(Ui.round(c, 0x00000000, 8));
             v.setClipToOutline(true);
             v.setOutlineProvider(ViewOutlineProvider.BACKGROUND);
             Thumbs.loadFile(c, e.file, kind, 168, v, new Runnable() {
@@ -1200,15 +1209,15 @@ final class ToPcScreen implements Screen {
         t.setGravity(Gravity.CENTER_HORIZONTAL);
         t.setBackground(Ui.outlined(c, picked ? Ui.chip(c) : Ui.surface(c)));
         t.setPadding(Ui.dp(c, 4), Ui.dp(c, 8), Ui.dp(c, 4), Ui.dp(c, 8));
-        t.setLayoutParams(new AbsListView.LayoutParams(AbsListView.LayoutParams.MATCH_PARENT, Ui.dp(c, 132)));
-        t.addView(top, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, Ui.dp(c, 56)));
-        TextView n = Ui.label(c, name, 12, Ui.text(c), false);
+        t.setLayoutParams(new AbsListView.LayoutParams(AbsListView.LayoutParams.MATCH_PARENT, Ui.dp(c, 148)));
+        t.addView(top, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, Ui.dp(c, 64)));
+        TextView n = Ui.label(c, name, 13, Ui.text(c), false);
         n.setMaxLines(2);
         n.setGravity(Gravity.CENTER);
         n.setEllipsize(android.text.TextUtils.TruncateAt.MIDDLE);
         n.setPadding(Ui.dp(c, 2), Ui.dp(c, 4), Ui.dp(c, 2), 0);
         t.addView(n);
-        TextView s = Ui.label(c, sub, 10, subColor, false);
+        TextView s = Ui.label(c, sub, 11, subColor, false);
         s.setSingleLine(true);
         s.setEllipsize(android.text.TextUtils.TruncateAt.END);
         t.addView(s);
@@ -1245,20 +1254,20 @@ final class ToPcScreen implements Screen {
         row.setGravity(Gravity.CENTER_VERTICAL);
         row.setBackground(Ui.listRowBg(c, picked));
         row.setPadding(Ui.dp(c, 14), Ui.dp(c, 8), Ui.dp(c, 12), Ui.dp(c, 8));
-        row.setLayoutParams(new AbsListView.LayoutParams(AbsListView.LayoutParams.MATCH_PARENT, Ui.dp(c, 68)));
+        row.setLayoutParams(new AbsListView.LayoutParams(AbsListView.LayoutParams.MATCH_PARENT, Ui.dp(c, 72)));
         ImageView ic = picked ? symbol(R.drawable.ic_check, Ui.primary(c)) : iconOf(e);
-        row.addView(ic, new LinearLayout.LayoutParams(Ui.dp(c, 44), Ui.dp(c, 44)));
+        row.addView(ic, new LinearLayout.LayoutParams(Ui.dp(c, 48), Ui.dp(c, 48)));
         LinearLayout text = new LinearLayout(c);
         text.setOrientation(LinearLayout.VERTICAL);
         text.setPadding(Ui.dp(c, 14), 0, Ui.dp(c, 6), 0);
-        TextView n = Ui.label(c, nameOf(e), 15, Ui.text(c), false);
+        TextView n = Ui.label(c, nameOf(e), 16, Ui.text(c), false);
         n.setMaxLines(1);
         n.setEllipsize(android.text.TextUtils.TruncateAt.MIDDLE);
         text.addView(n);
         // Größe und Datum zusammen unter dem Namen, damit alles in einer Spalte steht
         String sub = e.dir ? subOf(e)
                 : subOf(e) + " · " + new SimpleDateFormat("dd.MM.yyyy", Locale.GERMANY).format(new Date(e.modified));
-        TextView s = Ui.label(c, sub, 12, Ui.dim(c), false);
+        TextView s = Ui.label(c, sub, 13, Ui.dim(c), false);
         s.setSingleLine(true);
         s.setEllipsize(android.text.TextUtils.TruncateAt.END);
         s.setPadding(0, Ui.dp(c, 2), 0, 0);

@@ -960,16 +960,25 @@ final class FromPcScreen implements Screen {
         t.setGravity(Gravity.CENTER_HORIZONTAL);
         t.setBackground(Ui.outlined(c, picked ? Ui.chip(c) : Ui.surface(c)));
         t.setPadding(Ui.dp(c, 4), Ui.dp(c, 8), Ui.dp(c, 4), Ui.dp(c, 8));
-        t.setLayoutParams(new AbsListView.LayoutParams(AbsListView.LayoutParams.MATCH_PARENT, Ui.dp(c, 132)));
-        t.addView(top, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, Ui.dp(c, 56)));
-        TextView n = Ui.label(c, name, 12, Ui.text(c), false);
+        t.setLayoutParams(new AbsListView.LayoutParams(AbsListView.LayoutParams.MATCH_PARENT, Ui.dp(c, 148)));
+        t.addView(top, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, Ui.dp(c, 64)));
+        TextView n = Ui.label(c, name, 13, Ui.text(c), false);
         n.setMaxLines(2);
         n.setGravity(Gravity.CENTER);
         n.setEllipsize(android.text.TextUtils.TruncateAt.MIDDLE);
         n.setPadding(Ui.dp(c, 2), Ui.dp(c, 4), Ui.dp(c, 2), 0);
         t.addView(n);
-        t.addView(Ui.label(c, sub, 10, subColor, false));
+        t.addView(Ui.label(c, sub, 11, subColor, false));
         return picked ? withCheck(t) : t;
+    }
+
+    /** Ordnerkachel im gleichen Stil wie die Dateisymbole. */
+    private ImageView folderTile48() {
+        ImageView v = new ImageView(c);
+        v.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        v.setImageDrawable(Ui.folderIcon(c));
+        v.setPadding(Ui.dp(c, 2), Ui.dp(c, 2), Ui.dp(c, 2), Ui.dp(c, 2));
+        return v;
     }
 
     private ImageView symbol(int res, int color) {
@@ -982,27 +991,27 @@ final class FromPcScreen implements Screen {
     }
 
     private View folderTile(String name) {
-        return tile(symbol(R.drawable.ic_folder, Ui.folder(c)), name, "Ordner", Ui.dim(c), false);
+        return tile(folderTile48(), name, "Ordner", Ui.dim(c), false);
     }
 
     /** Dateisymbol mit Endung; bei geladenen Dateien ersetzt das Vorschaubild es, wenn es eines gibt. */
     private ImageView fileIcon(RemoteFile f) {
         final ImageView top = new ImageView(c);
         top.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
-        top.setPadding(Ui.dp(c, 4), Ui.dp(c, 2), Ui.dp(c, 4), Ui.dp(c, 2));
+        top.setPadding(Ui.dp(c, 2), Ui.dp(c, 2), Ui.dp(c, 2), Ui.dp(c, 2));
         final android.graphics.drawable.Drawable type = Ui.typeIcon(c, Ui.ext(f.name));
         top.setImageDrawable(type);
         String uri = Store.uri(c, f.key());
         String m = mime(f.name);
         if (uri != null && (m.startsWith("image/") || m.startsWith("video/"))) {
-            top.setBackground(Ui.round(c, 0x00000000, 6));
+            top.setBackground(Ui.round(c, 0x00000000, 8));
             top.setClipToOutline(true);
             top.setOutlineProvider(android.view.ViewOutlineProvider.BACKGROUND);
             Thumbs.load(c, Uri.parse(uri), 168, top, new Runnable() {
                 @Override
                 public void run() {
                     top.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
-                    top.setPadding(Ui.dp(c, 4), Ui.dp(c, 2), Ui.dp(c, 4), Ui.dp(c, 2));
+                    top.setPadding(Ui.dp(c, 2), Ui.dp(c, 2), Ui.dp(c, 2), Ui.dp(c, 2));
                     top.setImageDrawable(type);
                 }
             });
@@ -1034,7 +1043,7 @@ final class FromPcScreen implements Screen {
         row.setGravity(Gravity.CENTER_VERTICAL);
         row.setBackground(Ui.listRowBg(c, picked));
         row.setPadding(Ui.dp(c, 14), Ui.dp(c, 8), Ui.dp(c, 12), Ui.dp(c, 8));
-        row.setMinimumHeight(Ui.dp(c, 68));
+        row.setMinimumHeight(Ui.dp(c, 72));
         row.setLayoutParams(new AbsListView.LayoutParams(AbsListView.LayoutParams.MATCH_PARENT,
                 AbsListView.LayoutParams.WRAP_CONTENT));
         return row;
@@ -1042,8 +1051,8 @@ final class FromPcScreen implements Screen {
 
     private View folderRow(String name) {
         LinearLayout row = rowShell(false);
-        row.addView(symbol(R.drawable.ic_folder, Ui.folder(c)), new LinearLayout.LayoutParams(Ui.dp(c, 44), Ui.dp(c, 44)));
-        TextView n = Ui.label(c, name, 15, Ui.text(c), false);
+        row.addView(folderTile48(), new LinearLayout.LayoutParams(Ui.dp(c, 48), Ui.dp(c, 48)));
+        TextView n = Ui.label(c, name, 16, Ui.text(c), false);
         n.setPadding(Ui.dp(c, 14), 0, Ui.dp(c, 6), 0);
         n.setMaxLines(2);
         n.setEllipsize(android.text.TextUtils.TruncateAt.MIDDLE);
@@ -1057,15 +1066,15 @@ final class FromPcScreen implements Screen {
         boolean picked = selected.contains(f.key());
         LinearLayout row = rowShell(picked);
         ImageView ic = picked ? symbol(R.drawable.ic_check, Ui.primary(c)) : fileIcon(f);
-        row.addView(ic, new LinearLayout.LayoutParams(Ui.dp(c, 44), Ui.dp(c, 44)));
+        row.addView(ic, new LinearLayout.LayoutParams(Ui.dp(c, 48), Ui.dp(c, 48)));
         LinearLayout text = new LinearLayout(c);
         text.setOrientation(LinearLayout.VERTICAL);
         text.setPadding(Ui.dp(c, 14), 0, Ui.dp(c, 6), 0);
-        TextView n = Ui.label(c, f.name, 15, Ui.text(c), false);
+        TextView n = Ui.label(c, f.name, 16, Ui.text(c), false);
         n.setMaxLines(2);
         n.setEllipsize(android.text.TextUtils.TruncateAt.MIDDLE);
         text.addView(n);
-        TextView s = Ui.label(c, Ui.size(f.size) + (uri != null ? "  ·  auf dem Handy" : "  ·  noch nicht geladen"), 12,
+        TextView s = Ui.label(c, Ui.size(f.size) + (uri != null ? "  ·  auf dem Handy" : "  ·  noch nicht geladen"), 13,
                 uri != null ? Ui.accent(c) : Ui.dim(c), false);
         s.setPadding(0, Ui.dp(c, 2), 0, 0);
         text.addView(s);
