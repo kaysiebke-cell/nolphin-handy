@@ -1867,7 +1867,11 @@ final class ToPcScreen implements Screen {
         msg.append("Das Archiv enthält ").append(info.files).append(info.files == 1 ? " Datei" : " Dateien").append(" in ")
                 .append(info.folders).append(info.folders == 1 ? " Ordner" : " Ordnern").append(" (")
                 .append(ZipOps.sizeText(info.compressed)).append(", entpackt ").append(ZipOps.sizeText(need)).append(").");
-        msg.append("\n\nZiel: Ordner „").append(stem).append("“ in ").append(parent.getName());
+        if (info.root != null && !new File(parent, info.root).exists()) {
+            msg.append("\n\nZiel: Ordner „").append(info.root).append("“ in ").append(parent.getName());
+        } else {
+            msg.append("\n\nZiel: Ordner „").append(stem).append("“ in ").append(parent.getName());
+        }
         boolean tooBig = need > Math.max(0, free - 20L * 1024 * 1024);
         if (!info.unsafe.isEmpty()) {
             msg.append("\n\n").append(info.unsafe.size()).append(info.unsafe.size() == 1 ? " Eintrag wird" : " Einträge werden")
@@ -1885,6 +1889,11 @@ final class ToPcScreen implements Screen {
             b.setPositiveButton("Entpacken", new android.content.DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(android.content.DialogInterface d, int which) {
+                    if (info.root != null && !new File(parent, info.root).exists()) {
+                        // Das Archiv bringt seinen eigenen obersten Ordner mit: gleich hier entpacken, kein doppelter Ordner
+                        startUnzip(zip, parent, FileOps.Conflict.RENAME);
+                        return;
+                    }
                     File dest = new File(parent, stem);
                     if (dest.exists()) {
                         List<String> conflicts = new ArrayList<>();
@@ -1946,14 +1955,14 @@ final class ToPcScreen implements Screen {
                 return a.getName().compareToIgnoreCase(b.getName());
             }
         });
-        final String[] tabNames = { "Ersetzen", "Nummerieren", "Anhängen", "Schreibweise" };
+        final String[] tabNames = { "Ersetzen", "Nummer", "Anhängen", "Groß/Klein" };
         final BatchRename.Mode[] modes = { BatchRename.Mode.REPLACE, BatchRename.Mode.NUMBER, BatchRename.Mode.AFFIX, BatchRename.Mode.CASE };
         final int[] current = { 1 };
         final EditText find = field("Suchen", "", false);
         final EditText repl = field("Ersetzen durch", "", false);
         final EditText prefix = field("Name davor, zum Beispiel „Urlaub - “", "", false);
-        final EditText start = field("Start bei", "1", true);
-        final EditText digits = field("Stellen", "3", true);
+        final EditText start = field("Erste Nummer", "1", true);
+        final EditText digits = field("Anzahl Stellen", "3", true);
         final EditText pre = field("Text vorn", "", false);
         final EditText suf = field("Text hinten (vor der Endung)", "", false);
         final android.widget.RadioGroup caseGroup = new android.widget.RadioGroup(c);
@@ -2024,7 +2033,9 @@ final class ToPcScreen implements Screen {
                         break;
                     case 1:
                         fields.addView(prefix);
+                        fields.addView(Ui.label(c, "Erste Nummer", 12, Ui.dim(c), false));
                         fields.addView(start);
+                        fields.addView(Ui.label(c, "Anzahl Stellen (001 = 3)", 12, Ui.dim(c), false));
                         fields.addView(digits);
                         break;
                     case 2:
@@ -2039,6 +2050,7 @@ final class ToPcScreen implements Screen {
                     final int k = i;
                     boolean on = i == current[0];
                     TextView t = Ui.label(c, tabNames[i], 13, on ? Ui.primary(c) : Ui.dim(c), on);
+                    t.setSingleLine(true);
                     t.setGravity(Gravity.CENTER);
                     t.setPadding(Ui.dp(c, 2), Ui.dp(c, 10), Ui.dp(c, 2), Ui.dp(c, 8));
                     LinearLayout tab = new LinearLayout(c);

@@ -107,6 +107,11 @@ public class ZipBatchTest {
             { "Fotos/Größe äöü.txt", "uml" }, { "Fotos/Leer/", "" } });
         ZipOps.Info info = ZipOps.inspect(zip);
         ok(info.files == 3 && info.folders == 3 && info.uncompressed == 3 + 2 + 3 && info.unsafe.isEmpty(), "inspect: Dateien, Ordner, Größe: " + info.files + "/" + info.folders + "/" + info.uncompressed);
+        ok("Fotos".equals(info.root), "inspect: gemeinsamer oberster Ordner erkannt: " + info.root);
+        ZipOps.Info mixed = ZipOps.inspect(makeZip(t, "gemischt.zip", new String[][] { { "a/x.txt", "1" }, { "b/y.txt", "2" } }));
+        ok(mixed.root == null, "inspect: zwei oberste Ordner -> kein gemeinsamer");
+        ZipOps.Info loose = ZipOps.inspect(makeZip(t, "lose.zip", new String[][] { { "a/x.txt", "1" }, { "lose.txt", "2" } }));
+        ok(loose.root == null, "inspect: lose Datei neben Ordner -> kein gemeinsamer");
         File dest = new File(t, "Ziel");
         FileOps.Result r = ZipOps.unzip(zip, dest, FileOps.Conflict.RENAME, Long.MAX_VALUE, null);
         ok(r.ok() && read(new File(dest, "Fotos/a.txt")).equals("AAA") && read(new File(dest, "Fotos/Unter/b.txt")).equals("BB")

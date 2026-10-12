@@ -37,6 +37,9 @@ final class ZipOps {
         final List<String> unsafe = new ArrayList<>();
         /** Die ersten Einträge für die Ansicht "Inhalt ansehen" (höchstens 300). */
         final List<String> names = new ArrayList<>();
+        /** Ein gemeinsamer oberster Ordner aller sicheren Einträge (ohne Schrägstrich), sonst null. */
+        String root;
+        private boolean rootOpen = true;
     }
 
     static Info inspect(File zip) throws IOException {
@@ -49,6 +52,18 @@ final class ZipOps {
                 if (why != null) {
                     info.unsafe.add(e.getName() + ": " + why);
                     continue;
+                }
+                String top = e.getName().replace('\\', '/');
+                int slash = top.indexOf('/');
+                boolean nested = slash > 0 && (slash < top.length() - 1 || e.isDirectory());
+                String first = nested ? top.substring(0, slash) : null;
+                if (info.rootOpen) {
+                    if (first == null || (info.root != null && !info.root.equals(first))) {
+                        info.root = null;
+                        info.rootOpen = false;
+                    } else {
+                        info.root = first;
+                    }
                 }
                 if (e.isDirectory()) {
                     info.folders++;
