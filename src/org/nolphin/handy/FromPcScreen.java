@@ -30,6 +30,8 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.List;
@@ -714,11 +716,59 @@ final class FromPcScreen implements Screen {
                 });
         all.setLayoutParams(lp2);
         homeBox.addView(all);
-        for (int i = 0; i < homeDirs.size(); i += 2) {
-            View a = folderShortcut(homeDirs.get(i));
-            View b = i + 1 < homeDirs.size() ? folderShortcut(homeDirs.get(i + 1)) : new View(c);
+        // Standardordner zuerst, danach höchstens sechs weitere; der Rest steht hinter „Alle Ordner“
+        List<String> standard = new ArrayList<>();
+        List<String> other = new ArrayList<>();
+        for (String d : homeDirs) {
+            (isStandardFolder(d) ? standard : other).add(d);
+        }
+        Collections.sort(standard, new Comparator<String>() {
+            @Override
+            public int compare(String x, String y) {
+                return standardRank(x) - standardRank(y);
+            }
+        });
+        addFolderRows(standard);
+        if (!other.isEmpty()) {
+            homeBox.addView(Ui.heading(c, "Weitere Ordner"));
+            addFolderRows(other.subList(0, Math.min(6, other.size())));
+            if (other.size() > 6) {
+                View more = Ui.shortcut(c, R.drawable.ic_folder, 0xFFE0A93B, "Alle Ordner anzeigen", other.size() - 6 + " weitere",
+                        new View.OnClickListener() {
+                            @Override
+                            public void onClick(View v) {
+                                go("~");
+                            }
+                        });
+                more.setLayoutParams(lp2);
+                homeBox.addView(more);
+            }
+        }
+    }
+
+    private void addFolderRows(List<String> names) {
+        for (int i = 0; i < names.size(); i += 2) {
+            View a = folderShortcut(names.get(i));
+            View b = i + 1 < names.size() ? folderShortcut(names.get(i + 1)) : new View(c);
             homeBox.addView(Ui.pair(c, a, b));
         }
+    }
+
+    private static final String[] STANDARD = { "bilder", "pictures", "dokumente", "documents", "downloads", "musik",
+            "music", "videos", "schreibtisch", "desktop" };
+
+    private static boolean isStandardFolder(String name) {
+        return standardRank(name) < STANDARD.length;
+    }
+
+    private static int standardRank(String name) {
+        String n = name.toLowerCase(Locale.ROOT);
+        for (int i = 0; i < STANDARD.length; i++) {
+            if (STANDARD[i].equals(n)) {
+                return i;
+            }
+        }
+        return STANDARD.length;
     }
 
     private View folderShortcut(final String name) {

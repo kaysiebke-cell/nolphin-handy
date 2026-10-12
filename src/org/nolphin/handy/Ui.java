@@ -181,9 +181,11 @@ final class Ui {
         text.setOrientation(LinearLayout.VERTICAL);
         text.setPadding(dp(c, 10), 0, 0, 0);
         TextView n = label(c, name, 15, text(c), true);
-        n.setSingleLine(true);
+        n.setMaxLines(2);
+        n.setEllipsize(android.text.TextUtils.TruncateAt.END);
         text.addView(n);
-        TextView s = label(c, sub.isEmpty() ? " " : sub, 12, dim(c), false);
+        TextView s = label(c, sub, 12, dim(c), false);
+        s.setVisibility(sub.isEmpty() ? View.GONE : View.VISIBLE);
         s.setSingleLine(true);
         s.setEllipsize(android.text.TextUtils.TruncateAt.END);
         text.addView(s);
