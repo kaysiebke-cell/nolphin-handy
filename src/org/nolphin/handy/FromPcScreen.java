@@ -185,8 +185,7 @@ final class FromPcScreen implements Screen {
         root.addView(search, slp);
 
         normalBar = new LinearLayout(c);
-        normalBar.setOrientation(LinearLayout.HORIZONTAL);
-        normalBar.setGravity(Gravity.CENTER_VERTICAL);
+        normalBar.setOrientation(LinearLayout.VERTICAL);
         normalBar.setPadding(p, 0, p, Ui.dp(c, 6));
         final HorizontalScrollView scroll = new HorizontalScrollView(c);
         crumbScroll = scroll;
@@ -214,21 +213,30 @@ final class FromPcScreen implements Screen {
                 goOverview();
             }
         });
-        
-        normalBar.addView(homeBtn);
-        normalBar.addView(scroll, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
-        normalBar.addView(chip("Auswählen", false, new View.OnClickListener() {
+        // erste Zeile: Haus-Symbol und Pfad; zweite Zeile: die Knöpfe, rechtsbündig
+        LinearLayout crumbRow = new LinearLayout(c);
+        crumbRow.setOrientation(LinearLayout.HORIZONTAL);
+        crumbRow.setGravity(Gravity.CENTER_VERTICAL);
+        crumbRow.addView(homeBtn);
+        crumbRow.addView(scroll, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
+        normalBar.addView(crumbRow);
+        LinearLayout actionRow = new LinearLayout(c);
+        actionRow.setOrientation(LinearLayout.HORIZONTAL);
+        actionRow.setGravity(Gravity.END | Gravity.CENTER_VERTICAL);
+        actionRow.setPadding(0, Ui.dp(c, 2), 0, 0);
+        actionRow.addView(chip("Auswählen", false, new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 selectAll();
             }
         }));
-        normalBar.addView(chip("Alle laden", true, new View.OnClickListener() {
+        actionRow.addView(chip("Alle laden", true, new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 loadAll();
             }
         }));
+        normalBar.addView(actionRow);
         root.addView(normalBar);
 
         selectBar = new LinearLayout(c);
