@@ -256,7 +256,7 @@ final class ToPcScreen implements Screen {
         crumbBar = new LinearLayout(c);
         crumbBar.setOrientation(LinearLayout.HORIZONTAL);
         crumbBar.setGravity(Gravity.CENTER_VERTICAL);
-        crumbBar.setPadding(p, 0, p, Ui.dp(c, 4));
+        crumbBar.setPadding(p, 0, p, Ui.dp(c, 2));
         HorizontalScrollView scroll = new HorizontalScrollView(c);
         scroll.setHorizontalScrollBarEnabled(false);
         crumbs = new LinearLayout(c);
@@ -1073,8 +1073,9 @@ final class ToPcScreen implements Screen {
         if (!show) {
             return;
         }
-        ImageView home = Ui.icon(c, R.drawable.ic_home, Ui.primary(c), 20);
-        home.setPadding(Ui.dp(c, 2), Ui.dp(c, 2), Ui.dp(c, 2), Ui.dp(c, 2));
+        ImageView home = Ui.icon(c, R.drawable.ic_home, Ui.primary(c), 48);
+        home.setPadding(Ui.dp(c, 10), Ui.dp(c, 10), Ui.dp(c, 10), Ui.dp(c, 10));
+        home.setBackground(Ui.round(c, Ui.chip(c), 24));
         home.setContentDescription("Übersicht");
         home.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -1116,7 +1117,7 @@ final class ToPcScreen implements Screen {
 
     private TextView crumb(String text, final File target, boolean last) {
         TextView t = Ui.label(c, text, 14, last ? Ui.primary(c) : Ui.dim(c), last);
-        t.setPadding(0, Ui.dp(c, 6), 0, Ui.dp(c, 6));
+        t.setPadding(Ui.dp(c, 4), Ui.dp(c, 14), Ui.dp(c, 4), Ui.dp(c, 14));
         if (!last && target != null) {
             t.setOnClickListener(new View.OnClickListener() {
                 @Override
