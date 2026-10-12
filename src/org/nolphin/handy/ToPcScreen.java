@@ -1157,45 +1157,11 @@ final class ToPcScreen implements Screen {
             host.show(Host.TAB_HOME);
             return;
         }
-        final List<String> paths = new ArrayList<>(selected.keySet());
+        List<String> paths = new ArrayList<>(selected.keySet());
         selected.clear();
         render();
-        boolean hasDir = false;
-        for (String path : paths) {
-            if (new File(path).isDirectory()) {
-                hasDir = true;
-            }
-        }
-        if (!hasDir) {
-            host.sendPaths(paths);
-            return;
-        }
-        Toast.makeText(c, "Ordner werden gepackt …", Toast.LENGTH_SHORT).show();
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                final List<String> out = new ArrayList<>();
-                String err = null;
-                for (String path : paths) {
-                    File f = new File(path);
-                    try {
-                        out.add(f.isDirectory() ? FileOps.zip(f, c.getCacheDir()).getPath() : path);
-                    } catch (java.io.IOException e) {
-                        err = e.getMessage();
-                    }
-                }
-                final String fe = err;
-                root.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (fe != null) {
-                            Toast.makeText(c, "Packen nicht möglich: " + fe, Toast.LENGTH_LONG).show();
-                        }
-                        host.sendPaths(out);
-                    }
-                });
-            }
-        }, "nolphin-zip").start();
+        // Ordner schickt die App Datei für Datei mit Unterordnern (bei älterem Nolphin am PC als ZIP)
+        host.sendPaths(paths);
     }
 
     // ---- Dateiverwaltung: Kopieren, Verschieben, Löschen, Umbenennen, Neuer Ordner ------------
@@ -1345,7 +1311,7 @@ final class ToPcScreen implements Screen {
     /** Der Knopf ⋮ in jeder Zeile: alle Funktionen für dieses eine Element, gut lesbar in einer Liste. */
     private void rowMenu(final Entry e) {
         final File f = e.file;
-        final String[] names = { "An den PC senden" + (e.dir ? " (als ZIP)" : ""), "Kopieren", "Verschieben",
+        final String[] names = { "An den PC senden", "Kopieren", "Verschieben",
                 "Umbenennen", "Eigenschaften", "Löschen" };
         new AlertDialog.Builder(host.activity())
                 .setTitle(f.getName())

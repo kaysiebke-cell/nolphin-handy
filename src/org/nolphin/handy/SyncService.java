@@ -125,11 +125,11 @@ public class SyncService extends Service {
                 }
             }, "nolphin-fetch").start();
         } else if (ACTION_UPLOAD.equals(action) && intent != null) {
-            final List<Uri> uris = urisOf(intent);
+            final Intent in = intent;
             new Thread(new Runnable() {
                 @Override
                 public void run() {
-                    upload(uris);
+                    upload(jobsOf(in));
                 }
             }, "nolphin-upload").start();
         }
@@ -448,35 +448,117 @@ public class SyncService extends Service {
 
     // ---- Handy -> PC -----------------------------------------------------------------------
 
-    private List<Uri> urisOf(Intent intent) {
-        List<Uri> list = new ArrayList<>();
+    /** Eine Datei, die an den PC geht, bei Ordnern mit Unterordner (relativ) und dem Namen des obersten Ordners. */
+    private static final class Job {
+        final Uri uri;
+        final String name;    // null: Name aus dem Anbieter lesen
+        final String dir;     // Unterordner am PC ("Ordner1/Unter") oder null
+        final String group;   // oberster Ordner (für die Sammelmeldung) oder null
+
+        Job(Uri uri, String name, String dir, String group) {
+            this.uri = uri;
+            this.name = name;
+            this.dir = dir;
+            this.group = group;
+        }
+    }
+
+    private List<Job> jobsOf(Intent intent) {
+        List<Job> list = new ArrayList<>();
         ClipData clip = intent.getClipData();
         if (clip != null) {
             for (int i = 0; i < clip.getItemCount(); i++) {
                 Uri u = clip.getItemAt(i).getUri();
                 if (u != null) {
-                    list.add(u);
+                    list.add(new Job(u, null, null, null));
                 }
             }
         }
         String[] paths = intent.getStringArrayExtra("paths");
         if (paths != null) {
+            Boolean folders = null;
             for (String path : paths) {
-                list.add(Uri.fromFile(new java.io.File(path)));
+                java.io.File f = new java.io.File(path);
+                if (!f.isDirectory()) {
+                    list.add(new Job(Uri.fromFile(f), f.getName(), null, null));
+                    continue;
+                }
+                if (folders == null) {
+                    folders = pcAcceptsFolders();
+                }
+                if (folders) {
+                    addFolder(list, f, f.getName(), f.getName());
+                } else {
+                    // Ältere Nolphin-Version am PC: der Ordner geht als ZIP-Datei
+                    try {
+                        java.io.File zip = FileOps.zip(f, getCacheDir());
+                        list.add(new Job(Uri.fromFile(zip), zip.getName(), null, null));
+                    } catch (IOException e) {
+                        notifyFile("Packen nicht möglich", f.getName() + ": " + e.getMessage());
+                    }
+                }
             }
         }
         return list;
     }
 
-    private void upload(List<Uri> uris) {
+    private void addFolder(List<Job> list, java.io.File dir, String rel, String group) {
+        java.io.File[] fs = dir.listFiles();
+        if (fs == null) {
+            return;
+        }
+        java.util.Arrays.sort(fs);
+        for (java.io.File f : fs) {
+            if (f.isDirectory()) {
+                addFolder(list, f, rel + "/" + f.getName(), group);
+            } else if (f.isFile()) {
+                list.add(new Job(Uri.fromFile(f), f.getName(), rel, group));
+            }
+        }
+    }
+
+    /** Fragt den PC, ob er Ordner mit Unterordnern annimmt ("folders" in /info). */
+    private boolean pcAcceptsFolders() {
+        String host = Conn.host(this);
+        String token = Conn.token(this);
+        if (host == null || token == null) {
+            return false;
+        }
+        HttpURLConnection c = null;
+        try {
+            c = (HttpURLConnection) new URL("http://" + host + "/info?t=" + Uri.encode(token)).openConnection();
+            c.setConnectTimeout(5000);
+            c.setReadTimeout(5000);
+            return c.getResponseCode() == 200 && readAll(c.getInputStream()).contains("\"folders\":true");
+        } catch (Exception e) {
+            return false;
+        } finally {
+            if (c != null) {
+                c.disconnect();
+            }
+        }
+    }
+
+    private void upload(List<Job> jobs) {
         String host = Conn.host(this);
         String token = Conn.token(this);
         if (host == null || token == null) {
             notifyFile("Senden nicht möglich", "Erst den QR-Code vom PC scannen");
             return;
         }
-        for (Uri u : uris) {
-            String name = displayName(u);
+        // Sammelmeldung je Ordner: Anzahl, Größe, Fehler
+        java.util.Map<String, long[]> groups = new java.util.LinkedHashMap<>();
+        for (Job job : jobs) {
+            Uri u = job.uri;
+            String name = job.name != null ? job.name : displayName(u);
+            long[] grp = job.group != null ? groups.get(job.group) : null;
+            if (job.group != null && grp == null) {
+                grp = new long[3];
+                groups.put(job.group, grp);
+            }
+            if (grp != null && grp[2] > 0) {
+                continue;   // nach einem Fehler den Rest dieses Ordners nicht weiter senden
+            }
             java.io.File temp = null;
             long sentSize = 0;
             try {
@@ -492,7 +574,8 @@ public class SyncService extends Service {
                 long size = temp.length();
                 sentSize = size;
                 InputStream in = new java.io.FileInputStream(temp);
-                URL url = new URL("http://" + host + "/up?t=" + Uri.encode(token) + "&n=" + Uri.encode(name));
+                URL url = new URL("http://" + host + "/up?t=" + Uri.encode(token) + "&n=" + Uri.encode(name)
+                        + (job.dir != null ? "&d=" + Uri.encode(job.dir) : ""));
                 HttpURLConnection c = (HttpURLConnection) url.openConnection();
                 c.setConnectTimeout(8000);
                 c.setReadTimeout(120000);
@@ -517,16 +600,30 @@ public class SyncService extends Service {
                 int code = c.getResponseCode();
                 c.disconnect();
                 if (code == 200) {
-                    Store.addHistory(this, false, name, sentSize, true, "");
-                    notifyFile("An den PC gesendet", name);
+                    if (grp != null) {
+                        grp[0]++;
+                        grp[1] += sentSize;
+                    } else {
+                        Store.addHistory(this, false, name, sentSize, true, "");
+                        notifyFile("An den PC gesendet", name);
+                    }
                 } else if (code == 403) {
                     Store.addHistory(this, false, name, sentSize, false, "Schlüssel abgelaufen");
                     notifyFile("Senden fehlgeschlagen", name + ": Schlüssel abgelaufen, QR-Code neu scannen");
+                    if (grp != null) {
+                        grp[2]++;
+                    }
                 } else {
                     Store.addHistory(this, false, name, sentSize, false, "PC antwortet mit Fehler " + code);
                     notifyFile("Senden fehlgeschlagen", name + ": PC antwortet mit Fehler " + code);
+                    if (grp != null) {
+                        grp[2]++;
+                    }
                 }
             } catch (Exception e) {
+                if (grp != null) {
+                    grp[2]++;
+                }
                 if (cancelRequested) {
                     Store.addHistory(this, false, name, sentSize, false, "abgebrochen");
                     notifyFile("Senden abgebrochen", name);
@@ -541,6 +638,14 @@ public class SyncService extends Service {
                 if (temp != null) {
                     temp.delete();
                 }
+            }
+        }
+        for (java.util.Map.Entry<String, long[]> g : groups.entrySet()) {
+            long[] v = g.getValue();
+            if (v[0] > 0 && v[2] == 0) {
+                String text = v[0] + (v[0] == 1 ? " Datei" : " Dateien");
+                Store.addHistory(this, false, g.getKey() + "/ (" + text + ")", v[1], true, "");
+                notifyFile("Ordner an den PC gesendet", g.getKey() + ": " + text);
             }
         }
     }

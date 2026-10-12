@@ -73,7 +73,7 @@ Es gibt zwei Wege. Beide bieten dasselbe.
 
 **Löschen:** Die App fragt vorher nach. Gelöscht wird **endgültig**. Es gibt keinen Papierkorb.
 
-**Ordner an den PC:** Ein Ordner geht als **ZIP-Datei** an den PC. Die App packt ihn dabei samt Unterordnern. Der PC legt ihn nicht als Ordnerstruktur an.
+**Ordner an den PC:** Die App schickt einen Ordner **Datei für Datei mit allen Unterordnern**. Am PC entsteht derselbe Ordner im Eingangsordner „Vom Handy“. Gibt es den Ordner dort schon, kommen die Dateien hinein, und gleiche Namen werden nummeriert (`Name (1).ext`), nichts wird überschrieben. Für den ganzen Ordner gibt es **eine** Meldung und **einen** Eintrag im Verlauf. **Leere Ordner** werden nicht übertragen. Das braucht ein aktuelles Nolphin am PC (Feld `folders` in `/info`). Bei einem älteren Nolphin schickt die App den Ordner als **ZIP-Datei**.
 
 **Zugriff:** Für den Dateimanager braucht die App „Zugriff auf alle Dateien“ (`MANAGE_EXTERNAL_STORAGE`). Das erlauben Sie einmal in den Systemeinstellungen. Ohne ihn bleibt nur die Systemauswahl.
 
@@ -154,6 +154,6 @@ Der PC-Teil (der kleine Server in Nolphin) liegt im Projekt [nolphin-file-manage
 
 * Die Verbindung läuft **unverschlüsselt im eigenen WLAN**. Der Schlüssel steckt im Link. Verwenden Sie das nur in einem Netz, dem Sie vertrauen.
 * Löschen ist endgültig (kein Papierkorb).
-* Ordner gehen nur als ZIP an den PC.
+* Leere Ordner gehen nicht an den PC. Bei einem älteren Nolphin am PC geht ein Ordner nur als ZIP.
 * Der Zugriff auf alle Dateien ist mächtig. Die App nutzt ihn nur für den Dateimanager, und nur nach Ihrer Aktion.
 * Die privaten Ordner anderer Apps (`Android/data`, `Android/obb`) kann Android keiner App zeigen. Cloud-Dateien und Dateien anderer Apps holen Sie über die Systemauswahl (siehe oben).
