@@ -61,7 +61,7 @@ public class MainActivity extends Activity implements Host {
         super.onCreate(state);
         screens[TAB_HOME] = new HomeScreen(this, this);
         screens[TAB_FROM_PC] = new FromPcScreen(this, this);
-        screens[TAB_TO_PC] = new ToPcScreen(this, this);
+        screens[TAB_TO_PC] = new ToPcTabs(this, this);
         screens[TAB_HISTORY] = new HistoryScreen(this, this);
         screens[TAB_SETTINGS] = new SettingsScreen(this, this);
         buildUi();

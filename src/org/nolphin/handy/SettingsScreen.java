@@ -163,6 +163,29 @@ final class SettingsScreen implements Screen {
         });
         col.addView(files);
 
+        // Dateimanager
+        LinearLayout manager = Ui.card(c);
+        manager.addView(Ui.label(c, "Dateimanager", 16, Ui.text(c), true));
+        Switch dual = new Switch(c);
+        dual.setText("Zwei-Fenster-Modus anbieten");
+        dual.setTextSize(15);
+        dual.setTextColor(Ui.text(c));
+        dual.setChecked(Conn.dualAvailable(c));
+        dual.setPadding(0, Ui.dp(c, 10), 0, 0);
+        dual.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton b, boolean checked) {
+                Conn.setDualAvailable(c, checked);
+            }
+        });
+        manager.addView(dual);
+        TextView dualHint = Ui.label(c, "An: In „Zum PC“ erscheint oben ein Knopf für zwei Fenster, in denen du unabhängig durch "
+                + "Ordner gehst und Dateien zwischen beiden kopierst oder verschiebst. Aus: es gibt nur ein Fenster.", 12,
+                Ui.dim(c), false);
+        dualHint.setPadding(0, Ui.dp(c, 4), 0, 0);
+        manager.addView(dualHint);
+        col.addView(manager);
+
         // Verlauf
         LinearLayout hist = Ui.card(c);
         hist.addView(Ui.label(c, "Verlauf", 16, Ui.text(c), true));

@@ -133,6 +133,19 @@ final class ToPcScreen implements Screen {
     private static final String[] DOC_EXT = { "pdf", "doc", "docx", "odt", "rtf", "txt", "md", "xls", "xlsx", "ods", "csv",
             "ppt", "pptx", "odp", "epub", "zip", "rar", "7z", "step", "stp", "stl", "obj", "3mf", "dxf", "dwg", "iges", "igs" };
     private static final String[] DOC_FILTERS = { "Alle", "DOC", "XLS", "PDF", "PPT", "Sonstige" };
+    private final boolean compact;
+    private final String paneId;
+    private DualSwitch dualSwitch;
+    private Partner partner;
+    private int lastNotified;
+    private final TextView paneTag;
+    private final View activeBar;
+    private final ImageView dualBtn;
+    private final LinearLayout searchRow;
+    private final View searchLine;
+    private final View crumbLine;
+    private View selCopy;
+    private View selMove;
     private int docFilter;
     private SortOrder order = SortOrder.standard();
     private boolean orderChosen;
@@ -197,7 +210,26 @@ final class ToPcScreen implements Screen {
         }
     };
 
+    /** Umschalter zwischen einem und zwei Fenstern (vom Reiter "Zum PC" bereitgestellt). */
+    interface DualSwitch {
+        void setDual(boolean on);
+    }
+
+    /** Das gegenüberliegende Fenster im Zwei-Fenster-Modus wird über Änderungen informiert. */
+    interface Partner {
+        void selectionChanged(ToPcScreen s);
+
+        void opFinished(ToPcScreen s);
+    }
+
     ToPcScreen(Context c, Host host) {
+        this(c, host, false, null);
+    }
+
+    /** @param compact kleines Fenster für den Zwei-Fenster-Modus (ohne Suche, Pfadleiste und Sortierhinweis) */
+    ToPcScreen(Context c, Host host, boolean compact, String paneId) {
+        this.compact = compact;
+        this.paneId = paneId;
         this.c = c;
         orderChosen = Conn.hasSortOrder(c);
         if (orderChosen) {
@@ -209,6 +241,12 @@ final class ToPcScreen implements Screen {
         root.setOrientation(LinearLayout.VERTICAL);
         root.setBackgroundColor(Ui.bg(c));
         int p = Ui.dp(c, 16);
+
+        activeBar = new View(c);
+        activeBar.setBackgroundColor(0x00000000);
+        if (compact) {
+            root.addView(activeBar, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, Ui.dp(c, 3)));
+        }
 
         head = new LinearLayout(c);
         head.setOrientation(LinearLayout.HORIZONTAL);
@@ -228,10 +266,23 @@ final class ToPcScreen implements Screen {
                 onBack();
             }
         });
+        paneTag = Ui.label(c, "", 12, Ui.dim(c), true);
+        paneTag.setPadding(Ui.dp(c, 8), Ui.dp(c, 2), Ui.dp(c, 8), Ui.dp(c, 2));
+        paneTag.setBackground(Ui.outlined(c, Ui.surface(c)));
+        LinearLayout.LayoutParams tagLp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+        tagLp.leftMargin = Ui.dp(c, 4);
+        tagLp.rightMargin = Ui.dp(c, 4);
+        if (compact) {
+            head.addView(paneTag, tagLp);
+        }
         head.addView(back);
         title = Ui.label(c, "Zum PC", 18, Ui.text(c), true);
         title.setSingleLine(true);
-        title.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        title.setEllipsize(compact ? android.text.TextUtils.TruncateAt.START : android.text.TextUtils.TruncateAt.END);
+        if (compact) {
+            title.setTextSize(14);
+        }
         head.addView(title, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
         newFolder = Ui.icon(c, R.drawable.ic_newfolder, Ui.iconTint(c), 24);
         newFolder.setPadding(Ui.dp(c, 10), Ui.dp(c, 10), Ui.dp(c, 10), Ui.dp(c, 10));
@@ -255,6 +306,20 @@ final class ToPcScreen implements Screen {
                 showSortDialog();
             }
         });
+        dualBtn = Ui.icon(c, R.drawable.ic_panes, Ui.iconTint(c), 24);
+        dualBtn.setPadding(Ui.dp(c, 10), Ui.dp(c, 10), Ui.dp(c, 10), Ui.dp(c, 10));
+        dualBtn.setLayoutParams(new LinearLayout.LayoutParams(Ui.dp(c, 44), Ui.dp(c, 44)));
+        dualBtn.setContentDescription("Zwei Fenster");
+        dualBtn.setVisibility(View.GONE);
+        dualBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (dualSwitch != null) {
+                    dualSwitch.setDual(true);
+                }
+            }
+        });
+        head.addView(dualBtn);
         head.addView(sortBtn);
         head.addView(newFolder);
         toggle = Ui.icon(c, useGrid ? R.drawable.ic_list : R.drawable.ic_grid, Ui.iconTint(c), 24);
@@ -270,10 +335,10 @@ final class ToPcScreen implements Screen {
             }
         });
         head.addView(toggle);
-        root.addView(head, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, Ui.dp(c, 52)));
+        root.addView(head, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, Ui.dp(c, compact ? 40 : 52)));
         root.addView(divider());
 
-        LinearLayout searchRow = new LinearLayout(c);
+        searchRow = new LinearLayout(c);
         searchRow.setOrientation(LinearLayout.HORIZONTAL);
         searchRow.setGravity(Gravity.CENTER_VERTICAL);
         searchRow.setBackgroundColor(Ui.bg(c));
@@ -321,7 +386,8 @@ final class ToPcScreen implements Screen {
         LinearLayout.LayoutParams slp = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, Ui.dp(c, 44));
         root.addView(searchRow, slp);
-        root.addView(divider());
+        searchLine = divider();
+        root.addView(searchLine);
 
         crumbBar = new LinearLayout(c);
         crumbBar.setOrientation(LinearLayout.HORIZONTAL);
@@ -358,7 +424,8 @@ final class ToPcScreen implements Screen {
         crumbBar.addView(scroll, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
         crumbBar.setVisibility(View.GONE);
         root.addView(crumbBar);
-        root.addView(divider());
+        crumbLine = divider();
+        root.addView(crumbLine);
 
         HorizontalScrollView chipScroll = new HorizontalScrollView(c);
         chipScroll.setHorizontalScrollBarEnabled(false);
@@ -440,7 +507,15 @@ final class ToPcScreen implements Screen {
             }
         }));
         root.addView(selectBar, root.indexOfChild(head) + 1, new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT, Ui.dp(c, 52)));
+                LinearLayout.LayoutParams.MATCH_PARENT, Ui.dp(c, compact ? 44 : 52)));
+        for (int i = 0; i < selectBar.getChildCount(); i++) {
+            CharSequence d = selectBar.getChildAt(i).getContentDescription();
+            if ("Kopieren".contentEquals(d == null ? "" : d)) {
+                selCopy = selectBar.getChildAt(i);
+            } else if ("Verschieben".contentEquals(d == null ? "" : d)) {
+                selMove = selectBar.getChildAt(i);
+            }
+        }
 
         body = new FrameLayout(c);
         root.addView(body, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1));
@@ -538,6 +613,13 @@ final class ToPcScreen implements Screen {
         pasteBar.setVisibility(View.GONE);
         root.addView(pasteBar);
 
+        if (compact && paneId != null) {
+            String saved = Conn.paneDir(c, paneId);
+            if (saved != null && new File(saved).isDirectory()) {
+                mode = FOLDER;
+                dir = new File(saved);
+            }
+        }
         applyMode();
     }
 
@@ -1060,6 +1142,9 @@ final class ToPcScreen implements Screen {
         mode = FOLDER;
         dir = f;
         Conn.pushRecent(c, f.getPath());
+        if (compact && paneId != null) {
+            Conn.setPaneDir(c, paneId, f.getPath());
+        }
         loadList();
     }
 
@@ -1074,6 +1159,9 @@ final class ToPcScreen implements Screen {
     private void goHome() {
         resetQuery();
         mode = HOME;
+        if (compact && paneId != null) {
+            Conn.setPaneDir(c, paneId, null);
+        }
         ++gen;
         loading = false;
         all.clear();
@@ -1416,7 +1504,11 @@ final class ToPcScreen implements Screen {
         final File target = dir;
         clip = null;
         render();
-        // erst prüfen, ob es im Ziel schon gleiche Namen gibt
+        beginTransfer(items, target, move);
+    }
+
+    /** Erst prüfen, ob es im Ziel schon gleiche Namen gibt, dann (nach der Konfliktfrage) übertragen. */
+    private void beginTransfer(final List<File> items, final File target, final boolean move) {
         new Thread(new Runnable() {
             @Override
             public void run() {
@@ -1907,6 +1999,9 @@ final class ToPcScreen implements Screen {
         }
         Toast.makeText(c, r.summary(verbPast), Toast.LENGTH_LONG).show();
         reload();
+        if (partner != null) {
+            partner.opFinished(this);
+        }
         if (!r.failed.isEmpty()) {
             showProblems(r, retry);
         }
@@ -2074,7 +2169,101 @@ final class ToPcScreen implements Screen {
         if (chips) {
             buildDocChips();
         }
+        dualBtn.setVisibility(!compact && dualSwitch != null && Conn.dualAvailable(c) ? View.VISIBLE : View.GONE);
+        if (compact) {
+            crumbBar.setVisibility(View.GONE);
+            crumbLine.setVisibility(View.GONE);
+            searchRow.setVisibility(View.GONE);
+            searchLine.setVisibility(View.GONE);
+            sortHint.setVisibility(View.GONE);
+            sortHintLine.setVisibility(View.GONE);
+            toggle.setVisibility(View.GONE);
+            title.setText(pathLabel());
+            if (selCopy != null) {
+                selCopy.setVisibility(View.GONE);   // kopiert und verschoben wird mit der unteren Leiste
+            }
+            if (selMove != null) {
+                selMove.setVisibility(View.GONE);
+            }
+        }
         adapter.notifyDataSetChanged();
+        if (partner != null && lastNotified != selected.size()) {
+            lastNotified = selected.size();
+            partner.selectionChanged(this);
+        }
+    }
+
+    // ---- Schnittstelle für den Zwei-Fenster-Modus -----------------------------------------------
+
+    void setDualSwitch(DualSwitch sw) {
+        dualSwitch = sw;
+    }
+
+    void setPartner(Partner p) {
+        partner = p;
+    }
+
+    void setActive(boolean on) {
+        activeBar.setBackgroundColor(on ? Ui.primary(c) : 0x00000000);
+    }
+
+    void setPaneLabel(String text) {
+        paneTag.setText(text);
+    }
+
+    int selectionCount() {
+        return selected.size();
+    }
+
+    List<File> selectionFiles() {
+        return selectedFiles();
+    }
+
+    void clearSelection() {
+        selected.clear();
+        render();
+    }
+
+    /** Der geöffnete Ordner, oder null in der Übersicht, einer Kategorie oder bei den Apps. */
+    File currentDir() {
+        return mode == FOLDER ? dir : null;
+    }
+
+    /** Wo das Fenster gerade steht, zum Beispiel "Hauptspeicher › Download › Bilder". */
+    String pathLabel() {
+        if (mode == HOME) {
+            return "Übersicht";
+        }
+        if (mode == APPS) {
+            return "Apps";
+        }
+        if (mode == CATEGORY) {
+            return CATS[cat];
+        }
+        Vol v = volumeOf(dir);
+        if (v == null) {
+            return dir.getPath();
+        }
+        StringBuilder b = new StringBuilder(v.name);
+        String rest = dir.getPath().substring(v.root.getPath().length());
+        for (String part : rest.split("/")) {
+            if (!part.isEmpty()) {
+                b.append(" › ").append(part);
+            }
+        }
+        return b.toString();
+    }
+
+    void reloadList() {
+        reload();
+    }
+
+    /** Kopiert oder verschiebt die Auswahl in einen Ordner (mit Konfliktfrage, Fortschritt und Ergebnisliste). */
+    void transferSelection(File target, boolean move) {
+        List<File> items = selectedFiles();
+        selected.clear();
+        render();
+        beginTransfer(items, target, move);
     }
 
     private String folderTitle() {

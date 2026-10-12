@@ -73,6 +73,13 @@ Der Eintrag **Apps** zeigt dagegen nur Apps, die ihre Dateien in einem eigenen M
 
 **Favoriten und zuletzt geöffnete Orte.** Im Menü **⋮** eines Ordners steht **Zu Favoriten hinzufügen**. In der Übersicht erscheinen die Favoriten oben mit einem Stern, darunter die **zuletzt geöffneten Ordner** (die letzten fünf). Ein Favorit hat ein eigenes Menü mit „Öffnen“ und „Aus Favoriten entfernen“. Ist ein Ordner nicht mehr da (zum Beispiel SD-Karte entfernt), steht dort „Nicht verfügbar“. Die Liste der zuletzt geöffneten Ordner löschen Sie in den Einstellungen.
 
+**Zwei Fenster.** In den Einstellungen unter „Dateimanager“ schalten Sie **Zwei-Fenster-Modus anbieten** ein (Standard: aus). Dann erscheint in „Zum PC“ oben ein Knopf für zwei Fenster. Im Hochformat stehen die Fenster untereinander, im Querformat nebeneinander. Jedes Fenster hat seinen eigenen Ordner, Speicher (intern oder SD-Karte), Sortierung und Auswahl. Ein Fenster merkt sich seinen Ordner auch nach dem Drehen oder Neustart.
+
+* Das Fenster, das Sie zuletzt angetippt haben, ist **aktiv** (grüne Linie oben). Das Fenster mit der Auswahl ist die **Quelle**, das andere das **Ziel**.
+* Unten steht „Von … nach …“ mit **Kopieren** und **Verschieben**. Vor dem Vorgang fragt die App noch einmal mit dem vollen Zielpfad und bietet **Ziel wechseln** an. Danach läuft alles wie sonst: Fortschritt, Abbrechen, Konfliktfrage, Ergebnisliste.
+* Ist im Ziel-Fenster noch kein Ordner offen (Übersicht), bittet die App erst darum, einen zu öffnen.
+* Der Knopf in der Kopfleiste führt zurück zu einem Fenster. Schalten Sie den Modus in den Einstellungen aus, gibt es nur noch ein Fenster, wie bisher.
+
 **Vorschau.** Fotos und Videos zeigen ein Vorschaubild, Audio das Albumbild (wenn die Datei eines hat), PDF die erste Seite. Alle anderen Dateien zeigen ein einfarbiges Symbol nach Dateiart.
 
 **Suche.** Das Suchfeld sucht im aktuellen Ordner mit allen Unterordnern, in der Übersicht auf allen Speichern. In einer Kategorie filtert es die Liste.
@@ -167,6 +174,7 @@ Seiten: `start`, `uebersicht`, `liste`, `auswahl`, `dokumente`, `einfuegen`, `vo
 | `MainActivity` | Kopfleiste, Reiter, Verbindung, Versand |
 | `HomeScreen`, `FromPcScreen`, `ToPcScreen`, `HistoryScreen`, `SettingsScreen` | Die Bildschirme |
 | `SortOrder`, `PlaceLists` | Sortierreihenfolge, Favoriten und zuletzt geöffnete Orte (ohne Android, getestet) |
+| `ToPcTabs`, `DualScreen` | Reiter „Zum PC“ mit einem oder zwei Fenstern |
 | `FileOps` | Kopieren, Verschieben, Löschen, Umbenennen, ZIP (sicher, mit Ergebnisliste, Abbruch und Konfliktregeln) |
 | `Ui` | Farben (hell und dunkel), Symbole, Listenzeilen |
 | `Thumbs` | Vorschaubilder (Foto, Video, Albumbild, PDF, App-Symbol) |

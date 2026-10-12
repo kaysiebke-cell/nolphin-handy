@@ -104,6 +104,43 @@ final class Conn {
         prefs(c).edit().remove("sortkey").remove("sortasc").remove("foldersfirst").apply();
     }
 
+    /** Wird der Zwei-Fenster-Modus angeboten? (Einstellung, Standard: aus) */
+    static boolean dualAvailable(Context c) {
+        return prefs(c).getBoolean("dualavailable", false);
+    }
+
+    static void setDualAvailable(Context c, boolean on) {
+        SharedPreferences.Editor e = prefs(c).edit().putBoolean("dualavailable", on);
+        if (!on) {
+            e.putBoolean("dualactive", false);
+        }
+        e.apply();
+    }
+
+    /** Zeigt "Zum PC" gerade zwei Fenster? Bleibt beim Neustart erhalten. */
+    static boolean dualActive(Context c) {
+        return dualAvailable(c) && prefs(c).getBoolean("dualactive", false);
+    }
+
+    static void setDualActive(Context c, boolean on) {
+        prefs(c).edit().putBoolean("dualactive", on).apply();
+    }
+
+    /** Zuletzt geöffneter Ordner eines Fensters (damit ein Fenster nach dem Drehen oder Neustart wieder dort steht). */
+    static String paneDir(Context c, String paneId) {
+        return prefs(c).getString("pane_" + paneId, null);
+    }
+
+    static void setPaneDir(Context c, String paneId, String path) {
+        SharedPreferences.Editor e = prefs(c).edit();
+        if (path == null) {
+            e.remove("pane_" + paneId);
+        } else {
+            e.putString("pane_" + paneId, path);
+        }
+        e.apply();
+    }
+
     /** Favoriten (Ordnerpfade) in der Reihenfolge, in der sie angelegt wurden. */
     static List<String> favorites(Context c) {
         return PlaceLists.parse(prefs(c).getString("favorites", ""));
