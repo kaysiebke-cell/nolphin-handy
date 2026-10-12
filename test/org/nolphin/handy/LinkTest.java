@@ -42,7 +42,9 @@ public class LinkTest {
         String q = "?t=" + T + "&v=2&f=" + F;
         ok("Link aus dem QR-Code (Version 2)", "https://192.168.1.10:40000/" + q);
         ok("Link mit Ablauf (wird noch gelesen)", "https://192.168.1.10:40000/" + q + "&e=" + (NOW + 3600));
-        ok("nolphin-Link", "nolphin://connect?host=192.168.1.10:40000&t=" + T + "&v=2&f=" + F);
+        ok("Link aus dem QR-Code (nolphin://, Version 2)", "nolphin://192.168.1.10:40000/" + q);
+        ok("nolphin:// mit längster Adresse", "nolphin://192.168.178.255:65535/" + q);
+        ok("nolphin-Link, ältere Form mit connect", "nolphin://connect?host=192.168.1.10:40000&t=" + T + "&v=2&f=" + F);
         ok("Netz 10.x", "https://10.0.2.2:8080/" + q);
         ok("Netz 172.16 bis 172.31", "https://172.31.255.254:65535/" + q);
         ok("Leerzeichen und Zeilenumbruch drumherum", "  https://192.168.1.5:1024/" + q + "\n");
@@ -66,6 +68,11 @@ public class LinkTest {
         bad("https ohne Version", "https://192.168.1.5:1024/?t=" + T + "&f=" + F, "Version");
         bad("https mit Version 1", "https://192.168.1.5:1024/?t=" + T + "&v=1&f=" + F, "Version 1");
         bad("unbekannte Version 3", "https://192.168.1.5:1024/?t=" + T + "&v=3&f=" + F, "Version 3");
+        bad("nolphin:// ohne Fingerabdruck", "nolphin://192.168.1.10:40000/?t=" + T + "&v=2", "Fingerabdruck");
+        bad("nolphin:// ohne Port", "nolphin://192.168.1.10/" + q, "Port");
+        bad("nolphin:// mit öffentlicher Adresse", "nolphin://8.8.8.8:40000/" + q, "privaten Netz");
+        bad("nolphin:// mit Hostname", "nolphin://example.com:40000/" + q, "IPv4");
+        bad("nolphin:// Version 1", "nolphin://192.168.1.10:40000/?t=" + T + "&v=1&f=" + F, "Version 1");
         bad("Fingerabdruck fehlt", "https://192.168.1.5:1024/?t=" + T + "&v=2", "Fingerabdruck");
         bad("Fingerabdruck zu kurz", "https://192.168.1.5:1024/?t=" + T + "&v=2&f=QULDtffIw8Ed6DmETVJ7z", "Fingerabdruck");
         bad("Fingerabdruck zu lang", "https://192.168.1.5:1024/?t=" + T + "&v=2&f=QULDtffIw8Ed6DmETVJ7zAA", "Fingerabdruck");
@@ -91,7 +98,8 @@ public class LinkTest {
         bad("anderes Schema ftp", "ftp://192.168.1.5:1024/" + q, "kein Nolphin-Link");
         bad("javascript", "javascript:alert(1)", "kein Nolphin-Link");
         bad("file", "file:///etc/passwd", "kein Nolphin-Link");
-        bad("nolphin mit falschem Host", "nolphin://other?host=192.168.1.5:1024&t=" + T + "&v=2&f=" + F, "kein Nolphin-Link");
+        bad("nolphin mit falschem Host (abgelehnt, ohne Port)", "nolphin://other?host=192.168.1.5:1024&t=" + T + "&v=2&f=" + F, "Port");
+        bad("nolphin mit Hostname und Port", "nolphin://other:1024/" + q, "IPv4");
         bad("nolphin ohne Adresse", "nolphin://connect?t=" + T + "&v=2&f=" + F, "Adresse");
         bad("Ablauf keine Zahl", "https://192.168.1.5:1024/" + q + "&e=morgen", "Ablaufzeit");
         bad("leer", "", null);

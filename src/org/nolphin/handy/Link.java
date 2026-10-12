@@ -7,7 +7,9 @@ import java.util.Map;
 import java.util.regex.Pattern;
 
 /**
- * Verbindungslink von Nolphin, Format Version 2 (verschlüsselt):
+ * Verbindungslink von Nolphin, Format Version 2 (verschlüsselt). Im QR-Code steht die erste Form, damit die
+ * Kamera des Handys die App direkt öffnet; die anderen werden ebenfalls verstanden:
+ *   nolphin://HOST:PORT/?t=SCHLÜSSEL&v=2&f=FINGERABDRUCK
  *   https://HOST:PORT/?t=SCHLÜSSEL&v=2&f=FINGERABDRUCK
  *   nolphin://connect?host=HOST:PORT&t=SCHLÜSSEL&v=2&f=FINGERABDRUCK
  * HOST ist eine IPv4-Adresse aus einem privaten Netz, SCHLÜSSEL besteht aus 32 Hex-Zeichen,
@@ -73,8 +75,8 @@ final class Link {
                     + "Bitte Nolphin und die App auf den gleichen Stand bringen und einen neuen QR-Code erzeugen");
         } else if ("https".equals(scheme)) {
             authority = uri.getRawAuthority();
-        } else if ("nolphin".equals(scheme) && "connect".equals(uri.getHost())) {
-            authority = q.get("host");
+        } else if ("nolphin".equals(scheme)) {
+            authority = "connect".equals(uri.getHost()) ? q.get("host") : uri.getRawAuthority();
         } else {
             throw new Invalid("Das ist kein Nolphin-Link");
         }

@@ -420,12 +420,40 @@ public class MainActivity extends Activity implements Host {
         }
     };
 
+    /**
+     * Ein Link von außen (Kamera-App, Browser, andere App) verbindet erst nach Bestätigung: Sonst könnte eine fremde
+     * Seite die App mit einem untergeschobenen Rechner im Netz verbinden. Der eigene QR-Scanner der App fragt nicht,
+     * dort hat der Nutzer den Code gerade selbst gewählt.
+     */
     private void handleIntent(Intent intent) {
         Uri data = intent != null ? intent.getData() : null;
-        if (data != null && "nolphin".equals(data.getScheme())) {
-            error = null;
-            Connector.connect(this, data.toString(), connectListener);
+        if (data == null || !"nolphin".equals(data.getScheme())) {
+            return;
         }
+        final String text = data.toString();
+        final Link link;
+        try {
+            link = Link.parse(text, System.currentTimeMillis() / 1000);
+        } catch (Link.Invalid e) {
+            error = e.getMessage();
+            Toast.makeText(this, e.getMessage(), Toast.LENGTH_LONG).show();
+            if (current >= 0) {
+                screens[current].onShow();
+            }
+            return;
+        }
+        new android.app.AlertDialog.Builder(this, R.style.NolphinDialog)
+                .setTitle("Mit diesem PC verbinden?")
+                .setMessage("PC-Adresse: " + link.authority() + "\n\nNur bestätigen, wenn du diesen Code gerade selbst "
+                        + "an deinem PC in Nolphin angezeigt hast. Ein fremder Link kann dich mit einem fremden Rechner verbinden.")
+                .setNegativeButton("Abbrechen", null)
+                .setPositiveButton("Verbinden", new android.content.DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(android.content.DialogInterface d, int which) {
+                        error = null;
+                        Connector.connect(MainActivity.this, text, connectListener);
+                    }
+                }).show();
     }
 
     private void startSync(String action, String unused) {
