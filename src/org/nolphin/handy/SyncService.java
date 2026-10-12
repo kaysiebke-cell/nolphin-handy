@@ -459,6 +459,12 @@ public class SyncService extends Service {
                 }
             }
         }
+        String[] paths = intent.getStringArrayExtra("paths");
+        if (paths != null) {
+            for (String path : paths) {
+                list.add(Uri.fromFile(new java.io.File(path)));
+            }
+        }
         return list;
     }
 

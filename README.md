@@ -8,7 +8,7 @@ Vier Reiter unten, Einstellungen oben rechts; eigenes Design (Karten, Nolphin-Fa
 
 * **Start:** großer Status („Verbunden“ / „Nicht verbunden“), Fortschritt einer laufenden Übertragung mit Abbruch, letzte Übertragungen.
 * **Vom PC:** Liste der Dateien aus dem Ordner „Handy“ mit Vorschaubild; Antippen lädt, geladene Dateien lassen sich öffnen und teilen.
-* **Zum PC:** Raster der letzten Fotos (Mehrfachauswahl), „Dateien …“ für andere Dateien, „An den PC senden“ mit Fortschritt. Braucht die Berechtigung „Fotos“ (`READ_MEDIA_IMAGES`, bis Android 12 `READ_EXTERNAL_STORAGE`); ohne sie bleibt die Dateiauswahl.
+* **Zum PC:** Dateimanager für das Handy: Übersicht (Hauptspeicher, SD-Karte, Downloads, Bilder, Audio, Videos, Dokumente), Ordner mit Pfadleiste als Kacheln oder Liste, Suche (auch in Unterordnern), Mehrfachauswahl (langer Druck) und „An den PC senden“. Braucht „Zugriff auf alle Dateien“ (`MANAGE_EXTERNAL_STORAGE`, einmal in den Systemeinstellungen erlauben); ohne ihn bleibt die Systemauswahl.
 * **Verlauf:** alle Übertragungen (bis 200), mit Ergebnis.
 * **Einstellungen:** Verbindung trennen, neue Dateien automatisch laden (aus: erst nach Antippen), Ordner in „Downloads“, Verlauf löschen.
 

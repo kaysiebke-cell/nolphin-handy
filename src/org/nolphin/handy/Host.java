@@ -31,6 +31,14 @@ interface Host {
 
     void pickFiles();
 
+    /** Dateien des Handy-Speichers (Pfade) an den PC senden. */
+    void sendPaths(List<String> paths);
+
+    /** Darf die App alle Ordner lesen (Dateimanager)? */
+    boolean hasFilesAccess();
+
+    void requestFilesAccess();
+
     /** Zielordner für Dateien vom PC wählen (auch SD-Karte). */
     void pickTargetFolder();
 

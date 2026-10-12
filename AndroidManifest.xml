@@ -3,8 +3,8 @@
      Nur das Android-Framework, keine Bibliotheken. -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="org.nolphin.handy"
-    android:versionCode="18"
-    android:versionName="4.0">
+    android:versionCode="19"
+    android:versionName="4.1">
 
     <uses-sdk android:minSdkVersion="29" android:targetSdkVersion="34" />
 
@@ -19,6 +19,8 @@
     <!-- Nur für das Foto-Raster im Reiter „Zum PC“; wird erst dort angefragt. -->
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
+    <!-- Für den Dateimanager im Reiter „Zum PC“: alle Ordner des Handys und der SD-Karte durchsuchen. -->
+    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
 
     <!-- Der Austausch läuft unverschlüsselt (HTTP) im eigenen WLAN. -->
@@ -28,6 +30,7 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:theme="@style/NolphinTheme"
         android:allowBackup="false"
+        android:requestLegacyExternalStorage="true"
         android:usesCleartextTraffic="true">
 
         <activity

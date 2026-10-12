@@ -2,6 +2,7 @@ package org.nolphin.handy;
 
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.media.ThumbnailUtils;
 import android.net.Uri;
 import android.os.Handler;
 import android.os.Looper;
@@ -9,6 +10,7 @@ import android.util.LruCache;
 import android.util.Size;
 import android.widget.ImageView;
 
+import java.io.File;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -36,12 +38,44 @@ final class Thumbs {
             show(view, key, hit, fallback);
             return;
         }
+        run(key, view, fallback, new Source() {
+            @Override
+            public Bitmap get() throws Exception {
+                return c.getContentResolver().loadThumbnail(uri, new Size(px, px), null);
+            }
+        });
+    }
+
+    private interface Source {
+        Bitmap get() throws Exception;
+    }
+
+    /** Vorschaubild einer Datei im Dateisystem (Foto oder Video); sonst bleibt @p view unverändert. */
+    static void loadFile(final File file, final boolean video, final int px, final ImageView view,
+                         final Runnable fallback) {
+        final String key = file.getPath() + "#" + file.lastModified() + "#" + px;
+        view.setTag(key);
+        Bitmap hit = CACHE.get(key);
+        if (hit != null) {
+            show(view, key, hit, fallback);
+            return;
+        }
+        run(key, view, fallback, new Source() {
+            @Override
+            public Bitmap get() throws Exception {
+                return video ? ThumbnailUtils.createVideoThumbnail(file, new Size(px, px), null)
+                        : ThumbnailUtils.createImageThumbnail(file, new Size(px, px), null);
+            }
+        });
+    }
+
+    private static void run(final String key, final ImageView view, final Runnable fallback, final Source source) {
         POOL.execute(new Runnable() {
             @Override
             public void run() {
                 Bitmap b;
                 try {
-                    b = c.getContentResolver().loadThumbnail(uri, new Size(px, px), null);
+                    b = source.get();
                 } catch (Exception e) {
                     b = NONE;
                 }
@@ -65,6 +99,7 @@ final class Thumbs {
             fallback.run();
         } else {
             view.clearColorFilter();
+            view.setPadding(0, 0, 0, 0);
             view.setScaleType(ImageView.ScaleType.CENTER_CROP);
             view.setImageBitmap(b);
         }

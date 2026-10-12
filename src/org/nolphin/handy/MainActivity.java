@@ -287,6 +287,38 @@ public class MainActivity extends Activity implements Host {
     }
 
     @Override
+    public void sendPaths(List<String> paths) {
+        if (paths.isEmpty()) {
+            return;
+        }
+        Intent svc = new Intent(this, SyncService.class).setAction(SyncService.ACTION_UPLOAD);
+        svc.putExtra("paths", paths.toArray(new String[0]));
+        startForegroundService(svc);
+        Toast.makeText(this, paths.size() == 1 ? "Wird an den PC gesendet" : paths.size() + " Dateien werden gesendet",
+                Toast.LENGTH_SHORT).show();
+        show(TAB_HOME);
+    }
+
+    @Override
+    public boolean hasFilesAccess() {
+        return Build.VERSION.SDK_INT >= 30 ? android.os.Environment.isExternalStorageManager() : hasMediaAccess();
+    }
+
+    @Override
+    public void requestFilesAccess() {
+        if (Build.VERSION.SDK_INT < 30) {
+            requestMediaAccess();
+            return;
+        }
+        try {
+            startActivity(new Intent(android.provider.Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION,
+                    Uri.parse("package:" + getPackageName())));
+        } catch (RuntimeException e) {
+            startActivity(new Intent(android.provider.Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION));
+        }
+    }
+
+    @Override
     public void pickFiles() {
         Intent pick = new Intent(Intent.ACTION_OPEN_DOCUMENT);
         pick.addCategory(Intent.CATEGORY_OPENABLE);
