@@ -100,6 +100,10 @@ final class Conn {
         prefs(c).edit().putInt("sortkey", o.key).putBoolean("sortasc", o.ascending).putBoolean("foldersfirst", o.foldersFirst).apply();
     }
 
+    static void clearSortOrder(Context c) {
+        prefs(c).edit().remove("sortkey").remove("sortasc").remove("foldersfirst").apply();
+    }
+
     /** Favoriten (Ordnerpfade) in der Reihenfolge, in der sie angelegt wurden. */
     static List<String> favorites(Context c) {
         return PlaceLists.parse(prefs(c).getString("favorites", ""));

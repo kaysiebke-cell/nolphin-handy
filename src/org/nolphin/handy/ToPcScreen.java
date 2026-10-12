@@ -997,6 +997,17 @@ final class ToPcScreen implements Screen {
                 .setTitle("Sortieren")
                 .setView(v)
                 .setPositiveButton("Fertig", null)
+                .setNeutralButton("Standard", new android.content.DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(android.content.DialogInterface d, int which) {
+                        // zurück zur automatischen Sortierung (Kategorien: neueste zuerst, Ordner: A bis Z)
+                        Conn.clearSortOrder(c);
+                        orderChosen = false;
+                        order = SortOrder.standard();
+                        sortEntries(entries);
+                        render();
+                    }
+                })
                 .show();
     }
 
@@ -1628,13 +1639,22 @@ final class ToPcScreen implements Screen {
                 Toast.LENGTH_SHORT).show();
     }
 
+    /** Wo der Ordner liegt: der übergeordnete Ordner, bei einem Speicher-Hauptordner der Name des Speichers statt "0". */
+    private String placeLabel(File f, Vol v) {
+        File p = f.getParentFile();
+        if (v != null && p != null && p.equals(v.root)) {
+            return v.name;
+        }
+        return parentName(f);
+    }
+
     /** Eine Zeile für einen gemerkten Ordner (Favorit oder zuletzt geöffnet). */
     private View placeRow(final String path, final boolean favorite) {
         final File f = new File(path);
         final boolean here = f.isDirectory();
         Vol v = volumeOf(f);
         String name = v != null && f.equals(v.root) ? v.name : f.getName();
-        String sub = here ? (v != null && f.equals(v.root) ? "" : parentName(f)) : "Nicht verfügbar";
+        String sub = here ? (v != null && f.equals(v.root) ? "" : placeLabel(f, v)) : "Nicht verfügbar";
         LinearLayout row = Ui.row(c, favorite ? R.drawable.ic_star : R.drawable.ic_folder,
                 favorite ? Ui.primary(c) : Ui.folder(c), name, sub, null, new View.OnClickListener() {
                     @Override
