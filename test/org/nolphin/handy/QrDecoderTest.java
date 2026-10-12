@@ -107,6 +107,120 @@ public class QrDecoderTest {
         return g;
     }
 
+    /** Löst die Abbildung aus vier Punktpaaren (a,b)->(x,y); Ergebnis: acht Werte einer Perspektivabbildung. */
+    static double[] homography(double[][] s, double[][] d) {
+        double[][] m = new double[8][9];
+        for (int i = 0; i < 4; i++) {
+            double a = s[i][0], b = s[i][1], x = d[i][0], y = d[i][1];
+            m[2 * i] = new double[] { a, b, 1, 0, 0, 0, -a * x, -b * x, x };
+            m[2 * i + 1] = new double[] { 0, 0, 0, a, b, 1, -a * y, -b * y, y };
+        }
+        for (int col = 0; col < 8; col++) {
+            int piv = col;
+            for (int r = col + 1; r < 8; r++) {
+                if (Math.abs(m[r][col]) > Math.abs(m[piv][col])) {
+                    piv = r;
+                }
+            }
+            double[] t = m[col]; m[col] = m[piv]; m[piv] = t;
+            for (int r = 0; r < 8; r++) {
+                if (r != col) {
+                    double f = m[r][col] / m[col][col];
+                    for (int c = col; c < 9; c++) {
+                        m[r][c] -= f * m[col][c];
+                    }
+                }
+            }
+        }
+        double[] h = new double[8];
+        for (int i = 0; i < 8; i++) {
+            h[i] = m[i][8] / m[i][i];
+        }
+        return h;
+    }
+
+    /**
+     * Zeichnet den Code wie ein schräg gehaltenes Handy ihn sieht: das Papier (Code mit Rand) füllt das Viereck
+     * quad (links oben, rechts oben, rechts unten, links unten, in Bildpunkten); dazu Unschärfe, Schatten, Rauschen
+     * und auf Wunsch ein weißer Mauszeiger auf dem Code nahe dem Ausrichtungsmuster.
+     */
+    static byte[] renderQuad(boolean[][] m, int W, int H, double[][] quad, double blur, double noise, double gradient,
+                             boolean cursor, long seed) {
+        int n = m.length;
+        double q = 4;   // Ruhezone in Modulen
+        double[][] mod = { { -q, -q }, { n + q, -q }, { n + q, n + q }, { -q, n + q } };
+        double[] h = homography(quad, mod);   // Bildpunkt -> Modulkoordinate
+        Random rnd = new Random(seed);
+        double[] img = new double[W * H];
+        for (int y = 0; y < H; y++) {
+            for (int x = 0; x < W; x++) {
+                double acc = 0;
+                for (int sy = 0; sy < 2; sy++) {
+                    for (int sx = 0; sx < 2; sx++) {
+                        double px = x + 0.25 + 0.5 * sx, py = y + 0.25 + 0.5 * sy;
+                        double den = h[6] * px + h[7] * py + 1;
+                        double mx = (h[0] * px + h[1] * py + h[2]) / den;
+                        double my = (h[3] * px + h[4] * py + h[5]) / den;
+                        double v = 110;   // Hintergrund
+                        if (mx >= -q && mx < n + q && my >= -q && my < n + q) {
+                            v = 235;      // Papier
+                            int ix = (int) Math.floor(mx), iy = (int) Math.floor(my);
+                            if (ix >= 0 && iy >= 0 && ix < n && iy < n && m[iy][ix]) {
+                                v = 70;
+                            }
+                            if (cursor) {
+                                // Pfeil, Spitze bei Modul (29, 30): oben links in (0,0), Maße in Modulen
+                                double ax = mx - 29, ay = my - 30;
+                                boolean in = ax >= 0 && ay >= 0 && ax <= 3.2 && ay <= 4.8
+                                        && ay >= ax * 1.5 - 0.2 && ay <= 4.6 - ax * 0.6 + (ax > 1.4 ? 0 : 3);
+                                if (in) {
+                                    v = 250;
+                                }
+                            }
+                        }
+                        acc += v;
+                    }
+                }
+                img[y * W + x] = acc / 4;
+            }
+        }
+        int r = Math.max(0, (int) Math.round(blur));
+        if (r > 0) {
+            double[] tmp = new double[W * H];
+            for (int pass = 0; pass < 2; pass++) {
+                for (int y = 0; y < H; y++) {
+                    for (int x = 0; x < W; x++) {
+                        double sum = 0; int c = 0;
+                        for (int k = -r; k <= r; k++) {
+                            int xx = x + k;
+                            if (xx >= 0 && xx < W) { sum += img[y * W + xx]; c++; }
+                        }
+                        tmp[y * W + x] = sum / c;
+                    }
+                }
+                for (int y = 0; y < H; y++) {
+                    for (int x = 0; x < W; x++) {
+                        double sum = 0; int c = 0;
+                        for (int k = -r; k <= r; k++) {
+                            int yy = y + k;
+                            if (yy >= 0 && yy < H) { sum += tmp[yy * W + x]; c++; }
+                        }
+                        img[y * W + x] = sum / c;
+                    }
+                }
+            }
+        }
+        byte[] out = new byte[W * H];
+        for (int y = 0; y < H; y++) {
+            for (int x = 0; x < W; x++) {
+                double k = 1 - gradient * 0.5 + gradient * 0.5 * (x / (double) W) - 0.1 * gradient * (y / (double) H);
+                double v = img[y * W + x] * k + rnd.nextGaussian() * noise;
+                out[y * W + x] = (byte) Math.max(0, Math.min(255, (int) Math.round(v)));
+            }
+        }
+        return out;
+    }
+
     static void check(String what, byte[] g, int W, int H, String expect) {
         runs++;
         String got = QrDecoder.decode(g, W, H);
@@ -177,6 +291,29 @@ public class QrDecoderTest {
                     } else if (angle == 0) {
                         System.out.println("Foto " + W + "x" + H + " gelesen in " + ms + " ms");
                     }
+                }
+            }
+        }
+        // Starke Schräglage (Handy schräg vor dem Bildschirm), Mauszeiger auf dem Code, Schatten, Rauschen, Unschärfe:
+        // genau die Fälle, in denen die Ausrichtungsmarke weit neben der aus den Ecken errechneten Stelle liegt.
+        {
+            String text = "nolphin://192.168.1.10:40000/?t=0123456789abcdef0123456789abcdef&v=2&f=QULDtffIw8Ed6DmETVJ7zA";
+            boolean[][] m = matrix(driver, text);
+            double[][][] quads = {
+                { { 120, 60 }, { 430, 80 }, { 420, 400 }, { 100, 420 } },    // leicht
+                { { 110, 50 }, { 450, 40 }, { 405, 410 }, { 95, 430 } },     // rechts schmaler
+                { { 150, 60 }, { 420, 70 }, { 470, 410 }, { 90, 400 } },     // oben schmaler
+                { { 160, 40 }, { 470, 120 }, { 430, 420 }, { 110, 330 } },   // gedreht und schräg
+                { { 100, 80 }, { 470, 50 }, { 430, 440 }, { 130, 400 } },    // stark schräg
+                { { 90, 40 }, { 400, 90 }, { 450, 430 }, { 120, 380 } },     // gegenläufig
+            };
+            for (int qi = 0; qi < quads.length; qi++) {
+                for (int variant = 0; variant < 3; variant++) {
+                    boolean cursor = variant != 1;
+                    double blur = variant == 2 ? 2 : 1;
+                    int W = 640, H = 480;
+                    byte[] g = renderQuad(m, W, H, quads[qi], blur, 3 + variant, 0.5, cursor, 100 + qi * 10 + variant);
+                    check("schräg " + qi + (cursor ? " mit Zeiger" : " ohne Zeiger") + " Unschärfe " + blur, g, W, H, text);
                 }
             }
         }

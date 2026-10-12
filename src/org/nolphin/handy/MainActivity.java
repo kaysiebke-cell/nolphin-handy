@@ -442,6 +442,17 @@ public class MainActivity extends Activity implements Host {
             }
             return;
         }
+        confirmConnect(link, text);
+    }
+
+    private boolean confirmShowing;
+
+    /** Fragt nach, bevor sich die App mit einem Link verbindet, der nicht aus dem eigenen QR-Scanner kommt. */
+    private void confirmConnect(Link link, final String text) {
+        if (confirmShowing) {
+            return;
+        }
+        confirmShowing = true;
         new android.app.AlertDialog.Builder(this, R.style.NolphinDialog)
                 .setTitle("Mit diesem PC verbinden?")
                 .setMessage("PC-Adresse: " + link.authority() + "\n\nNur bestätigen, wenn du diesen Code gerade selbst "
@@ -453,7 +464,62 @@ public class MainActivity extends Activity implements Host {
                         error = null;
                         Connector.connect(MainActivity.this, text, connectListener);
                     }
+                })
+                .setOnDismissListener(new android.content.DialogInterface.OnDismissListener() {
+                    @Override
+                    public void onDismiss(android.content.DialogInterface d) {
+                        confirmShowing = false;
+                    }
                 }).show();
+    }
+
+    private static long lastClipStamp = -1;
+
+    /**
+     * Liegt gerade ein Nolphin-Link in der Zwischenablage (zum Beispiel nach „Text kopieren“ im Scanner des Handys),
+     * bietet die App an, sich damit zu verbinden. Gelesen wird nur, wenn sich die Zwischenablage seit dem letzten Mal
+     * geändert hat; so bleibt die Meldung „App hat Zwischenablage eingefügt“ des Systems selten.
+     */
+    private void offerClipboardLink() {
+        try {
+            android.content.ClipboardManager cm = getSystemService(android.content.ClipboardManager.class);
+            if (cm == null || !cm.hasPrimaryClip()) {
+                return;
+            }
+            android.content.ClipDescription desc = cm.getPrimaryClipDescription();
+            if (desc == null || !desc.hasMimeType(android.content.ClipDescription.MIMETYPE_TEXT_PLAIN)) {
+                return;
+            }
+            long stamp = desc.getTimestamp();
+            if (stamp == lastClipStamp) {
+                return;
+            }
+            lastClipStamp = stamp;
+            ClipData clip = cm.getPrimaryClip();
+            if (clip == null || clip.getItemCount() == 0) {
+                return;
+            }
+            String text = clip.getItemAt(0).coerceToText(this).toString().trim();
+            if (!text.startsWith("nolphin://") && !text.startsWith("https://")) {
+                return;
+            }
+            Link link = Link.parse(text, System.currentTimeMillis() / 1000);
+            if (link.authority().equals(Conn.host(this)) && link.token.equals(Conn.token(this))
+                    && link.fingerprint.equals(Conn.pin(this))) {
+                return;   // schon so verbunden
+            }
+            confirmConnect(link, text);
+        } catch (Link.Invalid | RuntimeException ignored) {
+            // kein brauchbarer Link: nichts anbieten
+        }
+    }
+
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        if (hasFocus) {
+            offerClipboardLink();   // erst mit Fokus darf die App die Zwischenablage lesen
+        }
     }
 
     private void startSync(String action, String unused) {

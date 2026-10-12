@@ -272,6 +272,10 @@ final class QrDecoder {
                     return text;
                 }
             }
+            String text = searchGrid(dark, w, h, tl, tr, bl, v);
+            if (text != null) {
+                return text;
+            }
         }
         return null;
     }
@@ -325,6 +329,11 @@ final class QrDecoder {
             src[3] = new double[] { size - 6.5, size - 6.5 };
             dst[3] = best;
         }
+        return sampleGrid(dark, w, h, src, dst, size, version);
+    }
+
+    /** Tastet das Raster mit der Abbildung aus vier Punktpaaren ab und liest es. */
+    private static String sampleGrid(boolean[] dark, int w, int h, double[][] src, double[][] dst, int size, int version) {
         double[] hom = homography(src, dst);
         if (hom == null) {
             return null;
@@ -346,6 +355,94 @@ final class QrDecoder {
             }
         }
         return readGrid(grid, version);
+    }
+
+    /**
+     * Letzter Versuch bei schräg oder verzerrt aufgenommenen Codes. Bei starker Schräglage liegt das Ausrichtungsmuster
+     * (die kleine Marke unten rechts) weit neben der Stelle, die man aus den drei Ecken errechnet. Deshalb wird es
+     * zuerst im Bild selbst in einem weiten Bereich gesucht; die besten Funde werden einzeln ausprobiert. Danach folgt die
+     * Umgebung der Schätzung in kleinen Schritten. Ob eine Lage stimmt, entscheidet die Fehlerkorrektur des Codes selbst,
+     * deshalb gibt es keine falschen Treffer.
+     */
+    private static String searchGrid(boolean[] dark, int w, int h, double[] tl, double[] tr, double[] bl, int version) {
+        int size = 4 * version + 17;
+        double ux = (tr[0] - tl[0]) / (size - 7);
+        double uy = (tr[1] - tl[1]) / (size - 7);
+        double vx = (bl[0] - tl[0]) / (size - 7);
+        double vy = (bl[1] - tl[1]) / (size - 7);
+        boolean align = version >= 2;
+        double reach = size - 7;      // Abstand der vierten Stützstelle von der Mitte des Suchmusters oben links
+        double px = tl[0] + ux * reach + vx * reach;
+        double py = tl[1] + uy * reach + vy * reach;
+        double[][] src = new double[4][];
+        double[][] dst = new double[4][];
+        src[0] = new double[] { 3.5, 3.5 };
+        dst[0] = new double[] { tl[0], tl[1] };
+        src[1] = new double[] { size - 3.5, 3.5 };
+        dst[1] = new double[] { tr[0], tr[1] };
+        src[2] = new double[] { 3.5, size - 3.5 };
+        dst[2] = new double[] { bl[0], bl[1] };
+        src[3] = new double[] { size - (align ? 6.5 : 3.5), size - (align ? 6.5 : 3.5) };
+
+        if (align) {
+            // 1. Ausrichtungsmuster im Bild suchen (±9 Module um die Schätzung), beste Funde zuerst
+            List<double[]> found = new ArrayList<>();
+            for (double oy = -9; oy <= 9.01; oy += 0.5) {
+                for (double ox = -9; ox <= 9.01; ox += 0.5) {
+                    double cx = px + ux * ox + vx * oy;
+                    double cy = py + uy * ox + vy * oy;
+                    double score = alignmentScore(dark, w, h, cx, cy, ux, uy, vx, vy);
+                    if (score >= 14) {
+                        found.add(new double[] { cx, cy, score });
+                    }
+                }
+            }
+            found.sort((p, q) -> Double.compare(q[2], p[2]));
+            double pitch = Math.hypot(ux, uy);
+            List<double[]> picked = new ArrayList<>();
+            for (double[] f : found) {
+                boolean near = false;
+                for (double[] g : picked) {
+                    if (Math.hypot(f[0] - g[0], f[1] - g[1]) < 2.5 * pitch) {
+                        near = true;
+                        break;
+                    }
+                }
+                if (!near) {
+                    picked.add(f);
+                    if (picked.size() >= 6) {
+                        break;
+                    }
+                }
+            }
+            for (double[] f : picked) {
+                for (double ry = -1; ry <= 1.01; ry += 0.5) {
+                    for (double rx = -1; rx <= 1.01; rx += 0.5) {
+                        dst[3] = new double[] { f[0] + ux * rx + vx * ry, f[1] + uy * rx + vy * ry };
+                        String text = sampleGrid(dark, w, h, src, dst, size, version);
+                        if (text != null) {
+                            return text;
+                        }
+                    }
+                }
+            }
+        }
+        // 2. Umgebung der Schätzung, von der Mitte nach außen
+        for (double ring = 0; ring <= 4.01; ring += 0.5) {
+            for (double oy = -ring; oy <= ring + 0.01; oy += 0.5) {
+                for (double ox = -ring; ox <= ring + 0.01; ox += 0.5) {
+                    if (Math.max(Math.abs(ox), Math.abs(oy)) < ring - 0.01) {
+                        continue;
+                    }
+                    dst[3] = new double[] { px + ux * ox + vx * oy, py + uy * ox + vy * oy };
+                    String text = sampleGrid(dark, w, h, src, dst, size, version);
+                    if (text != null) {
+                        return text;
+                    }
+                }
+            }
+        }
+        return null;
     }
 
     private static double alignmentScore(boolean[] dark, int w, int h, double cx, double cy,
