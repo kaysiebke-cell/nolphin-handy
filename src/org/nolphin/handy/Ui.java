@@ -27,22 +27,24 @@ final class Ui {
     }
 
     // Ruhige, neutrale Flächen; Grün nur als Akzent (Auswahl, aktive Reiter, Fortschritt)
-    static int bg(Context c)       { return dark(c) ? 0xFF181818 : 0xFFF4F5F3; }
-    static int surface(Context c)  { return dark(c) ? 0xFF242424 : 0xFFFFFFFF; }
-    static int text(Context c)     { return dark(c) ? 0xFFEDEDED : 0xFF1C211A; }
-    static int dim(Context c)      { return dark(c) ? 0xFFB0B0B0 : 0xFF565E52; }
+    static int bg(Context c)       { return dark(c) ? 0xFF1A1C19 : 0xFFF4F6F2; }
+    static int surface(Context c)  { return dark(c) ? 0xFF20231F : 0xFFFFFFFF; }
+    static int text(Context c)     { return dark(c) ? 0xFFEAEDE6 : 0xFF1C211A; }
+    static int dim(Context c)      { return dark(c) ? 0xFFA9B2A3 : 0xFF566052; }
     static int primary(Context c)  { return dark(c) ? 0xFF8CC152 : 0xFF3F8A21; }
     static int accent(Context c)   { return primary(c); }
     static int danger(Context c)   { return dark(c) ? 0xFFE57373 : 0xFFC0392B; }
-    static int bar(Context c)      { return dark(c) ? 0xFF202020 : 0xFF3F8A21; }
+    static int bar(Context c)      { return dark(c) ? 0xFF2D4A1F : 0xFF3F8A21; }
+    /** Leiste bei Auswahl: etwas kräftigeres Grün. */
+    static int selBar(Context c)   { return dark(c) ? 0xFF3C6228 : 0xFF2F6E18; }
     static int barEnd(Context c)   { return bar(c); }
-    static int line(Context c)     { return dark(c) ? 0xFF353535 : 0xFFE2E5DF; }
+    static int line(Context c)     { return dark(c) ? 0xFF33382F : 0xFFD9DDD5; }
     /** Hinterlegung für Auswahl und kleine Schaltflächen. */
-    static int chip(Context c)     { return dark(c) ? 0xFF2F3A28 : 0xFFE6F0DD; }
+    static int chip(Context c)     { return dark(c) ? 0xFF2A3A22 : 0xFFE3EFD9; }
     /** Einheitliche Farbe für Symbole (keine Regenbogenfarben). */
-    static int iconTint(Context c) { return dark(c) ? 0xFFC4C4C4 : 0xFF4A5246; }
+    static int iconTint(Context c) { return dark(c) ? 0xFFBFC7B9 : 0xFF4D5649; }
     /** Ordner: eine ruhige Farbe für alle Ordner. */
-    static int folder(Context c)   { return dark(c) ? 0xFF8FB571 : 0xFF5E8F45; }
+    static int folder(Context c)   { return dark(c) ? 0xFF8FB571 : 0xFF6AA84F; }
 
     static final int RADIUS = 10;
 
@@ -289,7 +291,7 @@ final class Ui {
                 new android.graphics.drawable.Drawable[] { fill, ln });
         ld.setLayerHeight(1, Math.max(1, dp(c, 1) / 2 + 1));
         ld.setLayerGravity(1, Gravity.BOTTOM | Gravity.FILL_HORIZONTAL);
-        ld.setLayerInsetStart(1, dp(c, 76));
+        ld.setLayerInsetStart(1, dp(c, 64));
         android.graphics.drawable.Drawable press = pressable(c);
         if (press == null) {
             return ld;
@@ -313,133 +315,51 @@ final class Ui {
         return dot < 0 || dot == name.length() - 1 ? "" : name.substring(dot + 1).toLowerCase(Locale.ROOT);
     }
 
-    /** Gedeckte Farbe des Etiketts je Dateiart (PDF, Text, Tabelle, Präsentation, Bild, Video, Audio, Archiv, App). */
-    static int typeColor(String e) {
-        switch (e) {
-            case "pdf":
-                return 0xFFB8483F;
-            case "doc": case "docx": case "odt": case "rtf": case "txt": case "md":
-                return 0xFF3F6FAE;
-            case "xls": case "xlsx": case "ods": case "csv":
-                return 0xFF2F7D4F;
-            case "ppt": case "pptx": case "odp":
-                return 0xFFBF6A2E;
-            case "jpg": case "jpeg": case "png": case "gif": case "webp": case "heic": case "bmp": case "svg":
-                return 0xFF7A5C9E;
-            case "mp4": case "mkv": case "webm": case "3gp": case "mov": case "avi":
-                return 0xFF9E4565;
-            case "mp3": case "m4a": case "wav": case "ogg": case "flac": case "aac": case "opus":
-                return 0xFF2C7F7B;
-            case "zip": case "rar": case "7z": case "gz": case "tar": case "xz":
-                return 0xFF7D6E48;
-            case "apk":
-                return 0xFF5E8A33;
-            default:
-                return 0xFF6B7178;
-        }
-    }
-
-    /** Ordnersymbol: gleiche Kachelform wie die Dateisymbole, damit die Liste ruhig und einheitlich wirkt. */
+    /** Ordnersymbol: einfarbig in Mint-Grün. */
     static android.graphics.drawable.Drawable folderIcon(Context c) {
-        return new TypeIcon(c, null);
+        return tinted(c, R.drawable.ic_folder, folder(c));
     }
 
-    /** Dateisymbol: klare Kachel mit der Endung in großen Buchstaben (PDF, DOCX …), Farbe nach Dateiart. */
+    /** Dateisymbol: einfarbiges Linien-Symbol nach Dateiart (die Endung steht im Namen). */
     static android.graphics.drawable.Drawable typeIcon(Context c, String ext) {
-        return new TypeIcon(c, ext);
+        int res;
+        switch (ext) {
+            case "pdf":
+                res = R.drawable.ic_pdf;
+                break;
+            case "doc": case "docx": case "odt": case "rtf": case "txt": case "md": case "odp": case "ppt": case "pptx":
+                res = R.drawable.ic_doc;
+                break;
+            case "xls": case "xlsx": case "ods": case "csv":
+                res = R.drawable.ic_table;
+                break;
+            case "jpg": case "jpeg": case "png": case "gif": case "webp": case "heic": case "bmp": case "svg":
+                res = R.drawable.ic_image;
+                break;
+            case "mp4": case "mkv": case "webm": case "3gp": case "mov": case "avi":
+                res = R.drawable.ic_video;
+                break;
+            case "mp3": case "m4a": case "wav": case "ogg": case "flac": case "aac": case "opus":
+                res = R.drawable.ic_audio;
+                break;
+            case "zip": case "rar": case "7z": case "gz": case "tar": case "xz":
+                res = R.drawable.ic_zip;
+                break;
+            case "step": case "stp": case "stl": case "obj": case "3mf": case "dxf": case "dwg": case "iges": case "igs":
+                res = R.drawable.ic_box;
+                break;
+            case "apk":
+                res = R.drawable.ic_apps;
+                break;
+            default:
+                res = R.drawable.ic_file;
+        }
+        return tinted(c, res, iconTint(c));
     }
 
-    private static final class TypeIcon extends android.graphics.drawable.Drawable {
-        private final String label;   // null = Ordner
-        private final int accent;
-        private final int fill;
-        private final float density;
-        private final android.graphics.Paint paint = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
-        private final android.graphics.Path glyph;
-
-        TypeIcon(Context c, String ext) {
-            boolean night = dark(c);
-            int base;
-            if (ext == null) {
-                label = null;
-                base = folder(c);
-                glyph = new android.graphics.Path();
-                // Ordner (24er-Raster): Reiter links oben, Körper darunter
-                glyph.moveTo(3, 7); glyph.lineTo(3, 18); glyph.lineTo(21, 18); glyph.lineTo(21, 9);
-                glyph.lineTo(11.5f, 9); glyph.lineTo(9.5f, 6); glyph.lineTo(4, 6); glyph.close();
-            } else {
-                String e = ext.toUpperCase(Locale.ROOT);
-                label = e.isEmpty() ? "?" : e.length() > 4 ? e.substring(0, 4) : e;
-                base = typeColor(ext);
-                glyph = null;
-            }
-            // Schrift und Rand in kräftiger Farbe, Fläche nur ganz leicht getönt (hoher Kontrast)
-            accent = night ? blend(base, 0xFFFFFFFF, 0.35f) : blend(base, 0xFF000000, 0.15f);
-            fill = blend(surface(c), base, night ? 0.22f : 0.12f);
-            density = c.getResources().getDisplayMetrics().density;
-        }
-
-        private static int blend(int a, int b, float t) {
-            int r = Math.round(Color.red(a) * (1 - t) + Color.red(b) * t);
-            int g = Math.round(Color.green(a) * (1 - t) + Color.green(b) * t);
-            int bl = Math.round(Color.blue(a) * (1 - t) + Color.blue(b) * t);
-            return Color.rgb(r, g, bl);
-        }
-
-        @Override
-        public void draw(android.graphics.Canvas cv) {
-            android.graphics.Rect b = getBounds();
-            float side = Math.min(b.width(), b.height());
-            float x = b.left + (b.width() - side) / 2f;
-            float y = b.top + (b.height() - side) / 2f;
-            float stroke = Math.max(1.5f, 1.5f * density);
-            float r = side * 0.16f;
-            paint.setStyle(android.graphics.Paint.Style.FILL);
-            paint.setColor(fill);
-            cv.drawRoundRect(x, y, x + side, y + side, r, r, paint);
-            paint.setStyle(android.graphics.Paint.Style.STROKE);
-            paint.setStrokeWidth(stroke);
-            paint.setColor(accent);
-            float h = stroke / 2f;
-            cv.drawRoundRect(x + h, y + h, x + side - h, y + side - h, r, r, paint);
-            if (glyph != null) {
-                cv.save();
-                cv.translate(x + side * 0.16f, y + side * 0.16f);
-                float k = side * 0.68f / 24f;
-                cv.scale(k, k);
-                paint.setStyle(android.graphics.Paint.Style.FILL);
-                paint.setColor(accent);
-                cv.drawPath(glyph, paint);
-                cv.restore();
-                return;
-            }
-            paint.setStyle(android.graphics.Paint.Style.FILL);
-            paint.setColor(accent);
-            paint.setTypeface(android.graphics.Typeface.create("sans-serif", android.graphics.Typeface.BOLD));
-            paint.setTextAlign(android.graphics.Paint.Align.CENTER);
-            float ts = side * (label.length() <= 3 ? 0.34f : 0.27f);
-            paint.setTextSize(ts);
-            float tw = paint.measureText(label);
-            if (tw > side * 0.84f) {
-                paint.setTextSize(ts * side * 0.84f / tw);
-            }
-            android.graphics.Paint.FontMetrics fm = paint.getFontMetrics();
-            cv.drawText(label, x + side / 2f, y + side / 2f - (fm.ascent + fm.descent) / 2f, paint);
-        }
-
-        @Override
-        public void setAlpha(int a) {
-            paint.setAlpha(a);
-        }
-
-        @Override
-        public void setColorFilter(android.graphics.ColorFilter f) {
-            paint.setColorFilter(f);
-        }
-
-        @Override
-        public int getOpacity() {
-            return android.graphics.PixelFormat.TRANSLUCENT;
-        }
+    private static android.graphics.drawable.Drawable tinted(Context c, int res, int color) {
+        android.graphics.drawable.Drawable d = c.getDrawable(res).mutate();
+        d.setTint(color);
+        return d;
     }
 }

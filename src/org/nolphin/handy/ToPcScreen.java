@@ -2,6 +2,7 @@ package org.nolphin.handy;
 
 import android.app.AlertDialog;
 import android.content.Context;
+import android.graphics.Color;
 import android.database.Cursor;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
@@ -96,6 +97,7 @@ final class ToPcScreen implements Screen {
     private final LinearLayout crumbs;
     private final HorizontalScrollView crumbScroll;
     private final TextView usage;
+    private final LinearLayout head;
     private final LinearLayout selectBar;
     private final TextView selCount;
     private final FrameLayout body;
@@ -105,8 +107,6 @@ final class ToPcScreen implements Screen {
     private final GridView grid;
     private final TextView empty;
     private final LinearLayout permCard;
-    private final LinearLayout footer;
-    private final TextView footerText;
     private final ImageView newFolder;
     private final LinearLayout pasteBar;
     private final TextView pasteText;
@@ -175,14 +175,15 @@ final class ToPcScreen implements Screen {
         root.setBackgroundColor(Ui.bg(c));
         int p = Ui.dp(c, 16);
 
-        LinearLayout head = new LinearLayout(c);
+        head = new LinearLayout(c);
         head.setOrientation(LinearLayout.HORIZONTAL);
         head.setGravity(Gravity.CENTER_VERTICAL);
-        head.setPadding(p, p, p, Ui.dp(c, 4));
-        back = Ui.icon(c, R.drawable.ic_back, Ui.primary(c), 24);
-        back.setPadding(Ui.dp(c, 6), Ui.dp(c, 6), Ui.dp(c, 6), Ui.dp(c, 6));
-        LinearLayout.LayoutParams blp = new LinearLayout.LayoutParams(Ui.dp(c, 40), Ui.dp(c, 40));
-        blp.rightMargin = Ui.dp(c, 6);
+        head.setBackgroundColor(Ui.surface(c));
+        head.setPadding(Ui.dp(c, 8), 0, Ui.dp(c, 4), 0);
+        back = Ui.icon(c, R.drawable.ic_back, Ui.iconTint(c), 24);
+        back.setPadding(Ui.dp(c, 10), Ui.dp(c, 10), Ui.dp(c, 10), Ui.dp(c, 10));
+        LinearLayout.LayoutParams blp = new LinearLayout.LayoutParams(Ui.dp(c, 44), Ui.dp(c, 44));
+        blp.rightMargin = Ui.dp(c, 4);
         back.setLayoutParams(blp);
         back.setContentDescription("Zurück");
         back.setVisibility(View.GONE);
@@ -193,13 +194,13 @@ final class ToPcScreen implements Screen {
             }
         });
         head.addView(back);
-        title = Ui.label(c, "Zum PC", 22, Ui.text(c), true);
+        title = Ui.label(c, "Zum PC", 18, Ui.text(c), true);
         title.setSingleLine(true);
         title.setEllipsize(android.text.TextUtils.TruncateAt.END);
         head.addView(title, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
-        newFolder = Ui.icon(c, R.drawable.ic_newfolder, Ui.primary(c), 24);
-        newFolder.setPadding(Ui.dp(c, 6), Ui.dp(c, 6), Ui.dp(c, 6), Ui.dp(c, 6));
-        newFolder.setLayoutParams(new LinearLayout.LayoutParams(Ui.dp(c, 40), Ui.dp(c, 40)));
+        newFolder = Ui.icon(c, R.drawable.ic_newfolder, Ui.iconTint(c), 24);
+        newFolder.setPadding(Ui.dp(c, 10), Ui.dp(c, 10), Ui.dp(c, 10), Ui.dp(c, 10));
+        newFolder.setLayoutParams(new LinearLayout.LayoutParams(Ui.dp(c, 44), Ui.dp(c, 44)));
         newFolder.setContentDescription("Neuer Ordner");
         newFolder.setVisibility(View.GONE);
         newFolder.setOnClickListener(new View.OnClickListener() {
@@ -209,9 +210,9 @@ final class ToPcScreen implements Screen {
             }
         });
         head.addView(newFolder);
-        toggle = Ui.icon(c, useGrid ? R.drawable.ic_list : R.drawable.ic_grid, Ui.primary(c), 24);
-        toggle.setPadding(Ui.dp(c, 6), Ui.dp(c, 6), Ui.dp(c, 6), Ui.dp(c, 6));
-        toggle.setLayoutParams(new LinearLayout.LayoutParams(Ui.dp(c, 40), Ui.dp(c, 40)));
+        toggle = Ui.icon(c, useGrid ? R.drawable.ic_list : R.drawable.ic_grid, Ui.iconTint(c), 24);
+        toggle.setPadding(Ui.dp(c, 10), Ui.dp(c, 10), Ui.dp(c, 10), Ui.dp(c, 10));
+        toggle.setLayoutParams(new LinearLayout.LayoutParams(Ui.dp(c, 44), Ui.dp(c, 44)));
         toggle.setContentDescription("Ansicht wechseln");
         toggle.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -222,13 +223,14 @@ final class ToPcScreen implements Screen {
             }
         });
         head.addView(toggle);
-        root.addView(head);
+        root.addView(head, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, Ui.dp(c, 52)));
+        root.addView(divider());
 
         LinearLayout searchRow = new LinearLayout(c);
         searchRow.setOrientation(LinearLayout.HORIZONTAL);
         searchRow.setGravity(Gravity.CENTER_VERTICAL);
-        searchRow.setBackground(Ui.outlined(c, Ui.surface(c)));
-        searchRow.setPadding(Ui.dp(c, 14), 0, Ui.dp(c, 6), 0);
+        searchRow.setBackgroundColor(Ui.bg(c));
+        searchRow.setPadding(Ui.dp(c, 16), 0, Ui.dp(c, 8), 0);
         searchRow.addView(Ui.icon(c, R.drawable.ic_search, Ui.dim(c), 20));
         search = new EditText(c);
         search.setHint("Auf dem Handy suchen");
@@ -271,13 +273,14 @@ final class ToPcScreen implements Screen {
         searchRow.addView(clear);
         LinearLayout.LayoutParams slp = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, Ui.dp(c, 44));
-        slp.setMargins(p, 0, p, Ui.dp(c, 6));
         root.addView(searchRow, slp);
+        root.addView(divider());
 
         crumbBar = new LinearLayout(c);
         crumbBar.setOrientation(LinearLayout.HORIZONTAL);
         crumbBar.setGravity(Gravity.CENTER_VERTICAL);
-        crumbBar.setPadding(p, 0, p, Ui.dp(c, 2));
+        crumbBar.setPadding(Ui.dp(c, 8), 0, p, 0);
+        crumbBar.setBackgroundColor(Ui.bg(c));
         HorizontalScrollView scroll = new HorizontalScrollView(c);
         crumbScroll = scroll;
         scroll.setHorizontalScrollBarEnabled(false);
@@ -294,9 +297,8 @@ final class ToPcScreen implements Screen {
                 }
             }
         });
-        ImageView homeBtn = Ui.icon(c, R.drawable.ic_home, Ui.primary(c), 48);
+        ImageView homeBtn = Ui.icon(c, R.drawable.ic_home, Ui.primary(c), 44);
         homeBtn.setPadding(Ui.dp(c, 10), Ui.dp(c, 10), Ui.dp(c, 10), Ui.dp(c, 10));
-        homeBtn.setBackground(Ui.round(c, Ui.chip(c), 10));
         homeBtn.setContentDescription("Übersicht");
         homeBtn.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -307,50 +309,79 @@ final class ToPcScreen implements Screen {
         
         crumbBar.addView(homeBtn);
         crumbBar.addView(scroll, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
-        usage = Ui.label(c, "", 12, Ui.primary(c), true);
-        usage.setBackground(Ui.round(c, Ui.chip(c), 8));
-        usage.setPadding(Ui.dp(c, 10), Ui.dp(c, 4), Ui.dp(c, 10), Ui.dp(c, 4));
+        usage = Ui.label(c, "", 12, Ui.dim(c), false);
         crumbBar.addView(usage);
         crumbBar.setVisibility(View.GONE);
         root.addView(crumbBar);
+        root.addView(divider());
 
         HorizontalScrollView chipScroll = new HorizontalScrollView(c);
         chipScroll.setHorizontalScrollBarEnabled(false);
         docChips = new LinearLayout(c);
         docChips.setOrientation(LinearLayout.HORIZONTAL);
-        docChips.setPadding(p, Ui.dp(c, 2), p, Ui.dp(c, 8));
+        docChips.setPadding(Ui.dp(c, 4), 0, p, 0);
+        chipScroll.setBackgroundColor(Ui.bg(c));
         chipScroll.addView(docChips);
         chipScroll.setVisibility(View.GONE);
         docChipScroll = chipScroll;
         root.addView(chipScroll);
 
+        // Auswahl: die Leiste oben wird grün und zeigt die Funktionen (wie im Systemmanager)
         selectBar = new LinearLayout(c);
         selectBar.setOrientation(LinearLayout.HORIZONTAL);
         selectBar.setGravity(Gravity.CENTER_VERTICAL);
-        selectBar.setPadding(p, 0, p, Ui.dp(c, 4));
+        selectBar.setBackgroundColor(Ui.selBar(c));
+        selectBar.setPadding(Ui.dp(c, 8), 0, Ui.dp(c, 4), 0);
         selectBar.setVisibility(View.GONE);
-        ImageView closeSel = Ui.icon(c, R.drawable.ic_close, Ui.primary(c), 24);
-        closeSel.setPadding(Ui.dp(c, 4), Ui.dp(c, 4), Ui.dp(c, 4), Ui.dp(c, 4));
-        closeSel.setLayoutParams(new LinearLayout.LayoutParams(Ui.dp(c, 36), Ui.dp(c, 36)));
-        closeSel.setContentDescription("Auswahl beenden");
-        closeSel.setOnClickListener(new View.OnClickListener() {
+        selectBar.addView(barIcon(R.drawable.ic_close, "Auswahl beenden", new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 selected.clear();
                 render();
             }
-        });
-        selectBar.addView(closeSel);
-        selCount = Ui.label(c, "", 14, Ui.text(c), true);
-        selCount.setPadding(Ui.dp(c, 6), 0, 0, 0);
+        }));
+        selCount = Ui.label(c, "", 17, Color.WHITE, true);
+        selCount.setSingleLine(true);
+        selCount.setPadding(Ui.dp(c, 4), 0, 0, 0);
         selectBar.addView(selCount, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
-        selectBar.addView(chip("Alle auswählen", new View.OnClickListener() {
+        selectBar.addView(barIcon(R.drawable.ic_checks, "Alle auswählen", new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 selectAll();
             }
         }));
-        root.addView(selectBar);
+        selectBar.addView(barIcon(R.drawable.ic_upload, "An den PC senden", new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                sendSelected();
+            }
+        }));
+        selectBar.addView(barIcon(R.drawable.ic_copy, "Kopieren", new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                markClip(false);
+            }
+        }));
+        selectBar.addView(barIcon(R.drawable.ic_move, "Verschieben", new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                markClip(true);
+            }
+        }));
+        selectBar.addView(barIcon(R.drawable.ic_trash, "Löschen", new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                askDelete();
+            }
+        }));
+        selectBar.addView(barIcon(R.drawable.ic_more, "Mehr: Umbenennen, Eigenschaften", new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                more();
+            }
+        }));
+        root.addView(selectBar, root.indexOfChild(head) + 1, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, Ui.dp(c, 52)));
 
         body = new FrameLayout(c);
         root.addView(body, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1));
@@ -421,49 +452,6 @@ final class ToPcScreen implements Screen {
         permCard.setLayoutParams(plp);
         permCard.setVisibility(View.GONE);
         body.addView(permCard);
-
-        footer = new LinearLayout(c);
-        footer.setOrientation(LinearLayout.VERTICAL);
-        footer.setBackgroundColor(Ui.surface(c));
-        footer.setElevation(Ui.dp(c, 6));
-        footerText = Ui.label(c, "", 14, Ui.text(c), true);
-        footerText.setPadding(p, Ui.dp(c, 8), p, Ui.dp(c, 2));
-        footer.addView(footerText);
-        LinearLayout actions = new LinearLayout(c);
-        actions.setOrientation(LinearLayout.HORIZONTAL);
-        actions.addView(action(R.drawable.ic_upload, "An PC", false, new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                sendSelected();
-            }
-        }));
-        actions.addView(action(R.drawable.ic_copy, "Kopieren", false, new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                markClip(false);
-            }
-        }));
-        actions.addView(action(R.drawable.ic_move, "Verschieben", false, new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                markClip(true);
-            }
-        }));
-        actions.addView(action(R.drawable.ic_trash, "Löschen", true, new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                askDelete();
-            }
-        }));
-        actions.addView(action(R.drawable.ic_more, "Mehr", false, new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                more();
-            }
-        }));
-        footer.addView(actions);
-        footer.setVisibility(View.GONE);
-        root.addView(footer);
 
         pasteBar = new LinearLayout(c);
         pasteBar.setOrientation(LinearLayout.HORIZONTAL);
@@ -703,7 +691,8 @@ final class ToPcScreen implements Screen {
             case 1: return t + "=" + MediaStore.Files.FileColumns.MEDIA_TYPE_AUDIO;
             case 2: return t + "=" + MediaStore.Files.FileColumns.MEDIA_TYPE_VIDEO;
             default: return t + "=" + MediaStore.Files.FileColumns.MEDIA_TYPE_NONE + " AND " + m + " IS NOT NULL AND "
-                    + m + " <> 'application/vnd.android.package-archive' AND "
+                    + m + " <> 'application/vnd.android.package-archive' AND " + m + " NOT LIKE 'image/%' AND "
+                    + m + " NOT LIKE 'video/%' AND " + m + " NOT LIKE 'audio/%' AND "
                     + MediaStore.Files.FileColumns.DATA + " NOT LIKE '%/Android/%' AND "
                     + MediaStore.Files.FileColumns.DISPLAY_NAME + " NOT LIKE '.%'";
         }
@@ -736,13 +725,16 @@ final class ToPcScreen implements Screen {
         for (int i = 0; i < DOC_FILTERS.length; i++) {
             final int k = i;
             boolean on = i == docFilter;
-            TextView t = Ui.label(c, DOC_FILTERS[i], 15, on ? Ui.primary(c) : Ui.dim(c), true);
-            t.setBackground(on ? Ui.round(c, Ui.chip(c), 18) : Ui.outlined(c, Ui.surface(c)));
-            t.setPadding(Ui.dp(c, 16), Ui.dp(c, 9), Ui.dp(c, 16), Ui.dp(c, 9));
-            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT);
-            lp.rightMargin = Ui.dp(c, 8);
-            t.setOnClickListener(new View.OnClickListener() {
+            LinearLayout tab = new LinearLayout(c);
+            tab.setOrientation(LinearLayout.VERTICAL);
+            tab.setBackground(Ui.pressable(c));
+            TextView t = Ui.label(c, DOC_FILTERS[i], 15, on ? Ui.primary(c) : Ui.dim(c), on);
+            t.setPadding(Ui.dp(c, 16), Ui.dp(c, 12), Ui.dp(c, 16), Ui.dp(c, 10));
+            tab.addView(t);
+            View bar = new View(c);
+            bar.setBackgroundColor(on ? Ui.primary(c) : 0x00000000);
+            tab.addView(bar, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, Ui.dp(c, 3)));
+            tab.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
                     docFilter = k;
@@ -750,7 +742,7 @@ final class ToPcScreen implements Screen {
                     applyQuery();
                 }
             });
-            docChips.addView(t, lp);
+            docChips.addView(tab);
         }
     }
 
@@ -1125,23 +1117,21 @@ final class ToPcScreen implements Screen {
 
     // ---- Dateiverwaltung: Kopieren, Verschieben, Löschen, Umbenennen, Neuer Ordner ------------
 
-    private View action(int icon, String text, boolean danger, View.OnClickListener l) {
-        LinearLayout a = new LinearLayout(c);
-        a.setOrientation(LinearLayout.VERTICAL);
-        a.setGravity(Gravity.CENTER);
-        a.setBackground(Ui.pressable(c));
-        a.setPadding(0, Ui.dp(c, 6), 0, Ui.dp(c, 8));
-        int col = danger ? Ui.danger(c) : Ui.primary(c);
-        ImageView i = Ui.icon(c, icon, col, 24);
-        i.setLayoutParams(new LinearLayout.LayoutParams(Ui.dp(c, 24), Ui.dp(c, 24)));
-        a.addView(i);
-        TextView t = Ui.label(c, text, 12, danger ? Ui.danger(c) : Ui.text(c), false);
-        t.setGravity(Gravity.CENTER);
-        t.setSingleLine(true);
-        a.addView(t);
-        a.setOnClickListener(l);
-        a.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
-        return a;
+    private View barIcon(int icon, String description, View.OnClickListener l) {
+        ImageView v = Ui.icon(c, icon, Color.WHITE, 24);
+        v.setPadding(Ui.dp(c, 10), Ui.dp(c, 10), Ui.dp(c, 10), Ui.dp(c, 10));
+        v.setLayoutParams(new LinearLayout.LayoutParams(Ui.dp(c, 44), Ui.dp(c, 44)));
+        v.setContentDescription(description);
+        v.setBackground(Ui.pressable(c));
+        v.setOnClickListener(l);
+        return v;
+    }
+
+    private View divider() {
+        View v = new View(c);
+        v.setBackgroundColor(Ui.line(c));
+        v.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, Math.max(1, Ui.dp(c, 1) / 2 + 1)));
+        return v;
     }
 
     private List<File> selectedFiles() {
@@ -1264,6 +1254,30 @@ final class ToPcScreen implements Screen {
                             askRename(f);
                         } else {
                             showProperties(f);
+                        }
+                    }
+                }).show();
+    }
+
+    /** Der Knopf ⋮ in jeder Zeile: alle Funktionen für dieses eine Element, gut lesbar in einer Liste. */
+    private void rowMenu(final Entry e) {
+        final File f = e.file;
+        final String[] names = { "An den PC senden" + (e.dir ? " (als ZIP)" : ""), "Kopieren", "Verschieben",
+                "Umbenennen", "Eigenschaften", "Löschen" };
+        new AlertDialog.Builder(host.activity())
+                .setTitle(f.getName())
+                .setItems(names, new android.content.DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(android.content.DialogInterface d, int which) {
+                        selected.clear();
+                        selected.put(f.getPath(), e.size);
+                        switch (which) {
+                            case 0: sendSelected(); break;
+                            case 1: markClip(false); break;
+                            case 2: markClip(true); break;
+                            case 3: askRename(f); break;
+                            case 4: selected.clear(); showProperties(f); break;
+                            default: askDelete(); break;
                         }
                     }
                 }).show();
@@ -1415,7 +1429,6 @@ final class ToPcScreen implements Screen {
             empty.setVisibility(View.GONE);
             crumbBar.setVisibility(View.GONE);
             selectBar.setVisibility(View.GONE);
-            footer.setVisibility(View.GONE);
             pasteBar.setVisibility(View.GONE);
             newFolder.setVisibility(View.GONE);
             docChipScroll.setVisibility(View.GONE);
@@ -1429,7 +1442,6 @@ final class ToPcScreen implements Screen {
         back.setVisibility(home ? View.GONE : View.VISIBLE);
         showCrumbs(sel);
         selectBar.setVisibility(sel ? View.VISIBLE : View.GONE);
-        selCount.setText(selected.size() + " ausgewählt");
 
         boolean showHome = home && !searching;
         homeScroll.setVisibility(showHome ? View.VISIBLE : View.GONE);
@@ -1451,12 +1463,12 @@ final class ToPcScreen implements Screen {
         empty.setText(msg == null ? "" : msg);
         empty.setVisibility(msg == null ? View.GONE : View.VISIBLE);
 
-        footer.setVisibility(sel ? View.VISIBLE : View.GONE);
         long total = 0;
-        for (long s : selected.values()) {
-            total += s;
+        for (long sz : selected.values()) {
+            total += sz;
         }
-        footerText.setText(selected.size() + (selected.size() == 1 ? " Element" : " Elemente") + (total > 0 ? " · " + Ui.size(total) : ""));
+        selCount.setText(selected.size() + " ausgewählt" + (total > 0 ? " · " + Ui.size(total) : ""));
+        head.setVisibility(sel ? View.GONE : View.VISIBLE);
         pasteBar.setVisibility(clip != null && mode == FOLDER && !sel ? View.VISIBLE : View.GONE);
         if (clip != null) {
             pasteText.setText(clip.size() + (clip.size() == 1 ? " Element " : " Elemente ") + (clipMove ? "verschieben" : "kopieren"));
@@ -1590,15 +1602,12 @@ final class ToPcScreen implements Screen {
                 || e.equals("csv");
     }
 
-    /**
-     * Symbol des Eintrags: Ordner einheitlich, Dateien als Blatt mit Endung (PDF, DOCX …). Fotos und Videos zeigen
-     * ihr Vorschaubild, Apps (APK) ihr eigenes Symbol.
-     */
+    /** Symbol des Eintrags: Ordner und Dateien einfarbig; Fotos und Videos zeigen ihr Vorschaubild, Apps ihr Symbol. */
     private ImageView iconOf(Entry e) {
+        final ImageView v = new ImageView(c);
+        v.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+        v.setPadding(Ui.dp(c, 4), Ui.dp(c, 4), Ui.dp(c, 4), Ui.dp(c, 4));
         if (e.pkg != null) {
-            ImageView v = new ImageView(c);
-            v.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
-            v.setPadding(Ui.dp(c, 6), Ui.dp(c, 2), Ui.dp(c, 6), Ui.dp(c, 2));
             try {
                 v.setImageDrawable(c.getPackageManager().getApplicationIcon(e.pkg));
                 return v;
@@ -1606,16 +1615,15 @@ final class ToPcScreen implements Screen {
             }
         }
         if (e.dir) {
-            return folderTile48();
+            v.setImageDrawable(Ui.folderIcon(c));
+            return v;
         }
         String x = Ui.ext(e.file.getName());
-        final ImageView v = new ImageView(c);
-        v.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
-        v.setPadding(Ui.dp(c, 2), Ui.dp(c, 2), Ui.dp(c, 2), Ui.dp(c, 2));
         v.setImageDrawable(Ui.typeIcon(c, x));
         String kind = isImage(x) ? "image" : isVideo(x) ? "video" : x.equals("apk") ? "apk" : null;
         if (kind != null) {
-            v.setBackground(Ui.round(c, 0x00000000, 8));
+            v.setPadding(0, 0, 0, 0);
+            v.setBackground(Ui.round(c, 0x00000000, 4));
             v.setClipToOutline(true);
             v.setOutlineProvider(ViewOutlineProvider.BACKGROUND);
             Thumbs.loadFile(c, e.file, kind, 168, v, new Runnable() {
@@ -1625,6 +1633,22 @@ final class ToPcScreen implements Screen {
             });
         }
         return v;
+    }
+
+    /** Kästchen für die Auswahl. */
+    private View checkbox(boolean on) {
+        TextView t = new TextView(c);
+        t.setGravity(Gravity.CENTER);
+        t.setTextSize(14);
+        t.setTextColor(Ui.dark(c) ? 0xFF10200A : Color.WHITE);
+        android.graphics.drawable.GradientDrawable g = new android.graphics.drawable.GradientDrawable();
+        g.setCornerRadius(Ui.dp(c, 3));
+        g.setColor(on ? Ui.primary(c) : 0x00000000);
+        g.setStroke(Ui.dp(c, 2), on ? Ui.primary(c) : Ui.dim(c));
+        t.setBackground(g);
+        t.setText(on ? "✓" : "");
+        t.setLayoutParams(new LinearLayout.LayoutParams(Ui.dp(c, 22), Ui.dp(c, 22)));
+        return t;
     }
 
     private View tile(View top, String name, String sub, int subColor, boolean picked) {
@@ -1673,32 +1697,48 @@ final class ToPcScreen implements Screen {
 
     private View entryRow(Entry e) {
         boolean picked = selected.containsKey(e.path());
+        boolean selecting = !selected.isEmpty();
         LinearLayout row = new LinearLayout(c);
         row.setOrientation(LinearLayout.HORIZONTAL);
         row.setGravity(Gravity.CENTER_VERTICAL);
         row.setBackground(Ui.listRowBg(c, picked));
-        row.setPadding(Ui.dp(c, 14), Ui.dp(c, 8), Ui.dp(c, 12), Ui.dp(c, 8));
-        row.setLayoutParams(new AbsListView.LayoutParams(AbsListView.LayoutParams.MATCH_PARENT, Ui.dp(c, 72)));
-        ImageView ic = picked ? symbol(R.drawable.ic_check, Ui.primary(c)) : iconOf(e);
-        row.addView(ic, new LinearLayout.LayoutParams(Ui.dp(c, 48), Ui.dp(c, 48)));
+        row.setPadding(Ui.dp(c, 14), Ui.dp(c, 4), Ui.dp(c, 4), Ui.dp(c, 4));
+        row.setLayoutParams(new AbsListView.LayoutParams(AbsListView.LayoutParams.MATCH_PARENT, Ui.dp(c, 60)));
+        if (selecting) {
+            LinearLayout.LayoutParams cp = new LinearLayout.LayoutParams(Ui.dp(c, 22), Ui.dp(c, 22));
+            cp.rightMargin = Ui.dp(c, 14);
+            row.addView(checkbox(picked), cp);
+        }
+        row.addView(iconOf(e), new LinearLayout.LayoutParams(Ui.dp(c, 36), Ui.dp(c, 36)));
         LinearLayout text = new LinearLayout(c);
         text.setOrientation(LinearLayout.VERTICAL);
-        text.setPadding(Ui.dp(c, 14), 0, Ui.dp(c, 6), 0);
-        TextView n = Ui.label(c, nameOf(e), 16, Ui.text(c), false);
+        text.setPadding(Ui.dp(c, 14), 0, Ui.dp(c, 4), 0);
+        TextView n = Ui.label(c, nameOf(e), 15, Ui.text(c), false);
         n.setMaxLines(1);
         n.setEllipsize(android.text.TextUtils.TruncateAt.MIDDLE);
         text.addView(n);
-        // Größe und Datum zusammen unter dem Namen, damit alles in einer Spalte steht
         String sub = e.dir ? subOf(e)
                 : subOf(e) + " · " + new SimpleDateFormat("dd.MM.yyyy", Locale.GERMANY).format(new Date(e.modified));
-        TextView s = Ui.label(c, sub, 13, Ui.dim(c), false);
+        TextView s = Ui.label(c, sub, 12, Ui.dim(c), false);
         s.setSingleLine(true);
         s.setEllipsize(android.text.TextUtils.TruncateAt.END);
-        s.setPadding(0, Ui.dp(c, 2), 0, 0);
+        s.setPadding(0, Ui.dp(c, 1), 0, 0);
         text.addView(s);
         row.addView(text, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
-        if (e.dir) {
-            row.addView(Ui.icon(c, R.drawable.ic_chevron, Ui.dim(c), 20));
+        if (e.pkg == null && !selecting) {
+            ImageView more = Ui.icon(c, R.drawable.ic_more, Ui.dim(c), 24);
+            more.setPadding(Ui.dp(c, 12), Ui.dp(c, 12), Ui.dp(c, 12), Ui.dp(c, 12));
+            more.setLayoutParams(new LinearLayout.LayoutParams(Ui.dp(c, 48), Ui.dp(c, 48)));
+            more.setContentDescription("Funktionen für " + e.file.getName());
+            more.setBackground(Ui.pressable(c));
+            final Entry en = e;
+            more.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    rowMenu(en);
+                }
+            });
+            row.addView(more);
         }
         return row;
     }
