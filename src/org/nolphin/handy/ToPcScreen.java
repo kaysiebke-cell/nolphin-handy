@@ -176,6 +176,7 @@ final class ToPcScreen implements Screen {
     private final String[] catSub = { "", "", "", "" };
     private String downloadsSub = "";
     private String appsSub = "";
+    private String trashSub = "";
     private final List<Entry> all = new ArrayList<>();       // Inhalt des Ordners oder der Kategorie
     private final List<Entry> entries = new ArrayList<>();   // was angezeigt wird (gefiltert oder Suchergebnis)
     private final Map<String, Long> selected = new LinkedHashMap<>();   // Pfad → Größe
@@ -672,6 +673,13 @@ final class ToPcScreen implements Screen {
                         openFolder(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS));
                     }
                 }));
+        Ui.addRow(c, places, Ui.row(c, R.drawable.ic_trash, Ui.iconTint(c), "Papierkorb", trashSub, null,
+                new View.OnClickListener() {
+                    @Override
+                    public void onClick(View x) {
+                        openTrash();
+                    }
+                }));
         homeBox.addView(places);
         List<String> favs = Conn.favorites(c);
         if (!favs.isEmpty()) {
@@ -746,6 +754,13 @@ final class ToPcScreen implements Screen {
                     @Override
                     public void onClick(View v) {
                         openFolder(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS));
+                    }
+                }));
+        Ui.addRow(c, quick, Ui.row(c, R.drawable.ic_trash, Ui.iconTint(c), "Papierkorb", trashSub, null,
+                new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        openTrash();
                     }
                 }));
         Ui.addRow(c, quick, Ui.row(c, R.drawable.ic_apps, Ui.iconTint(c), "Apps", appsSub, null,
@@ -916,12 +931,20 @@ final class ToPcScreen implements Screen {
                 final String dls = dl == null ? "" : dl.length + " Elemente";
                 int na = appFolders().size();
                 final String apps = na + (na == 1 ? " App" : " Apps");
+                List<File> rts = new ArrayList<>();
+                for (Vol vv : new ArrayList<>(vols)) {
+                    rts.add(vv.root);
+                }
+                TrashOps.purge(rts, TrashOps.MAX_AGE_MS, System.currentTimeMillis());
+                long[] ts = TrashOps.summary(rts);
+                final String trash = ts[0] == 0 ? "leer" : ts[0] + (ts[0] == 1 ? " Element · " : " Elemente · ") + Ui.size(ts[1]);
                 root.post(new Runnable() {
                     @Override
                     public void run() {
                         System.arraycopy(sub, 0, catSub, 0, sub.length);
                         downloadsSub = dls;
                         appsSub = apps;
+                        trashSub = trash;
                         buildHome();
                     }
                 });
@@ -1705,12 +1728,37 @@ final class ToPcScreen implements Screen {
         d.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(Ui.danger(c));
     }
 
+    private List<File> volRoots() {
+        List<File> l = new ArrayList<>();
+        for (Vol v : vols) {
+            l.add(v.root);
+        }
+        return l;
+    }
+
     private void askDelete() {
         if (selected.isEmpty()) {
             return;
         }
         final List<File> items = selectedFiles();
         String what = items.size() == 1 ? "„" + items.get(0).getName() + "“" : items.size() + " Elemente";
+        if (TrashOps.canTrashAll(items, volRoots())) {
+            new AlertDialog.Builder(host.activity(), R.style.NolphinDialog)
+                    .setTitle("In den Papierkorb?")
+                    .setMessage(what + (items.size() == 1 ? " wird" : " werden")
+                            + " in den Papierkorb verschoben. Dort bleibt " + (items.size() == 1 ? "es" : "alles")
+                            + " 30 Tage und lässt sich wiederherstellen.")
+                    .setNegativeButton("Abbrechen", null)
+                    .setPositiveButton("In den Papierkorb", new android.content.DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(android.content.DialogInterface d, int which) {
+                            selected.clear();
+                            render();
+                            startTrash(items);
+                        }
+                    }).show();
+            return;
+        }
         new AlertDialog.Builder(host.activity(), R.style.NolphinDialog)
                 .setTitle("Löschen?")
                 .setMessage(what + " wird endgültig gelöscht. Das lässt sich nicht rückgängig machen.")
@@ -1723,6 +1771,37 @@ final class ToPcScreen implements Screen {
                         startDelete(items);
                     }
                 }).show();
+    }
+
+    private void startTrash(final List<File> items) {
+        final List<File> roots = volRoots();
+        runBatch("Lege in den Papierkorb …", "in den Papierkorb gelegt", new BatchWork() {
+            @Override
+            public FileOps.Result run(FileOps.Progress p) {
+                return TrashOps.moveToTrash(items, roots, p);
+            }
+        }, new Retry() {
+            @Override
+            public void run(List<File> failedItems) {
+                startTrash(failedItems);
+            }
+        });
+    }
+
+    private void openTrash() {
+        TrashScreen.show(host.activity(), volRoots(), new TrashScreen.Changed() {
+            @Override
+            public void changed(List<File> touched) {
+                for (File f : touched) {
+                    scan(f);
+                }
+                reload();
+                if (partner != null) {
+                    partner.opFinished(ToPcScreen.this);
+                }
+                loadHomeInfo();
+            }
+        });
     }
 
     private void startDelete(final List<File> items) {

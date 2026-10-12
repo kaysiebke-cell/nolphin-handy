@@ -112,7 +112,14 @@ Das Ergebnis bleibt bis zum Neuzählen oder Beenden der App erhalten. Die Analys
 
 **Mehrere Dateien umbenennen:** Wählen Sie mehrere Dateien, dann ⋮, dann **Umbenennen …**. Vier Reiter: **Ersetzen** (Text suchen und ersetzen), **Nummer** (zum Beispiel `001.jpg`, `002.jpg`, mit Anfang, erster Nummer und Stellenzahl), **Anhängen** (Text vorn und hinten, vor der Endung) und **Groß/Klein**. Eine Vorschau „alt → neu“ zeigt vorher alle Namen. Der Knopf **Umbenennen** bleibt gesperrt, solange es ein Problem gibt (leerer Name, zwei gleiche Namen, ein Name, den es schon gibt, auch bei anderer Groß-/Kleinschreibung wie auf der SD-Karte). Umbenannt wird in zwei Schritten über Zwischennamen, so funktionieren auch Tauschfälle. Geht etwas schief, wird alles zurückgenommen.
 
-**Löschen:** Die App fragt vorher nach. Gelöscht wird **endgültig**. Es gibt keinen Papierkorb.
+**Löschen und Papierkorb:** Die App fragt vorher nach („In den Papierkorb?“). Gelöschtes wandert in den **Papierkorb**, nicht ins Nichts:
+
+* **Wo er liegt:** Jeder Speicher hat seinen eigenen Papierkorb im versteckten Ordner `.nolphin-papierkorb` auf dem Speicher selbst. Es wird nichts zwischen Speichern kopiert. Der Papierkorb belegt weiter Platz, bis er geleert wird.
+* **Nur umbenennen:** Das Element wird nur umbenannt/verschoben, nie kopiert und nie ersatzweise gelöscht. Geht das nicht, bleibt das Original unberührt, und die App nennt den Grund.
+* **Aufrufen:** In „Zum PC“ gibt es die Zeile **Papierkorb** mit Anzahl und Größe. Im Papierkorb wählen Sie Elemente und tippen **Zurück** (wiederherstellen) oder **Löschen** (endgültig, mit Nachfrage). Das Menü ⋮ hat „Alle auswählen“ und „Papierkorb leeren“.
+* **Wiederherstellen:** Das Element kommt an seinen alten Ort zurück. Fehlt der Ordner, wird er neu angelegt. Gibt es dort schon etwas Gleichnamiges, heißt das Zurückgeholte „(2)“, es wird nie etwas überschrieben.
+* **30 Tage:** Was älter ist, wird beim Öffnen der Übersicht automatisch endgültig gelöscht.
+* **Grenzen:** Der Papierkorb gilt **nur für Löschen in dieser App**, nicht für Löschen durch andere Apps oder am PC. Löschen von Dateien, die schon im Papierkorb liegen, und das Löschen von etwas außerhalb der bekannten Speicher ist endgültig (die App sagt das im Dialog).
 
 **Sicherheit beim Kopieren, Verschieben und Löschen:**
 
@@ -168,6 +175,7 @@ Der Test läuft ohne Handy und prüft:
 * den **QR-Leser**: 163 Prüfungen (Codes des C-Encoders von Nolphin, gedreht, verzerrt, unscharf, verrauscht, ein Bildschirmfoto und ein echtes dunkles, unscharfes Handyfoto),
 * die **Link-Prüfung**: 34 Prüfungen,
 * die **Sortierung und die Listen für Favoriten und zuletzt geöffnete Orte** (`SortOrder`, `PlaceLists`): 22 Prüfungen (alle vier Schlüssel, beide Richtungen, „Ordner zuerst“, Gleichstand nach Namen, Endungen, Begrenzung und Reihenfolge der Listen, Pfade mit Leerzeichen und Umlauten),
+* der **Papierkorb** (`TrashOps`): 39 Prüfungen (nur Umbenennen, jeder Speicher sein eigener Papierkorb, Zurückholen an den alten Ort, Namensgleichheit „(2)“ ohne Überschreiben, fehlender alter Ordner, Verknüpfungen, Original bleibt bei Fehler und Abbruch, 30 Tage, Absturz ohne Infodatei, kaputte Infodatei, nie aus dem Papierkorb erneut hinein),
 * die **Speicheranalyse** (`StorageScan`): 39 Prüfungen (Gruppen, Summen, größte Ordner und Dateien, Verknüpfungen ohne Endlosschleife, leerer und fehlender Ordner, nicht lesbarer Ordner, Abbruch auch mitten in einem großen Ordner, Fortschritt),
 * **ZIP und Stapelumbenennen** (`ZipOps`, `BatchRename`): 52 Prüfungen (Inhalt lesen, Entpacken mit Umlauten und leeren Ordnern, gemeinsamer Oberordner, unsichere Pfade, Verknüpfungen, Größe über der Angabe, Konflikte, Packen, Vorschau, Tauschfälle, Groß-/Kleinschreibung, Zurücknehmen bei Fehler),
 * die **Dateioperationen** (`FileOps`): 60 Prüfungen für Kopieren, Verschieben (auch über Kopieren und Prüfen), Umbenennen, neuer Ordner, ZIP und Löschen. Dazu die Schutzfälle: Ordner nicht in sich selbst, Namenskonflikte (überspringen, umbenennen, ersetzen, Ordner zusammenführen), Verknüpfungen (nie verfolgt, keine Endlosschleife), nicht lesbare Dateien und Ordner (Rest wird erledigt, Fehler genannt), keine halben Dateien nach Fehler oder Abbruch, Original bleibt bei Fehler oder Abbruch, Fortschritt mit Dateizähler, Abbruch auch beim Löschen, Konfliktliste vorab, Wiederholen nur des Fehlgeschlagenen.
@@ -194,6 +202,7 @@ Seiten: `start`, `uebersicht`, `liste`, `auswahl`, `dokumente`, `einfuegen`, `vo
 | `HomeScreen`, `FromPcScreen`, `ToPcScreen`, `HistoryScreen`, `SettingsScreen` | Die Bildschirme |
 | `SortOrder`, `PlaceLists` | Sortierreihenfolge, Favoriten und zuletzt geöffnete Orte (ohne Android, getestet) |
 | `ToPcTabs`, `DualScreen` | Reiter „Zum PC“ mit einem oder zwei Fenstern |
+| `TrashOps`, `TrashScreen` | Papierkorb: Logik (ohne Android, getestet) und Fenster |
 | `StorageScan`, `StorageAnalysis` | Speicheranalyse: Zählen (ohne Android, getestet) und Fenster |
 | `ZipOps`, `BatchRename` | ZIP entpacken und packen, Stapelumbenennen mit Vorschau (ohne Android, getestet) |
 | `FileOps` | Kopieren, Verschieben, Löschen, Umbenennen, ZIP (sicher, mit Ergebnisliste, Abbruch und Konfliktregeln) |
@@ -209,7 +218,7 @@ Der PC-Teil (der kleine Server in Nolphin) liegt im Projekt [nolphin-file-manage
 ## Sicherheit und Grenzen
 
 * Die Verbindung läuft **unverschlüsselt im eigenen WLAN**. Der Schlüssel steckt im Link. Verwenden Sie das nur in einem Netz, dem Sie vertrauen.
-* Löschen ist endgültig (kein Papierkorb).
+* Löschen geht in den Papierkorb (30 Tage), nur in dieser App. Aus dem Papierkorb heraus ist Löschen endgültig.
 * Bei einem älteren Nolphin am PC geht ein Ordner nur als ZIP.
 * Der Zugriff auf alle Dateien ist mächtig. Die App nutzt ihn nur für den Dateimanager, und nur nach Ihrer Aktion.
 * Die privaten Ordner anderer Apps (`Android/data`, `Android/obb`) kann Android keiner App zeigen. Cloud-Dateien und Dateien anderer Apps holen Sie über die Systemauswahl (siehe oben).
