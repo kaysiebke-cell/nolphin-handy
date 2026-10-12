@@ -49,6 +49,7 @@ final class FromPcScreen implements Screen {
     private final Host host;
     private final LinearLayout root;
     private final LinearLayout crumbs;
+    private final HorizontalScrollView crumbScroll;
     private final GridView grid;
     private final TextView empty;
     private final ImageView toggle;
@@ -187,12 +188,34 @@ final class FromPcScreen implements Screen {
         normalBar.setOrientation(LinearLayout.HORIZONTAL);
         normalBar.setGravity(Gravity.CENTER_VERTICAL);
         normalBar.setPadding(p, 0, p, Ui.dp(c, 6));
-        HorizontalScrollView scroll = new HorizontalScrollView(c);
+        final HorizontalScrollView scroll = new HorizontalScrollView(c);
+        crumbScroll = scroll;
         scroll.setHorizontalScrollBarEnabled(false);
         crumbs = new LinearLayout(c);
         crumbs.setOrientation(LinearLayout.HORIZONTAL);
         crumbs.setGravity(Gravity.CENTER_VERTICAL);
         scroll.addView(crumbs);
+        // bei jeder Änderung des Pfads ans Ende scrollen, damit der aktuelle Ordner sichtbar bleibt
+        crumbs.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
+            @Override
+            public void onLayoutChange(View v, int l, int t, int r, int b, int ol, int ot, int or, int ob) {
+                if (r - l != or - ol) {
+                    crumbScroll.scrollTo(r - l, 0);
+                }
+            }
+        });
+        ImageView homeBtn = Ui.icon(c, R.drawable.ic_home, Ui.primary(c), 48);
+        homeBtn.setPadding(Ui.dp(c, 10), Ui.dp(c, 10), Ui.dp(c, 10), Ui.dp(c, 10));
+        homeBtn.setBackground(Ui.round(c, Ui.chip(c), 24));
+        homeBtn.setContentDescription("Übersicht");
+        homeBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                goOverview();
+            }
+        });
+        
+        normalBar.addView(homeBtn);
         normalBar.addView(scroll, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
         normalBar.addView(chip("Auswählen", false, new View.OnClickListener() {
             @Override
@@ -359,22 +382,11 @@ final class FromPcScreen implements Screen {
 
     private void buildCrumbs() {
         crumbs.removeAllViews();
-        ImageView home = Ui.icon(c, R.drawable.ic_home, Ui.primary(c), 48);
-        home.setPadding(Ui.dp(c, 10), Ui.dp(c, 10), Ui.dp(c, 10), Ui.dp(c, 10));
-        home.setBackground(Ui.round(c, Ui.chip(c), 24));
-        home.setContentDescription("Übersicht");
-        home.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                goOverview();
-            }
-        });
-        crumbs.addView(home);
         boolean personal = dir.equals("~") || dir.startsWith("~/");
         String rootKey = personal ? "~" : "";
         String rel = personal ? (dir.length() > 2 ? dir.substring(2) : "") : dir;
         crumbs.addView(Ui.label(c, "  ›  ", 14, Ui.dim(c), false));
-        addCrumb(personal ? "Persönlicher Ordner" : "Handy-Ordner", rootKey, rel.isEmpty());
+        addCrumb(personal ? "Persönlich" : "Handy-Ordner", rootKey, rel.isEmpty());
         if (!rel.isEmpty()) {
             String[] parts = rel.split("/");
             StringBuilder path = new StringBuilder(personal ? "~" : "");
@@ -387,6 +399,13 @@ final class FromPcScreen implements Screen {
                 addCrumb(parts[i], path.toString(), i == parts.length - 1);
             }
         }
+        // der aktuelle (letzte) Teil soll sichtbar sein, auch bei langen Pfaden
+        crumbScroll.post(new Runnable() {
+            @Override
+            public void run() {
+                crumbScroll.scrollTo(crumbs.getWidth(), 0);
+            }
+        });
     }
 
     private void addCrumb(String text, final String target, boolean last) {

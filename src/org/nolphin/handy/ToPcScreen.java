@@ -95,6 +95,7 @@ final class ToPcScreen implements Screen {
     private final EditText search;
     private final LinearLayout crumbBar;
     private final LinearLayout crumbs;
+    private final HorizontalScrollView crumbScroll;
     private final TextView usage;
     private final LinearLayout selectBar;
     private final TextView selCount;
@@ -258,11 +259,33 @@ final class ToPcScreen implements Screen {
         crumbBar.setGravity(Gravity.CENTER_VERTICAL);
         crumbBar.setPadding(p, 0, p, Ui.dp(c, 2));
         HorizontalScrollView scroll = new HorizontalScrollView(c);
+        crumbScroll = scroll;
         scroll.setHorizontalScrollBarEnabled(false);
         crumbs = new LinearLayout(c);
         crumbs.setOrientation(LinearLayout.HORIZONTAL);
         crumbs.setGravity(Gravity.CENTER_VERTICAL);
         scroll.addView(crumbs);
+        // bei jeder Änderung des Pfads ans Ende scrollen, damit der aktuelle Ordner sichtbar bleibt
+        crumbs.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
+            @Override
+            public void onLayoutChange(View v, int l, int t, int r, int b, int ol, int ot, int or, int ob) {
+                if (r - l != or - ol) {
+                    crumbScroll.scrollTo(r - l, 0);
+                }
+            }
+        });
+        ImageView homeBtn = Ui.icon(c, R.drawable.ic_home, Ui.primary(c), 48);
+        homeBtn.setPadding(Ui.dp(c, 10), Ui.dp(c, 10), Ui.dp(c, 10), Ui.dp(c, 10));
+        homeBtn.setBackground(Ui.round(c, Ui.chip(c), 24));
+        homeBtn.setContentDescription("Übersicht");
+        homeBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                goHome();
+            }
+        });
+        
+        crumbBar.addView(homeBtn);
         crumbBar.addView(scroll, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
         usage = Ui.label(c, "", 12, Ui.primary(c), true);
         usage.setBackground(Ui.round(c, Ui.chip(c), 12));
@@ -1041,17 +1064,6 @@ final class ToPcScreen implements Screen {
         if (!show) {
             return;
         }
-        ImageView home = Ui.icon(c, R.drawable.ic_home, Ui.primary(c), 48);
-        home.setPadding(Ui.dp(c, 10), Ui.dp(c, 10), Ui.dp(c, 10), Ui.dp(c, 10));
-        home.setBackground(Ui.round(c, Ui.chip(c), 24));
-        home.setContentDescription("Übersicht");
-        home.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                goHome();
-            }
-        });
-        crumbs.addView(home);
         usage.setVisibility(View.GONE);
         if (mode == CATEGORY || mode == APPS) {
             crumbs.addView(Ui.label(c, "  ›  ", 14, Ui.dim(c), false));
@@ -1074,6 +1086,12 @@ final class ToPcScreen implements Screen {
             crumbs.addView(Ui.label(c, "  ›  ", 14, Ui.dim(c), false));
             crumbs.addView(crumb(chain.get(i).getName(), chain.get(i), i == chain.size() - 1));
         }
+        crumbScroll.post(new Runnable() {
+            @Override
+            public void run() {
+                crumbScroll.scrollTo(crumbs.getWidth(), 0);
+            }
+        });
         try {
             StatFs s = new StatFs(v.root.getPath());
             long used = s.getTotalBytes() - s.getAvailableBytes();
