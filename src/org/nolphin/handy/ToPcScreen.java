@@ -1228,22 +1228,9 @@ final class ToPcScreen implements Screen {
         runOp(move ? "Verschiebe …" : "Kopiere …", new Op() {
             @Override
             public String run() {
-                int ok = 0;
-                String err = null;
-                for (File f : items) {
-                    try {
-                        File r = move ? FileOps.moveTo(f, target) : FileOps.copyTo(f, target);
-                        scan(r);
-                        if (move) {
-                            scan(f);
-                        }
-                        ok++;
-                    } catch (java.io.IOException e) {
-                        err = e.getMessage();
-                    }
-                }
-                String done = ok + (ok == 1 ? " Element " : " Elemente ") + (move ? "verschoben" : "kopiert");
-                return err == null ? done : done + ". Fehler: " + err;
+                FileOps.Result r = move ? FileOps.moveAll(items, target, FileOps.Conflict.RENAME, null)
+                        : FileOps.copyAll(items, target, FileOps.Conflict.RENAME, null);
+                return finish(r, move ? "verschoben" : "kopiert");
             }
         });
     }
@@ -1266,19 +1253,7 @@ final class ToPcScreen implements Screen {
                         runOp("Lösche …", new Op() {
                             @Override
                             public String run() {
-                                int ok = 0;
-                                String err = null;
-                                for (File f : items) {
-                                    try {
-                                        FileOps.deleteTree(f);
-                                        scan(f);
-                                        ok++;
-                                    } catch (java.io.IOException e) {
-                                        err = e.getMessage();
-                                    }
-                                }
-                                String done = ok + (ok == 1 ? " Element " : " Elemente ") + "gelöscht";
-                                return err == null ? done : done + ". Fehler: " + err;
+                                return finish(FileOps.deleteAll(items, null), "gelöscht");
                             }
                         });
                     }
@@ -1411,17 +1386,53 @@ final class ToPcScreen implements Screen {
         String run();
     }
 
+    /** Probleme des letzten Vorgangs (werden nach der Meldung in einem Dialog gezeigt). */
+    private volatile List<String> problems;
+
+    /** Meldet das Ergebnis eines Vorgangs mit mehreren Elementen und merkt sich die Probleme. */
+    private String finish(FileOps.Result r, String verbPast) {
+        for (File f : r.touched) {
+            scan(f);
+        }
+        List<String> p = new ArrayList<>(r.failed);
+        p.addAll(r.skipped);
+        problems = p;
+        return r.summary(verbPast);
+    }
+
+    private void showProblems(List<String> list) {
+        StringBuilder b = new StringBuilder();
+        int shown = Math.min(list.size(), 10);
+        for (int i = 0; i < shown; i++) {
+            b.append("• ").append(list.get(i)).append("\n");
+        }
+        if (list.size() > shown) {
+            b.append("… und ").append(list.size() - shown).append(" weitere");
+        }
+        new AlertDialog.Builder(host.activity())
+                .setTitle("Nicht alles hat geklappt")
+                .setMessage(b.toString().trim())
+                .setPositiveButton("Schließen", null)
+                .show();
+    }
+
     private void runOp(final String start, final Op op) {
         Toast.makeText(c, start, Toast.LENGTH_SHORT).show();
+        problems = null;
         new Thread(new Runnable() {
             @Override
             public void run() {
                 final String msg = op.run();
+                final List<String> p = problems;
+                problems = null;
                 root.post(new Runnable() {
                     @Override
                     public void run() {
                         Toast.makeText(c, msg, Toast.LENGTH_LONG).show();
                         reload();
+                        if (p != null && !p.isEmpty()) {
+                            showProblems(p);
+                        }
                     }
                 });
             }

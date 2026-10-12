@@ -86,6 +86,14 @@ Es gibt zwei Wege. Beide bieten dasselbe.
 
 **Löschen:** Die App fragt vorher nach. Gelöscht wird **endgültig**. Es gibt keinen Papierkorb.
 
+**Sicherheit beim Kopieren, Verschieben und Löschen:**
+
+* **Keine halben Dateien:** Kopiert wird erst in eine Temporärdatei im Zielordner und erst danach unter dem richtigen Namen abgelegt. Nach einem Fehler oder Abbruch bleibt nichts Halbes zurück.
+* **Verschieben ohne Risiko:** Auf demselben Speicher wird nur umbenannt. Zwischen Speichern (zum Beispiel SD-Karte) wird kopiert, die Kopie per Prüfsumme geprüft, und erst dann verschwindet das Original, Datei für Datei. Ein Fehler lässt das Original stehen.
+* **Verknüpfungen (Symlinks) werden nie verfolgt:** Beim Löschen verschwindet nur die Verknüpfung, nie ihr Ziel. Beim Kopieren gibt es dadurch keine Endlosschleifen.
+* **Ein Fehler stoppt nicht alles:** Nicht lesbare Dateien oder Ordner werden ausgelassen. Danach zeigt die App, was geklappt hat und was nicht, mit dem Grund. Ein Ordner mit Fehlern gilt nicht als erledigt.
+* Die Funktionen können Namenskonflikte nach den Regeln überspringen, umbenennen oder ersetzen und Vorgänge abbrechen. In der Oberfläche ist bisher nur „umbenennen“ (`Name (2)`) gewählt. Abbruch, Fortschrittsanzeige und die Auswahl der Regel folgen in einer späteren Stufe.
+
 **Ordner an den PC:** Die App schickt einen Ordner **Datei für Datei mit allen Unterordnern**. Am PC entsteht derselbe Ordner im Eingangsordner „Vom Handy“. Gibt es den Ordner dort schon, kommen die Dateien hinein, und gleiche Namen werden nummeriert (`Name (1).ext`), nichts wird überschrieben. Für den ganzen Ordner gibt es **eine** Meldung und **einen** Eintrag im Verlauf. **Leere Unterordner** werden auch angelegt. Das braucht ein aktuelles Nolphin am PC (Feld `folders` in `/info`). Bei einem älteren Nolphin schickt die App den Ordner als **ZIP-Datei**.
 
 **Zugriff:** Für den Dateimanager braucht die App „Zugriff auf alle Dateien“ (`MANAGE_EXTERNAL_STORAGE`). Das erlauben Sie einmal in den Systemeinstellungen. Ohne ihn bleibt nur die Systemauswahl.
@@ -131,7 +139,7 @@ Der Test läuft ohne Handy und prüft:
 
 * den **QR-Leser**: 163 Prüfungen (Codes des C-Encoders von Nolphin, gedreht, verzerrt, unscharf, verrauscht, ein Bildschirmfoto und ein echtes dunkles, unscharfes Handyfoto),
 * die **Link-Prüfung**: 34 Prüfungen,
-* die **Dateioperationen** (`FileOps`): 16 Prüfungen für Kopieren, Verschieben, Umbenennen, neuer Ordner, ZIP und Löschen, einschließlich der Schutzfälle (Ordner nicht in sich selbst, Namenskonflikt, ungültige Namen, Wurzel nicht löschbar).
+* die **Dateioperationen** (`FileOps`): 50 Prüfungen für Kopieren, Verschieben (auch über Kopieren und Prüfen), Umbenennen, neuer Ordner, ZIP und Löschen. Dazu die Schutzfälle: Ordner nicht in sich selbst, Namenskonflikte (überspringen, umbenennen, ersetzen, Ordner zusammenführen), Verknüpfungen (nie verfolgt, keine Endlosschleife), nicht lesbare Dateien und Ordner (Rest wird erledigt, Fehler genannt), keine halben Dateien nach Fehler oder Abbruch, Original bleibt bei Fehler oder Abbruch, Fortschritt.
 
 Der Test braucht den Nolphin-Quelltext im Nachbarordner `../nolphin-file-manager-master` (oder `NOLPHIN_ROOT`), außerdem `gcc` und GLib.
 
@@ -153,7 +161,7 @@ Seiten: `start`, `uebersicht`, `liste`, `auswahl`, `dokumente`, `einfuegen`, `vo
 |---|---|
 | `MainActivity` | Kopfleiste, Reiter, Verbindung, Versand |
 | `HomeScreen`, `FromPcScreen`, `ToPcScreen`, `HistoryScreen`, `SettingsScreen` | Die Bildschirme |
-| `FileOps` | Kopieren, Verschieben, Löschen, Umbenennen, ZIP |
+| `FileOps` | Kopieren, Verschieben, Löschen, Umbenennen, ZIP (sicher, mit Ergebnisliste, Abbruch und Konfliktregeln) |
 | `Ui` | Farben (hell und dunkel), Symbole, Listenzeilen |
 | `Thumbs` | Vorschaubilder (Foto, Video, Albumbild, PDF, App-Symbol) |
 | `SyncService` | Laden und Senden im Hintergrund |
