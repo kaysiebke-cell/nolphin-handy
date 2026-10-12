@@ -645,8 +645,71 @@ final class ToPcScreen implements Screen {
 
     // ---- Übersicht ---------------------------------------------------------------------------
 
+    /** Übersicht für die kleinen Fenster: nur einfache Zeilen, damit Speicher und Downloads sofort erreichbar sind. */
+    private void buildHomeCompact() {
+        LinearLayout places = Ui.group(c);
+        for (final Vol v : vols) {
+            String sub = "";
+            try {
+                StatFs sf = new StatFs(v.root.getPath());
+                long total = sf.getTotalBytes();
+                long used = total - sf.getAvailableBytes();
+                sub = total > 0 ? Ui.size(used) + " von " + Ui.size(total) + " belegt" : "";
+            } catch (RuntimeException ignored) {
+            }
+            Ui.addRow(c, places, Ui.row(c, v.card ? R.drawable.ic_sd : R.drawable.ic_storage, Ui.iconTint(c), v.name, sub, null,
+                    new View.OnClickListener() {
+                        @Override
+                        public void onClick(View x) {
+                            openFolder(v.root);
+                        }
+                    }));
+        }
+        Ui.addRow(c, places, Ui.row(c, R.drawable.ic_download, Ui.iconTint(c), "Downloads", downloadsSub, null,
+                new View.OnClickListener() {
+                    @Override
+                    public void onClick(View x) {
+                        openFolder(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS));
+                    }
+                }));
+        homeBox.addView(places);
+        List<String> favs = Conn.favorites(c);
+        if (!favs.isEmpty()) {
+            homeBox.addView(heading("Favoriten"));
+            LinearLayout fg = Ui.group(c);
+            for (String path : favs) {
+                Ui.addRow(c, fg, placeRow(path, true));
+            }
+            homeBox.addView(fg);
+        }
+        List<String> recent = new ArrayList<>();
+        for (String path : Conn.recents(c)) {
+            if (new File(path).isDirectory() && recent.size() < 3) {
+                recent.add(path);
+            }
+        }
+        if (!recent.isEmpty()) {
+            homeBox.addView(heading("Zuletzt geöffnet"));
+            LinearLayout rg = Ui.group(c);
+            for (String path : recent) {
+                Ui.addRow(c, rg, placeRow(path, false));
+            }
+            homeBox.addView(rg);
+        }
+        homeBox.addView(heading("Kategorien"));
+        LinearLayout cats = Ui.group(c);
+        for (int k = 0; k < CATS.length; k++) {
+            Ui.addRow(c, cats, category(k));
+        }
+        homeBox.addView(cats);
+    }
+
     private void buildHome() {
         homeBox.removeAllViews();
+        if (compact) {
+            buildHomeCompact();
+            return;
+        }
         List<String> favs = Conn.favorites(c);
         if (!favs.isEmpty()) {
             homeBox.addView(heading("Favoriten"));
@@ -1159,6 +1222,7 @@ final class ToPcScreen implements Screen {
     private void goHome() {
         resetQuery();
         mode = HOME;
+        homeScroll.scrollTo(0, 0);
         if (compact && paneId != null) {
             Conn.setPaneDir(c, paneId, null);
         }
@@ -1226,6 +1290,7 @@ final class ToPcScreen implements Screen {
     }
 
     private void loadList() {
+        grid.setSelection(0);   // ein neuer Ordner beginnt oben, nicht an der alten Scrollstelle
         final int my = ++gen;
         loading = true;
         error = null;
@@ -2205,6 +2270,18 @@ final class ToPcScreen implements Screen {
 
     void setActive(boolean on) {
         activeBar.setBackgroundColor(on ? Ui.primary(c) : 0x00000000);
+        // die Marke des aktiven Fensters ist gefüllt
+        android.graphics.drawable.GradientDrawable g = new android.graphics.drawable.GradientDrawable();
+        g.setCornerRadius(Ui.dp(c, 10));
+        if (on) {
+            g.setColor(Ui.primary(c));
+            paneTag.setTextColor(Ui.dark(c) ? 0xFF10200A : 0xFFFFFFFF);
+        } else {
+            g.setColor(Ui.surface(c));
+            g.setStroke(Math.max(1, Ui.dp(c, 1)), Ui.line(c));
+            paneTag.setTextColor(Ui.dim(c));
+        }
+        paneTag.setBackground(g);
     }
 
     void setPaneLabel(String text) {

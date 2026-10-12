@@ -77,7 +77,7 @@ Der Eintrag **Apps** zeigt dagegen nur Apps, die ihre Dateien in einem eigenen M
 
 * Das Fenster, das Sie zuletzt angetippt haben, ist **aktiv** (grüne Linie oben). Das Fenster mit der Auswahl ist die **Quelle**, das andere das **Ziel**.
 * Unten steht „Von … nach …“ mit **Kopieren** und **Verschieben**. Vor dem Vorgang fragt die App noch einmal mit dem vollen Zielpfad und bietet **Ziel wechseln** an. Danach läuft alles wie sonst: Fortschritt, Abbrechen, Konfliktfrage, Ergebnisliste.
-* Ist im Ziel-Fenster noch kein Ordner offen (Übersicht), bittet die App erst darum, einen zu öffnen.
+* Ist im Ziel-Fenster noch kein Ordner offen (Übersicht), bittet die App erst darum, einen zu öffnen. Die Übersicht in den kleinen Fenstern ist kompakt (Speicher, Downloads, Favoriten, Kategorien als einfache Zeilen), damit man sofort in einen Ordner kommt.
 * Der Knopf in der Kopfleiste führt zurück zu einem Fenster. Schalten Sie den Modus in den Einstellungen aus, gibt es nur noch ein Fenster, wie bisher.
 
 **Vorschau.** Fotos und Videos zeigen ein Vorschaubild, Audio das Albumbild (wenn die Datei eines hat), PDF die erste Seite. Alle anderen Dateien zeigen ein einfarbiges Symbol nach Dateiart.

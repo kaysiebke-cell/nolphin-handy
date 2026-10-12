@@ -93,6 +93,7 @@ final class SettingsScreen implements Screen {
         auto.setTextColor(Ui.text(c));
         auto.setChecked(Conn.autoLoad(c));
         auto.setPadding(0, Ui.dp(c, 10), 0, 0);
+        Ui.tintSwitch(c, auto);
         auto.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton b, boolean checked) {
@@ -172,6 +173,7 @@ final class SettingsScreen implements Screen {
         dual.setTextColor(Ui.text(c));
         dual.setChecked(Conn.dualAvailable(c));
         dual.setPadding(0, Ui.dp(c, 10), 0, 0);
+        Ui.tintSwitch(c, dual);
         dual.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton b, boolean checked) {

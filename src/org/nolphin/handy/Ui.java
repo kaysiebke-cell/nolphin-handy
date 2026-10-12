@@ -154,6 +154,16 @@ final class Ui {
         return b;
     }
 
+    /** Schalter im Mint-Grün der App statt in der Systemfarbe. */
+    static void tintSwitch(Context c, android.widget.Switch sw) {
+        int on = primary(c);
+        int off = dark(c) ? 0xFF8A9484 : 0xFF7A8575;
+        int[][] states = { { android.R.attr.state_checked }, {} };
+        sw.setThumbTintList(new android.content.res.ColorStateList(states, new int[] { on, off }));
+        sw.setTrackTintList(new android.content.res.ColorStateList(states,
+                new int[] { (on & 0x00FFFFFF) | 0x66000000, (off & 0x00FFFFFF) | 0x55000000 }));
+    }
+
     static ImageView icon(Context c, int res, int tint, int sizeDp) {
         ImageView v = new ImageView(c);
         v.setImageResource(res);
