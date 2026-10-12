@@ -95,6 +95,14 @@ Es gibt zwei Wege. Beide bieten dasselbe.
 
 **Kopieren und Verschieben:** Wählen Sie die Elemente, tippen Sie auf Kopieren oder Verschieben, öffnen Sie den Zielordner und tippen Sie unten auf **Hierher**. Gibt es den Namen schon, hängt die App „(2)“ an. Einen Ordner in sich selbst zu kopieren oder zu verschieben lehnt sie ab.
 
+**Speicheranalyse:** Tippen Sie in „Zum PC“ auf die Karte **Hauptspeicher** oder **SD-Karte**. Die App zählt im Hintergrund (mit Zähler und **Abbrechen**) und zeigt dann:
+
+* oben die Belegung und einen **Balken nach Gruppen** (Bilder, Videos, Audio, Dokumente, Apps, Sonstiges) mit Größen,
+* die **größten Ordner** und die **größten Dateien** mit Anteilsbalken. Ein Tipp öffnet den Ordner,
+* den Knopf **Dateien ansehen**, der den Speicher wie gewohnt öffnet. Mit dem Symbol oben rechts zählen Sie neu.
+
+Das Ergebnis bleibt bis zum Neuzählen oder Beenden der App erhalten. Die Analyse **liest nur** und ändert nichts. Android erlaubt der App nicht, die Daten des Systems und anderer Apps zu sehen. Die App nennt deshalb, wie viel „nicht lesbar“ ist. Im Zwei-Fenster-Modus öffnet die Karte weiter direkt den Ordner.
+
 **ZIP entpacken und packen:**
 
 * **Entpacken:** Die App zeigt vorher, was im Archiv steckt (Dateien, Ordner, entpackte Größe), und prüft den freien Platz. Entpackt wird in einen Ordner mit dem Namen des Archivs. Bringt das Archiv schon einen eigenen obersten Ordner mit, wird gleich dort entpackt, es gibt keinen doppelten Ordner. Gibt es den Zielordner schon, fragt die App wie beim Kopieren (beide behalten, überspringen, ersetzen).
@@ -160,6 +168,7 @@ Der Test läuft ohne Handy und prüft:
 * den **QR-Leser**: 163 Prüfungen (Codes des C-Encoders von Nolphin, gedreht, verzerrt, unscharf, verrauscht, ein Bildschirmfoto und ein echtes dunkles, unscharfes Handyfoto),
 * die **Link-Prüfung**: 34 Prüfungen,
 * die **Sortierung und die Listen für Favoriten und zuletzt geöffnete Orte** (`SortOrder`, `PlaceLists`): 22 Prüfungen (alle vier Schlüssel, beide Richtungen, „Ordner zuerst“, Gleichstand nach Namen, Endungen, Begrenzung und Reihenfolge der Listen, Pfade mit Leerzeichen und Umlauten),
+* die **Speicheranalyse** (`StorageScan`): 39 Prüfungen (Gruppen, Summen, größte Ordner und Dateien, Verknüpfungen ohne Endlosschleife, leerer und fehlender Ordner, nicht lesbarer Ordner, Abbruch auch mitten in einem großen Ordner, Fortschritt),
 * **ZIP und Stapelumbenennen** (`ZipOps`, `BatchRename`): 52 Prüfungen (Inhalt lesen, Entpacken mit Umlauten und leeren Ordnern, gemeinsamer Oberordner, unsichere Pfade, Verknüpfungen, Größe über der Angabe, Konflikte, Packen, Vorschau, Tauschfälle, Groß-/Kleinschreibung, Zurücknehmen bei Fehler),
 * die **Dateioperationen** (`FileOps`): 60 Prüfungen für Kopieren, Verschieben (auch über Kopieren und Prüfen), Umbenennen, neuer Ordner, ZIP und Löschen. Dazu die Schutzfälle: Ordner nicht in sich selbst, Namenskonflikte (überspringen, umbenennen, ersetzen, Ordner zusammenführen), Verknüpfungen (nie verfolgt, keine Endlosschleife), nicht lesbare Dateien und Ordner (Rest wird erledigt, Fehler genannt), keine halben Dateien nach Fehler oder Abbruch, Original bleibt bei Fehler oder Abbruch, Fortschritt mit Dateizähler, Abbruch auch beim Löschen, Konfliktliste vorab, Wiederholen nur des Fehlgeschlagenen.
 
@@ -185,6 +194,7 @@ Seiten: `start`, `uebersicht`, `liste`, `auswahl`, `dokumente`, `einfuegen`, `vo
 | `HomeScreen`, `FromPcScreen`, `ToPcScreen`, `HistoryScreen`, `SettingsScreen` | Die Bildschirme |
 | `SortOrder`, `PlaceLists` | Sortierreihenfolge, Favoriten und zuletzt geöffnete Orte (ohne Android, getestet) |
 | `ToPcTabs`, `DualScreen` | Reiter „Zum PC“ mit einem oder zwei Fenstern |
+| `StorageScan`, `StorageAnalysis` | Speicheranalyse: Zählen (ohne Android, getestet) und Fenster |
 | `ZipOps`, `BatchRename` | ZIP entpacken und packen, Stapelumbenennen mit Vorschau (ohne Android, getestet) |
 | `FileOps` | Kopieren, Verschieben, Löschen, Umbenennen, ZIP (sicher, mit Ergebnisliste, Abbruch und Konfliktregeln) |
 | `Ui` | Farben (hell und dunkel), Symbole, Listenzeilen |

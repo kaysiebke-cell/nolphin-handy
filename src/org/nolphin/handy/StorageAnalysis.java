@@ -71,6 +71,10 @@ final class StorageAnalysis {
             w.setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(Ui.bg(c)));
             w.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
             w.setStatusBarColor(Ui.bar(c));
+            w.setNavigationBarColor(Ui.bg(c));
+            if (!Ui.dark(c)) {
+                w.getDecorView().setSystemUiVisibility(w.getDecorView().getSystemUiVisibility() | View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR);
+            }
         }
         dialog.setOnDismissListener(new android.content.DialogInterface.OnDismissListener() {
             @Override
