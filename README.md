@@ -1,40 +1,144 @@
-# Nolphin Handy (Android-App)
+# Nolphin Handy
 
-App für den Handy-Austausch von Nolphin, **in beide Richtungen**: Dateien aus dem Ordner „Handy“ am PC kommen aufs Handy, Fotos und Dateien vom Handy gehen an den PC.
+Android-App für den Dateiaustausch mit **Nolphin** am PC, in beide Richtungen, und zugleich ein Dateimanager für das Handy.
 
-## Aufbau der App
+* **Vom PC:** Dateien aus dem Ordner „Handy“ am PC kommen aufs Handy.
+* **Zum PC:** Fotos, Dateien und Ordner vom Handy gehen an den PC.
+* **Dateiverwaltung:** Kopieren, Verschieben, Löschen, Umbenennen, neuer Ordner, Eigenschaften, mit internem Speicher und SD-Karte.
 
-Vier Reiter unten, Einstellungen oben rechts; ruhiges, klares Design (Listen mit Trennlinien, einfarbige Symbole, Dateisymbole als klare Kacheln mit großer Endung (PDF, DOCX …), größere Schrift und mehr Zeilenabstand, eigenes Symbol, hell und dunkel), ohne Bibliotheken.
+Nur das Android-Framework. **Keine Bibliotheken, kein Gradle.** Mindestens Android 10.
 
-* **Start:** großer Status („Verbunden“ / „Nicht verbunden“), Fortschritt einer laufenden Übertragung mit Abbruch, letzte Übertragungen.
-* **Vom PC:** Liste der Dateien aus dem Ordner „Handy“ mit Vorschaubild; Antippen lädt, geladene Dateien lassen sich öffnen und teilen.
-* **Zum PC:** Dateimanager für das Handy: Übersicht (Hauptspeicher, SD-Karte, Downloads, Bilder, Audio, Videos, Dokumente), Ordner mit Pfadleiste als Kacheln oder Liste, Suche (auch in Unterordnern), Mehrfachauswahl (langer Druck) und „An den PC senden“. Braucht „Zugriff auf alle Dateien“ (`MANAGE_EXTERNAL_STORAGE`, einmal in den Systemeinstellungen erlauben); ohne ihn bleibt die Systemauswahl.
-* **Verlauf:** alle Übertragungen (bis 200), mit Ergebnis.
-* **Einstellungen:** Verbindung trennen, neue Dateien automatisch laden (aus: erst nach Antippen), Ordner in „Downloads“, Verlauf löschen.
+Das Aussehen folgt Linux Mint (Mint-Grün), sachlich und ruhig: flache Listen, einfarbige Symbole, große klare Schrift mit etwas mehr Abstand. Es gibt einen hellen und einen dunklen Modus. Beide folgen der Einstellung des Handys.
 
-Nur das Android-Framework, **keine Bibliotheken**, kein Gradle. Mindestens Android 10.
+> Die Bilder unten sind **nachgezeichnet mit Beispieldaten** (Quelle: [`docs/bilder/quelle.html`](docs/bilder/quelle.html)). Sie zeigen das Aussehen der App, aber keine echten Dateien oder Netzwerkdaten.
 
-## Einrichten (Anwender)
+| Start | Zum PC: Übersicht | Liste |
+|:--:|:--:|:--:|
+| ![Start, hell](docs/bilder/start-hell.png) | ![Übersicht, hell](docs/bilder/uebersicht-hell.png) | ![Liste, hell](docs/bilder/liste-hell.png) |
 
-1. Klicken Sie in Nolphin in der Seitenleiste auf **Handy** und scannen Sie den QR-Code mit der Kamera des Handys.
-2. **Erster Scan:** Die Seite im Handy-Browser bietet die App zum Installieren an. Laden Sie sie und erlauben Sie die Installation (Warnungen von Chrome, Play Protect oder Mi Protect sind bei Apps außerhalb des Play Store normal).
-3. **Verbinden:** Öffnen Sie die App, tippen Sie auf **QR-Code scannen** und richten Sie die Kamera auf den QR-Code am PC. Die App liest ihn mit einem **eigenen QR-Leser** (`QrDecoder.java`, ohne Bibliothek und ohne Google-Dienste). Zum Scharfstellen tippen Sie aufs Bild. Alternativ scannen Sie mit der Kamera des Handys: Die Seite öffnet dann die App und verbindet sie.
-4. Der Schlüssel im Code gilt, solange der Austausch am PC läuft; nach einem Neustart von Nolphin scannen Sie einfach erneut.
+| Auswahl | Dokumente mit Reitern | Dunkel |
+|:--:|:--:|:--:|
+| ![Auswahl, hell](docs/bilder/auswahl-hell.png) | ![Dokumente, dunkel](docs/bilder/dokumente-dunkel.png) | ![Liste, dunkel](docs/bilder/liste-dunkel.png) |
 
-Die App lädt neue Dateien nach `Download/Nolphin`. Beim allerersten Verbinden werden bereits vorhandene Dateien nicht geladen.
+## Die vier Reiter
+
+Unten stehen vier Reiter. Die Einstellungen öffnen Sie oben rechts.
+
+| Reiter | Was er tut |
+|---|---|
+| **Start** | Zeigt „Verbunden“ oder „Nicht verbunden“, den Fortschritt einer Übertragung (mit Abbruch) und die letzten Übertragungen. |
+| **Vom PC** | Dateien aus dem Ordner „Handy“ am PC, mit Vorschaubild. Antippen lädt eine Datei. Geladene Dateien lassen sich öffnen, teilen oder speichern. |
+| **Zum PC** | Der Dateimanager des Handys. Hier senden Sie Dateien und Ordner an den PC. |
+| **Verlauf** | Alle Übertragungen (bis 200) mit Ergebnis. |
+
+![Vom PC, hell](docs/bilder/vompc-hell.png)
+
+Die **Einstellungen** enthalten: Verbindung trennen, neue Dateien automatisch laden (aus: erst nach Antippen), Zielordner für Dateien vom PC, Verlauf löschen.
+
+## „Zum PC“ im Einzelnen
+
+**Übersicht.** Hauptspeicher und SD-Karte mit Füllstand, Schnellzugriff (Downloads, Apps) und die Kategorien Bilder, Audio, Videos und Dokumente.
+
+**Ordner.** Oben stehen Pfeil zurück, Name des Ordners, „Neuer Ordner“ und der Wechsel zwischen Liste und Kacheln. Darunter folgen Suche und Pfadleiste. Tippen Sie auf das Haus, um zur Übersicht zu gelangen.
+
+**Dokumente.** Reiter: **Alle, DOC, XLS, PDF, PPT, Sonstige.** „Sonstige“ enthält zum Beispiel ZIP, EPUB und Konstruktionsdateien (STEP, STL, DXF …). Die Liste zeigt Dokumente aus dem internen Speicher **und** von der SD-Karte zusammen. Dateien auf der SD-Karte tragen in der Zeile den Zusatz „SD-Karte“. Programm- und Systemdateien anderer Apps erscheinen nicht.
+
+**Vorschau.** Fotos und Videos zeigen ein Vorschaubild, Audio das Albumbild (wenn die Datei eines hat), PDF die erste Seite. Alle anderen Dateien zeigen ein einfarbiges Symbol nach Dateiart.
+
+**Suche.** Das Suchfeld sucht im aktuellen Ordner mit allen Unterordnern, in der Übersicht auf allen Speichern. In einer Kategorie filtert es die Liste.
+
+### Funktionen für Dateien und Ordner
+
+Es gibt zwei Wege. Beide bieten dasselbe.
+
+1. **Ein Element:** Tippen Sie rechts in der Zeile auf **⋮**. Es erscheint ein Menü: An den PC senden, Kopieren, Verschieben, Umbenennen, Eigenschaften, Löschen.
+2. **Mehrere Elemente:** Drücken Sie lange auf ein Element. Es erscheinen Kästchen, und die Leiste oben wird grün. Dort stehen die Funktionen **An PC, Kopieren, Verschieben, Löschen** und **⋮** (Alle auswählen, Umbenennen, Eigenschaften). Tippen Sie weitere Elemente an, um sie zu wählen.
+
+**Kopieren und Verschieben:** Wählen Sie die Elemente, tippen Sie auf Kopieren oder Verschieben, öffnen Sie den Zielordner und tippen Sie unten auf **Hierher**. Gibt es den Namen schon, hängt die App „(2)“ an. Einen Ordner in sich selbst zu kopieren oder zu verschieben lehnt sie ab.
+
+**Löschen:** Die App fragt vorher nach. Gelöscht wird **endgültig**. Es gibt keinen Papierkorb.
+
+**Ordner an den PC:** Ein Ordner geht als **ZIP-Datei** an den PC. Die App packt ihn dabei samt Unterordnern. Der PC legt ihn nicht als Ordnerstruktur an.
+
+**Zugriff:** Für den Dateimanager braucht die App „Zugriff auf alle Dateien“ (`MANAGE_EXTERNAL_STORAGE`). Das erlauben Sie einmal in den Systemeinstellungen. Ohne ihn bleibt nur die Systemauswahl.
+
+## Einrichten
+
+1. Klicken Sie in Nolphin am PC in der Seitenleiste auf **Handy**. Es erscheint ein QR-Code.
+2. **Erster Scan:** Scannen Sie den Code mit der Kamera des Handys. Die Seite im Browser bietet die App zum Installieren an. Laden Sie sie und erlauben Sie die Installation. Warnungen von Chrome, Play Protect oder Mi Protect sind bei Apps außerhalb des Play Store normal.
+3. **Verbinden:** Öffnen Sie die App, tippen Sie auf **QR-Code scannen und verbinden** und richten Sie die Kamera auf den Code am PC. Zum Scharfstellen tippen Sie aufs Bild. Die App liest den Code mit einem **eigenen QR-Leser** ([`QrDecoder.java`](src/org/nolphin/handy/QrDecoder.java)), ohne Bibliothek und ohne Google-Dienste. Statt zu scannen können Sie am PC den Link kopieren und in der App **Link aus der Zwischenablage einfügen** wählen.
+4. **Wichtig:** Handy und PC müssen im **selben WLAN** sein. In einem anderen Netz, zum Beispiel einem Hotspot, erreicht die App den PC nicht.
+
+Der Schlüssel im Link gilt, solange der Austausch am PC läuft, höchstens eine begrenzte Zeit. Nach einem Neustart von Nolphin oder bei einem neuen Code scannen Sie einfach erneut. Beim ersten Verbinden lädt die App vorhandene Dateien nicht. Neue Dateien landen in `Download/Nolphin`.
 
 ## Aktualisieren
 
-Hat Nolphin am PC eine neuere App (höhere `versionCode`), zeigt die Startseite „Neue Version“. Ein Tipp auf **Aktualisieren** installiert sie über die alte, ohne Deinstallieren; die Verbindung bleibt. Beim ersten Mal erlaubt man der App einmal „Apps installieren“. Neue Version bereitstellen: `android/build.sh`, danach Nolphin installieren (`sudo ninja -C build install`) oder die APK nach `~/.local/share/nolphin/phone/` kopieren. Die `versionCode` im Manifest muss steigen.
+Hat Nolphin am PC eine neuere App (höhere `versionCode`), zeigt die Startseite **Neue Version**. Ein Tipp auf **Aktualisieren** installiert sie über die alte, ohne Deinstallieren. Die Verbindung bleibt. Beim ersten Mal erlauben Sie der App einmal „Apps installieren“.
+
+Eine neue Version bereitstellen:
+
+1. `versionCode` in [`AndroidManifest.xml`](AndroidManifest.xml) erhöhen.
+2. `./build.sh` ausführen.
+3. Die APK nach `~/.local/share/nolphin/phone/nolphin-handy.apk` kopieren, oder Nolphin installieren (`sudo ninja -C build install` im Nolphin-Ordner).
 
 ## Bauen (Entwickler)
 
-Voraussetzungen: JDK (`javac`, `keytool`) und das Android-SDK (`android.jar`, `aapt2`, `d8`, `zipalign`, `apksigner`).
+Voraussetzungen: JDK (`javac`, `keytool`) und das Android-SDK mit `android.jar`, `aapt2`, `d8`, `zipalign`, `apksigner`. Das SDK wird standardmäßig in `~/Android/Sdk` gesucht, sonst über `ANDROID_HOME`.
 
 ```bash
-android/build.sh
+./build.sh
 ```
 
-Ergebnis: `android/build/nolphin-handy.apk`.
+Ergebnis: `build/nolphin-handy.apk`.
 
-Der QR-Leser lässt sich ohne Handy prüfen (`android/test.sh`): Er liest Codes des C-Encoders von Nolphin, gedreht, verzerrt, unscharf und verrauscht gezeichnet, einen Bildschirmfoto-Ausschnitt und ein echtes, dunkles und unscharfes Handyfoto des Codes. Beim ersten Lauf entsteht ein Signaturschlüssel in `~/.config/nolphin/` (nicht im Repository); sein Passwort liegt im Systemschlüsselbund (`secret-tool`, Paket `libsecret-tools`), nie in einer Datei. Liegt die APK vor dem Installieren von Nolphin da, wird sie nach `<datadir>/nolphin/phone/` mitinstalliert und der Handy-Austausch bietet sie zum Laden an. Ohne APK läuft alles weiter im Handy-Browser.
+Beim ersten Lauf entsteht ein Signaturschlüssel in `~/.config/nolphin/`. Er liegt **nicht** im Repository. Sein Passwort liegt im Systemschlüsselbund (`secret-tool`, Paket `libsecret-tools`), nie in einer Datei. Eine neue APK lässt sich nur über die alte installieren, wenn sie mit demselben Schlüssel signiert ist.
+
+### Tests
+
+```bash
+./test.sh
+```
+
+Der Test läuft ohne Handy und prüft:
+
+* den **QR-Leser**: 163 Prüfungen (Codes des C-Encoders von Nolphin, gedreht, verzerrt, unscharf, verrauscht, ein Bildschirmfoto und ein echtes dunkles, unscharfes Handyfoto),
+* die **Link-Prüfung**: 34 Prüfungen,
+* die **Dateioperationen** (`FileOps`): 16 Prüfungen für Kopieren, Verschieben, Umbenennen, neuer Ordner, ZIP und Löschen, einschließlich der Schutzfälle (Ordner nicht in sich selbst, Namenskonflikt, ungültige Namen, Wurzel nicht löschbar).
+
+Der Test braucht den Nolphin-Quelltext im Nachbarordner `../nolphin-file-manager-master` (oder `NOLPHIN_ROOT`), außerdem `gcc` und GLib.
+
+**Nicht automatisch getestet** ist die Oberfläche. Sie wurde auf einem echten Handy angesehen: Start, Liste, Dokument-Reiter, PDF-Vorschau, Auswahl-Leiste, hell und dunkel. Die Funktionen Kopieren, Verschieben, Löschen, Umbenennen und Neuer Ordner sind **auf dem Handy noch nicht von Hand ausprobiert**. Probieren Sie Löschen und Verschieben zuerst an einer Testdatei aus.
+
+### Bilder der README neu erzeugen
+
+```bash
+google-chrome --headless=new --hide-scrollbars --virtual-time-budget=6000 \
+  --force-device-scale-factor=2 --window-size=360,740 \
+  --screenshot=docs/bilder/liste-hell.png "file://$PWD/docs/bilder/quelle.html#liste-hell"
+```
+
+Seiten: `start`, `uebersicht`, `liste`, `auswahl`, `dokumente`, `vompc`, jeweils mit `-hell` oder `-dunkel`. Die Quelle braucht beim Rendern Internet für die Symbolschrift.
+
+## Aufbau des Quelltexts
+
+| Datei (`src/org/nolphin/handy/`) | Aufgabe |
+|---|---|
+| `MainActivity` | Kopfleiste, Reiter, Verbindung, Versand |
+| `HomeScreen`, `FromPcScreen`, `ToPcScreen`, `HistoryScreen`, `SettingsScreen` | Die Bildschirme |
+| `FileOps` | Kopieren, Verschieben, Löschen, Umbenennen, ZIP |
+| `Ui` | Farben (hell und dunkel), Symbole, Listenzeilen |
+| `Thumbs` | Vorschaubilder (Foto, Video, Albumbild, PDF, App-Symbol) |
+| `SyncService` | Laden und Senden im Hintergrund |
+| `Link`, `Connector`, `PcCheck`, `Conn` | Verbindung und gespeicherter Schlüssel |
+| `QrDecoder`, `ScanActivity` | Eigener QR-Leser und Scanner |
+| `Updater`, `Store`, `ShareActivity` | Aktualisieren, Verlauf, Teilen-Menü |
+
+Der PC-Teil (der kleine Server in Nolphin) liegt im Projekt [nolphin-file-manager](https://github.com/kaysiebke-cell/nolphin-file-manager) (`src/nolphin-phone-server.c`, `src/nolphin-phone.c`).
+
+## Sicherheit und Grenzen
+
+* Die Verbindung läuft **unverschlüsselt im eigenen WLAN**. Der Schlüssel steckt im Link. Verwenden Sie das nur in einem Netz, dem Sie vertrauen.
+* Löschen ist endgültig (kein Papierkorb).
+* Ordner gehen nur als ZIP an den PC.
+* Der Zugriff auf alle Dateien ist mächtig. Die App nutzt ihn nur für den Dateimanager, und nur nach Ihrer Aktion.
+* Android-Systemordner anderer Apps (`Android/data`, `Android/obb`) erscheinen nicht unter „Dokumente“.

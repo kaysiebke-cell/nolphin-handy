@@ -3,7 +3,10 @@
 # Die Testcodes erzeugt der C-Encoder von Nolphin (src/nolphin-qr.c).
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
-ROOT="$(cd "$HERE/.." && pwd)"
+# Nolphin (PC-Teil) liegt im Nachbarordner; mit NOLPHIN_ROOT lässt sich ein anderer Ort angeben
+ROOT="${NOLPHIN_ROOT:-$HERE/../nolphin-file-manager-master}"
+[ -f "$ROOT/src/nolphin-qr.c" ] || { echo "Nolphin-Quelltext nicht gefunden: $ROOT (NOLPHIN_ROOT setzen)" >&2; exit 2; }
+ROOT="$(cd "$ROOT" && pwd)"
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
@@ -27,6 +30,8 @@ CONFIG_DIR="$ROOT/build"
 gcc -I"$ROOT/src" -I"$CONFIG_DIR" $(pkg-config --cflags glib-2.0) "$TMP/drv.c" "$ROOT/src/nolphin-qr.c" \
     -o "$TMP/drv" $(pkg-config --libs glib-2.0)
 javac --release 11 -d "$TMP/classes" "$HERE/src/org/nolphin/handy/QrDecoder.java" "$HERE/src/org/nolphin/handy/Link.java" \
-    "$HERE/test/org/nolphin/handy/QrDecoderTest.java" "$HERE/test/org/nolphin/handy/LinkTest.java"
+    "$HERE/src/org/nolphin/handy/FileOps.java" "$HERE/test/org/nolphin/handy/QrDecoderTest.java" \
+    "$HERE/test/org/nolphin/handy/LinkTest.java" "$HERE/test/org/nolphin/handy/FileOpsTest.java"
 java -cp "$TMP/classes" org.nolphin.handy.LinkTest
+java -cp "$TMP/classes" org.nolphin.handy.FileOpsTest
 java -cp "$TMP/classes" org.nolphin.handy.QrDecoderTest "$TMP/drv" "$ROOT/docs/bilder/panel-handy.png" "$HERE/test/resources/echtes-foto.png"
