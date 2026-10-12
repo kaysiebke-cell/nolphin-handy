@@ -3,7 +3,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Bilder für die README (Beispieldaten)</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
-<!-- Quelle der README-Bilder. Aufruf: quelle.html#<seite>-<hell|dunkel>. Seiten: start, uebersicht, liste, auswahl, dokumente, einfuegen, vompc, vompcauswahl, entpacken, umbenennen, loeschen, analyse, papierkorb.
+<!-- Quelle der README-Bilder. Aufruf: quelle.html#<seite>-<hell|dunkel>. Seiten: start, uebersicht, liste, auswahl, dokumente, einfuegen, vompc, vompcauswahl, entpacken, umbenennen, loeschen, analyse, papierkorb, sortieren, zweifenster.
      Rendern: google-chrome --headless --screenshot=OUT.png --window-size=360,740 --force-device-scale-factor=2 "file:///…/quelle.html#liste-hell" -->
 <style>
 :root{--font:Roboto,"Noto Sans","DejaVu Sans",system-ui,sans-serif}
@@ -74,11 +74,17 @@ body.dunkel .badge{color:#10200A}
 .rtabs{display:flex;font-size:13px;margin:6px 0 8px}.rtabs div{flex:1;text-align:center;padding:8px 2px 7px;color:var(--dm);border-bottom:3px solid transparent;white-space:nowrap}.rtabs .on{color:var(--pr);font-weight:500;border-color:var(--pr)}
 .fld{border-bottom:1.5px solid var(--ln);padding:8px 0 6px;font-size:15px;margin-bottom:4px}.flb{font-size:12px;color:var(--dm);margin-top:6px}
 .prev{border:1px solid var(--ln);border-radius:10px;padding:10px 12px;font-size:13px;line-height:1.6;margin-top:10px;background:var(--bg)}.prev i{font-style:normal;color:var(--dm);padding:0 6px}
+
+.rd{width:18px;height:18px;border:2px solid var(--dm);border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center}.rd.on{border-color:var(--pr)}.rd.on:after{content:"";width:10px;height:10px;border-radius:50%;background:var(--pr)}
+.opt{display:flex;align-items:center;gap:14px;font-size:15px;padding:9px 0}.sh{font-size:12px;font-weight:500;color:var(--dm);margin:10px 0 2px}
+.pane{flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden;border-bottom:3px solid var(--ln)}
+.pane .ph{display:flex;align-items:center;gap:8px;height:38px;padding:0 16px;font-size:13px;color:var(--dm);background:var(--bg);border-bottom:1px solid var(--ln);flex:none}.pane .ph b{color:var(--pr);font-weight:500}
+.pane .r{height:54px}
 </style></head>
 <body><div id="root" style="display:contents"></div>
 <script>
 const h=(location.hash||'#start-hell').slice(1).split('-');const page=h[0],theme=h[1]||'hell';
-document.body.className=theme;if(page==='uebersicht')document.body.style.height='900px';
+document.body.className=theme;
 const ic=n=>`<i class="ti ti-${n}"></i>`;
 const nav=a=>`<div class="nav">${[['home','Start'],['download','Vom PC'],['upload','Zum PC'],['history','Verlauf']].map((x,i)=>`<div class="${i==a?'on':''}">${ic(x[0])}${x[1]}</div>`).join('')}</div>`;
 const app=`<div class="app"><img src="../../res/mipmap-xxxhdpi/ic_launcher.png" alt=""><div><b>Nolphin Handy</b><small>Verbunden mit Mein-Laptop</small></div><div class="set">${ic('adjustments-horizontal')}</div></div>`;
@@ -121,5 +127,9 @@ const rr=(i,t,sub,p,o={})=>`<div class="r" style="height:66px"><div class="ico $
 html=app+`<div class="top">${ic('arrow-left')}<span>Hauptspeicher</span>${ic('refresh')}</div><div class="body"><div class="pad" style="gap:10px"><div class="card"><div class="big">74 GB <span style="font-size:14px;font-weight:400;color:var(--dm)">von 128 GB belegt</span></div><div class="seg">${cat.map((c,i)=>`<i style="width:${c[1]}%;background:${cols[i]}"></i>`).join('')}</div><div class="leg">${cat.map((c,i)=>`<div><em style="background:${cols[i]}"></em>${c[0]}<b>${c[2]}</b></div>`).join('')}</div><p style="font-size:12px;margin-top:10px">Stand: 18:12</p><div class="btn">Dateien ansehen</div></div><div class="sec">GRÖSSTE ORDNER</div><div class="grp">${rr('folder-filled','Android','23 GB',100,{fo:1})}${rr('folder-filled','DCIM','16 GB',70,{fo:1})}${rr('folder-filled','Movies','13 GB',56,{fo:1})}</div></div></div>`+nav(2);}
 if(page==='papierkorb'){const cr=(i,t,s,on,fo)=>`<div class="r ${on?'on':''}"><div class="cb ${on?'on':''}">${on?'✓':''}</div><div class="ico ${fo?'fo':''}">${ic(i)}</div><div class="x"><div class="t">${t}</div><div class="s">${s}</div></div></div>`;
 html=app+`<div class="top">${ic('arrow-left')}<span>Papierkorb</span>${ic('dots-vertical')}</div><div class="body"><div class="pad" style="gap:10px;padding:12px 16px"><div class="note"><b>12 Elemente · 340 MB.</b> Gelöschtes bleibt 30 Tage hier und belegt weiter Platz. Das gilt nur für Löschen in dieser App.</div><div class="grp">${cr('file-type-pdf','Rechnung_Oktober.pdf','Documents · 214 KB · vor 2 Tagen',1)}${cr('photo','Urlaub_007.jpg','Kamera · 3,1 MB · vor 5 Tagen',1)}${cr('folder-filled','Alte Fotos','Pictures · 41 Dateien · vor 9 Tagen',0,1)}${cr('file-text','Notizen.txt','Download · 8 KB · vor 21 Tagen',0)}</div></div></div><div class="paste"><span>2 gewählt</span><div class="bt">Löschen</div><div class="bt f">Zurück</div></div>`+nav(2);}
+
+if(page==='sortieren'){const o=(on,t)=>`<div class="opt"><div class="rd ${on?'on':''}"></div>${t}</div>`;
+html=app+`<div class="top">${ic('arrow-left')}<span>Dokumente</span>${ic('folder-plus')}${ic('layout-grid')}</div><div class="body">${F('Steuer 2025','14 Elemente',{more:false})}${row('file-type-pdf','Rechnung_Oktober.pdf','214 KB · 12.10.2026')}</div>`+`<div class="dlgwrap"><div class="dlg"><h3>Sortieren</h3><div class="sh">SORTIEREN NACH</div>${o(1,'Name')}${o(0,'Größe')}${o(0,'Änderungsdatum')}${o(0,'Dateityp')}<div class="sh">REIHENFOLGE</div>${o(1,'Aufsteigend (A bis Z)')}${o(0,'Absteigend (Z bis A)')}<div class="opt" style="margin-top:6px"><div class="cb on">✓</div>Ordner zuerst</div><div class="acts" style="justify-content:space-between"><div class="bt" style="border:0;min-width:0">Standard</div><div class="bt f">Fertig</div></div></div></div>`;}
+if(page==='zweifenster'){html=app+`<div class="body" style="display:flex;flex-direction:column;background:var(--sf)"><div class="pane"><div class="ph">${ic('folder')}<b>Quelle</b> · Hauptspeicher › Download</div>${row('photo','Urlaub_001.jpg','3,1 MB',{cb:1,on:1,more:false})}${row('photo','Urlaub_002.jpg','2,8 MB',{cb:1,on:1,more:false})}${row('file-type-pdf','Rechnung.pdf','214 KB',{cb:0,more:false})}</div><div class="pane"><div class="ph">${ic('folder')}<b>Ziel</b> · SD-Karte › Fotos</div>${F('2025','48 Elemente',{more:false})}${F('2026','12 Elemente',{more:false})}${row('photo','Titel.jpg','1,2 MB',{more:false})}</div></div>`+nav(2);}
 document.getElementById('root').outerHTML=html;
 </script></body></html>

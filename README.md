@@ -12,29 +12,13 @@ Das Aussehen folgt Linux Mint (Mint-Grün), sachlich und ruhig: flache Listen, e
 
 > Die Bilder unten sind **nachgezeichnet mit Beispieldaten** (Quelle: [`docs/bilder/quelle.html`](docs/bilder/quelle.html)). Sie zeigen das Aussehen der App, aber keine echten Dateien oder Netzwerkdaten.
 
-| Start | Zum PC: Übersicht | Liste |
-|:--:|:--:|:--:|
-| ![Start, hell](docs/bilder/start-hell.png) | ![Übersicht mit Google Fotos und Cloud, hell](docs/bilder/uebersicht-hell.png) | ![Liste, hell](docs/bilder/liste-hell.png) |
+Der ganze Funktionsumfang in einem Durchlauf (15 Bilder, jeweils mit Beschriftung):
 
-| Auswahl | Dokumente mit Reitern und Speicher-Schalter | Kopieren und Verschieben |
-|:--:|:--:|:--:|
-| ![Auswahl, hell](docs/bilder/auswahl-hell.png) | ![Dokumente, hell](docs/bilder/dokumente-hell.png) | ![Einfügen-Leiste, hell](docs/bilder/einfuegen-hell.png) |
+| Hell | Dunkel |
+|:--:|:--:|
+| ![Alle Funktionen der App, hell](docs/bilder/funktionen-hell.gif) | ![Alle Funktionen der App, dunkel](docs/bilder/funktionen-dunkel.gif) |
 
-| Dunkel: Liste | Dunkel: Auswahl | Dunkel: Dokumente |
-|:--:|:--:|:--:|
-| ![Liste, dunkel](docs/bilder/liste-dunkel.png) | ![Auswahl, dunkel](docs/bilder/auswahl-dunkel.png) | ![Dokumente, dunkel](docs/bilder/dokumente-dunkel.png) |
-
-| Vom PC | Vom PC: Auswahl, dunkel | Start, dunkel |
-|:--:|:--:|:--:|
-| ![Vom PC, hell](docs/bilder/vompc-hell.png) | ![Vom PC mit Auswahl, dunkel](docs/bilder/vompcauswahl-dunkel.png) | ![Start, dunkel](docs/bilder/start-dunkel.png) |
-
-| ZIP entpacken | Mehrere Dateien umbenennen | Löschen in den Papierkorb |
-|:--:|:--:|:--:|
-| ![ZIP entpacken, hell](docs/bilder/entpacken-hell.png) | ![Umbenennen mit Vorschau, hell](docs/bilder/umbenennen-hell.png) | ![In den Papierkorb, hell](docs/bilder/loeschen-hell.png) |
-
-| Speicheranalyse | Papierkorb | Dunkel: Umbenennen, Analyse, Papierkorb |
-|:--:|:--:|:--:|
-| ![Speicheranalyse, hell](docs/bilder/analyse-hell.png) | ![Papierkorb, hell](docs/bilder/papierkorb-hell.png) | ![Papierkorb, dunkel](docs/bilder/papierkorb-dunkel.png) |
+Gezeigt werden: Start, Übersicht, Ordner und Dateien, Sortieren, Dokumente mit Reitern und Speicher-Schalter, Mehrfachauswahl, Kopieren und Verschieben, Zwei-Fenster-Modus, ZIP entpacken, mehrere Dateien umbenennen, Löschen in den Papierkorb, Papierkorb, Speicheranalyse, Vom PC und Vom PC mit Auswahl.
 
 ## Wo die Dateien am PC landen
 
@@ -195,12 +179,10 @@ Der Test braucht den Nolphin-Quelltext im Nachbarordner `../nolphin-file-manager
 ### Bilder der README neu erzeugen
 
 ```bash
-google-chrome --headless=new --hide-scrollbars --virtual-time-budget=6000 \
-  --force-device-scale-factor=2 --window-size=360,740 \
-  --screenshot=docs/bilder/liste-hell.png "file://$PWD/docs/bilder/quelle.html#liste-hell"
+docs/bilder/erzeugen.sh
 ```
 
-Seiten: `start`, `uebersicht`, `liste`, `auswahl`, `dokumente`, `einfuegen`, `vompc`, `vompcauswahl`, `entpacken`, `umbenennen`, `loeschen`, `analyse`, `papierkorb`, jeweils mit `-hell` oder `-dunkel`. Die Seite `uebersicht` ist höher: `--window-size=360,900`. Die Quelle braucht beim Rendern Internet für die Symbolschrift.
+Das Skript zeichnet die Seiten aus `docs/bilder/quelle.html` mit Chrome oder Chromium (Beispieldaten, keine echten Dateien) und setzt sie mit `docs/bilder/gif.py` (Python mit Pillow) zu den beiden GIFs `funktionen-hell.gif` und `funktionen-dunkel.gif` zusammen. Die Reihenfolge und die Beschriftungen stehen am Anfang von `gif.py`, die Seiten in `quelle.html` (`#<seite>-<hell|dunkel>`). Die Quelle braucht beim Rendern Internet für die Symbolschrift.
 
 ## Aufbau des Quelltexts
 
