@@ -454,12 +454,18 @@ public class SyncService extends Service {
         final String name;    // null: Name aus dem Anbieter lesen
         final String dir;     // Unterordner am PC ("Ordner1/Unter") oder null
         final String group;   // oberster Ordner (für die Sammelmeldung) oder null
+        final boolean emptyDir;   // ein leerer Ordner: am PC nur anlegen, nichts hochladen
 
         Job(Uri uri, String name, String dir, String group) {
+            this(uri, name, dir, group, false);
+        }
+
+        Job(Uri uri, String name, String dir, String group, boolean emptyDir) {
             this.uri = uri;
             this.name = name;
             this.dir = dir;
             this.group = group;
+            this.emptyDir = emptyDir;
         }
     }
 
@@ -505,6 +511,10 @@ public class SyncService extends Service {
     private void addFolder(List<Job> list, java.io.File dir, String rel, String group) {
         java.io.File[] fs = dir.listFiles();
         if (fs == null) {
+            return;
+        }
+        if (fs.length == 0) {
+            list.add(new Job(null, dir.getName(), rel, group, true));   // leerer Ordner
             return;
         }
         java.util.Arrays.sort(fs);
@@ -553,11 +563,20 @@ public class SyncService extends Service {
             String name = job.name != null ? job.name : displayName(u);
             long[] grp = job.group != null ? groups.get(job.group) : null;
             if (job.group != null && grp == null) {
-                grp = new long[3];
+                grp = new long[4];
                 groups.put(job.group, grp);
             }
             if (grp != null && grp[2] > 0) {
                 continue;   // nach einem Fehler den Rest dieses Ordners nicht weiter senden
+            }
+            if (job.emptyDir) {
+                if (makeRemoteFolder(host, token, job.dir)) {
+                    grp[3]++;
+                } else {
+                    grp[2]++;
+                    notifyFile("Senden fehlgeschlagen", "Ordner " + job.dir + " konnte am PC nicht angelegt werden");
+                }
+                continue;
             }
             java.io.File temp = null;
             long sentSize = 0;
@@ -642,10 +661,32 @@ public class SyncService extends Service {
         }
         for (java.util.Map.Entry<String, long[]> g : groups.entrySet()) {
             long[] v = g.getValue();
-            if (v[0] > 0 && v[2] == 0) {
-                String text = v[0] + (v[0] == 1 ? " Datei" : " Dateien");
+            if ((v[0] > 0 || v[3] > 0) && v[2] == 0) {
+                String text = v[0] + (v[0] == 1 ? " Datei" : " Dateien")
+                        + (v[3] > 0 ? " und " + v[3] + (v[3] == 1 ? " leerer Ordner" : " leere Ordner") : "");
                 Store.addHistory(this, false, g.getKey() + "/ (" + text + ")", v[1], true, "");
                 notifyFile("Ordner an den PC gesendet", g.getKey() + ": " + text);
+            }
+        }
+    }
+
+    /** Legt am PC einen (leeren) Ordner im Eingangsordner an ("Ordner/Unter"). */
+    private boolean makeRemoteFolder(String host, String token, String rel) {
+        HttpURLConnection c = null;
+        try {
+            c = (HttpURLConnection) new URL("http://" + host + "/mkdir?t=" + Uri.encode(token) + "&d=" + Uri.encode(rel)).openConnection();
+            c.setConnectTimeout(8000);
+            c.setReadTimeout(20000);
+            c.setRequestMethod("POST");
+            c.setDoOutput(true);
+            c.setFixedLengthStreamingMode(0);
+            c.getOutputStream().close();
+            return c.getResponseCode() == 200;
+        } catch (Exception e) {
+            return false;
+        } finally {
+            if (c != null) {
+                c.disconnect();
             }
         }
     }

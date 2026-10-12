@@ -28,6 +28,18 @@ Das Aussehen folgt Linux Mint (Mint-Grün), sachlich und ruhig: flache Listen, e
 |:--:|:--:|:--:|
 | ![Vom PC, hell](docs/bilder/vompc-hell.png) | ![Vom PC mit Auswahl, dunkel](docs/bilder/vompcauswahl-dunkel.png) | ![Start, dunkel](docs/bilder/start-dunkel.png) |
 
+## Wo die Dateien am PC landen
+
+Alles, was Sie vom Handy senden, liegt am PC im Ordner **`~/Handy/Vom Handy/`** (in Ihrem Home-Ordner, Unterordner `Handy`, darin `Vom Handy`). Das gilt auch für Fotos aus Google Fotos und Dateien aus Google Drive.
+
+* Einzelne Dateien liegen direkt in `Vom Handy`.
+* Ordner liegen dort als Ordner mit allen Unterordnern.
+* Gibt es einen Namen schon, wird nummeriert (`Name (1).ext`). Nichts wird überschrieben.
+
+In Nolphin öffnen Sie ihn mit einem Klick auf **Handy** in der Seitenleiste. Die Hauptansicht zeigt den Ordner `~/Handy`.
+
+Der Weg in die andere Richtung: Dateien aus `~/Handy` (ohne `Vom Handy`) erscheinen in der App unter **Vom PC**.
+
 ## Die vier Reiter
 
 Unten stehen vier Reiter. Die Einstellungen öffnen Sie oben rechts.
@@ -73,7 +85,7 @@ Es gibt zwei Wege. Beide bieten dasselbe.
 
 **Löschen:** Die App fragt vorher nach. Gelöscht wird **endgültig**. Es gibt keinen Papierkorb.
 
-**Ordner an den PC:** Die App schickt einen Ordner **Datei für Datei mit allen Unterordnern**. Am PC entsteht derselbe Ordner im Eingangsordner „Vom Handy“. Gibt es den Ordner dort schon, kommen die Dateien hinein, und gleiche Namen werden nummeriert (`Name (1).ext`), nichts wird überschrieben. Für den ganzen Ordner gibt es **eine** Meldung und **einen** Eintrag im Verlauf. **Leere Ordner** werden nicht übertragen. Das braucht ein aktuelles Nolphin am PC (Feld `folders` in `/info`). Bei einem älteren Nolphin schickt die App den Ordner als **ZIP-Datei**.
+**Ordner an den PC:** Die App schickt einen Ordner **Datei für Datei mit allen Unterordnern**. Am PC entsteht derselbe Ordner im Eingangsordner „Vom Handy“. Gibt es den Ordner dort schon, kommen die Dateien hinein, und gleiche Namen werden nummeriert (`Name (1).ext`), nichts wird überschrieben. Für den ganzen Ordner gibt es **eine** Meldung und **einen** Eintrag im Verlauf. **Leere Unterordner** werden auch angelegt. Das braucht ein aktuelles Nolphin am PC (Feld `folders` in `/info`). Bei einem älteren Nolphin schickt die App den Ordner als **ZIP-Datei**.
 
 **Zugriff:** Für den Dateimanager braucht die App „Zugriff auf alle Dateien“ (`MANAGE_EXTERNAL_STORAGE`). Das erlauben Sie einmal in den Systemeinstellungen. Ohne ihn bleibt nur die Systemauswahl.
 
@@ -122,7 +134,7 @@ Der Test läuft ohne Handy und prüft:
 
 Der Test braucht den Nolphin-Quelltext im Nachbarordner `../nolphin-file-manager-master` (oder `NOLPHIN_ROOT`), außerdem `gcc` und GLib.
 
-**Von Hand auf einem echten Handy geprüft** (mit Testdateien in einem eigenen Testordner, danach gelöscht): Neuer Ordner, Kopieren (auch mit Namenskonflikt, es entsteht `a (2).txt`), Verschieben, Umbenennen, Löschen mit Abbrechen und Bestätigen, Löschen eines ganzen Ordners, Mehrfachauswahl mit der Leiste oben, Eigenschaften, Ordner als ZIP an den PC (kam mit Unterordnern an, so läuft es noch bei älterem Nolphin) und der Schutz „Ordner nicht in sich selbst kopieren“. Der Ordner-Versand Datei für Datei ist am PC-Server automatisch getestet (Unterordner, Schutz vor `..`, Nummerierung) und auf dem Handy von Hand geprüft: Ein Testordner mit zwei Ebenen, einer Datei mit Umlauten und einem leeren Unterordner kam mit allen Dateien und Unterordnern an (der leere Ordner nicht, wie beschrieben). Beim zweiten Senden entstanden `Name (1).txt`, nichts wurde überschrieben. Die Oberfläche selbst ist nicht automatisch getestet.
+**Von Hand auf einem echten Handy geprüft** (mit Testdateien in einem eigenen Testordner, danach gelöscht): Neuer Ordner, Kopieren (auch mit Namenskonflikt, es entsteht `a (2).txt`), Verschieben, Umbenennen, Löschen mit Abbrechen und Bestätigen, Löschen eines ganzen Ordners, Mehrfachauswahl mit der Leiste oben, Eigenschaften, Ordner als ZIP an den PC (kam mit Unterordnern an, so läuft es noch bei älterem Nolphin) und der Schutz „Ordner nicht in sich selbst kopieren“. Der Ordner-Versand Datei für Datei ist am PC-Server automatisch getestet (Unterordner, Schutz vor `..`, Nummerierung) und auf dem Handy von Hand geprüft: Ein Testordner mit zwei Ebenen, einer Datei mit Umlauten und einem leeren Unterordner kam mit allen Dateien und Unterordnern an. Beim zweiten Senden entstanden `Name (1).txt`, nichts wurde überschrieben. Die Oberfläche selbst ist nicht automatisch getestet.
 
 ### Bilder der README neu erzeugen
 
@@ -154,6 +166,6 @@ Der PC-Teil (der kleine Server in Nolphin) liegt im Projekt [nolphin-file-manage
 
 * Die Verbindung läuft **unverschlüsselt im eigenen WLAN**. Der Schlüssel steckt im Link. Verwenden Sie das nur in einem Netz, dem Sie vertrauen.
 * Löschen ist endgültig (kein Papierkorb).
-* Leere Ordner gehen nicht an den PC. Bei einem älteren Nolphin am PC geht ein Ordner nur als ZIP.
+* Bei einem älteren Nolphin am PC geht ein Ordner nur als ZIP.
 * Der Zugriff auf alle Dateien ist mächtig. Die App nutzt ihn nur für den Dateimanager, und nur nach Ihrer Aktion.
 * Die privaten Ordner anderer Apps (`Android/data`, `Android/obb`) kann Android keiner App zeigen. Cloud-Dateien und Dateien anderer Apps holen Sie über die Systemauswahl (siehe oben).
