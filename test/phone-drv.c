@@ -1,5 +1,7 @@
-/* Hilfsprogramm für test.sh: startet den ECHTEN Nolphin-Server (src/nolphin-phone-server.c) auf 127.0.0.1 und
- * schreibt eine Zeile "PORT TOKEN FINGERABDRUCK". Es läuft, bis die Standardeingabe schließt. */
+/* Hilfsprogramm für test.sh und für Prüfungen am echten Handy: startet den ECHTEN Nolphin-Server
+ * (src/nolphin-phone-server.c) auf einer Adresse (Vorgabe 127.0.0.1) und schreibt eine Zeile
+ * "PORT TOKEN FINGERABDRUCK". Es läuft, bis die Standardeingabe schließt. Aufruf: phone-drv [Adresse [Ordner]]
+ * Der Ordner enthält "eingang" (Empfang) und "frei" (zum Laden); ohne Angabe ein Temporärordner. */
 #include <gio/gio.h>
 #include <stdio.h>
 
@@ -17,10 +19,11 @@ watch_stdin (gpointer loop)
 }
 
 int
-main (void)
+main (int argc, char **argv)
 {
 	GError *error = NULL;
-	gchar *root = g_dir_make_tmp ("nolphin-live-XXXXXX", NULL);
+	const gchar *address = argc > 1 ? argv[1] : "127.0.0.1";
+	gchar *root = argc > 2 ? g_strdup (argv[2]) : g_dir_make_tmp ("nolphin-live-XXXXXX", NULL);
 	gchar *inbox = g_build_filename (root, "eingang", NULL);
 	gchar *share = g_build_filename (root, "frei", NULL);
 	GFile *in = g_file_new_for_path (inbox), *sh = g_file_new_for_path (share);
@@ -29,7 +32,7 @@ main (void)
 	gchar *token, *fp;
 
 	g_mkdir_with_parents (share, 0755);
-	s = nolphin_phone_server_start ("127.0.0.1", in, sh, NULL, NULL, NULL, NULL, &error);
+	s = nolphin_phone_server_start (address, in, sh, NULL, NULL, NULL, NULL, &error);
 	if (s == NULL) {
 		g_printerr ("Start fehlgeschlagen: %s\n", error->message);
 		return 1;

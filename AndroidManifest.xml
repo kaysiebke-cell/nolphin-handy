@@ -43,7 +43,7 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-            <!-- Der QR-Code von Nolphin öffnet über die Seite im Browser diesen Link. -->
+            <!-- nolphin://connect?…: Verbindungslink (Version 2, mit Fingerabdruck) zum Öffnen der App. -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />

@@ -414,6 +414,8 @@ public class MainActivity extends Activity implements Host {
         @Override
         public void onFailure(String message) {
             error = message;
+            // Auch sichtbar machen, wenn die App schon verbunden ist (zum Beispiel abgelehntes Zertifikat)
+            Toast.makeText(MainActivity.this, message, Toast.LENGTH_LONG).show();
             screens[current].onShow();
         }
     };
