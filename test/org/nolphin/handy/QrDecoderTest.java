@@ -120,8 +120,8 @@ public class QrDecoderTest {
         String driver = args[0];
         String[] texts = {
             "A",
-            "nolphin://connect?host=192.168.178.20:41841&t=f334a57a2c0d4a7e9b6c1d2e3f405162",
-            "http://192.168.178.20:41841/?t=f334a57a2c0d4a7e9b6c1d2e3f405162",
+            "nolphin://connect?host=192.168.1.10:40000&t=0123456789abcdef0123456789abcdef",
+            "http://192.168.1.10:40000/?t=0123456789abcdef0123456789abcdef",
             "http://10.0.0.5:8080/?t=00112233445566778899aabbccddeeff",
             "123456789012345",
         };
@@ -159,7 +159,7 @@ public class QrDecoderTest {
         }
         // Große Fotos (Kamera-App, 12 Megapixel und mehr): große Module, nur mit Verkleinerung lesbar
         {
-            String text = "http://192.168.178.20:43913/?t=4d6d1633ec8ca225aaeb5ddfbc5a1b6d&v=1&e=1791769130";
+            String text = "http://192.168.1.10:40000/?t=0123456789abcdef0123456789abcdef&v=1&e=1700000000";
             boolean[][] m = matrix(driver, text);
             int[][] sizes = { { 4000, 3000 }, { 3264, 2448 }, { 2560, 1920 } };
             double[] scalesBig = { 26, 18, 14 };
@@ -210,15 +210,16 @@ public class QrDecoderTest {
             }
             runs++;
             String got = QrDecoder.decode(g, W, H);
-            if (got == null || !got.startsWith("http://192.168.178.20:") || !got.contains("/?t=")) {
+            if (got == null || !got.startsWith("http://192.168.1.10:40000/?t=") || !got.contains("&v=1&e=")) {
                 fails++;
                 System.out.println("FAIL: Screenshot -> " + got);
             } else {
                 System.out.println("Screenshot gelesen: " + got.replaceAll("t=.*", "t=…"));
             }
         }
-        // Echtes Handyfoto (dunkel, unscharf, schief) des QR-Codes vom Bildschirm, Ausschnitt aus dem Xiaomi-Scanner
-        File real = new File(args.length > 2 ? args[2] : "android/test/resources/echtes-foto.png");
+        // Künstlich verwischtes Testbild (dunkel, wenig Kontrast, unscharf, schief, mit Rauschen) mit erfundenem Link.
+        // Ein echtes Foto wird nicht mehr benutzt: Es enthielt den echten Link einer Sitzung.
+        File real = new File(args.length > 2 ? args[2] : "test/resources/testfoto-verwischt.png");
         if (real.exists()) {
             BufferedImage bi = ImageIO.read(real);
             int W = bi.getWidth(), H = bi.getHeight();
@@ -230,11 +231,11 @@ public class QrDecoderTest {
             }
             runs++;
             String got = QrDecoder.decode(g, W, H);
-            if (!"http://192.168.178.20:39369/?t=4d6d1633ec8ca225aaeb5ddfbc5a1b6d".equals(got)) {
+            if (!"http://192.168.1.10:40000/?t=0123456789abcdef0123456789abcdef&v=1&e=1700000000".equals(got)) {
                 fails++;
-                System.out.println("FAIL: echtes Foto -> " + got);
+                System.out.println("FAIL: verwischtes Testbild -> " + got);
             } else {
-                System.out.println("Echtes Handyfoto gelesen: " + got.replaceAll("t=.*", "t=…"));
+                System.out.println("Verwischtes Testbild gelesen: " + got.replaceAll("t=.*", "t=…"));
             }
         }
         System.out.println(runs - fails + " von " + runs + " Prüfungen bestanden");

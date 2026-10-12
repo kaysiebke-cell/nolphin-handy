@@ -166,7 +166,7 @@ Beim ersten Lauf entsteht ein Signaturschlüssel in `~/.config/nolphin/`. Er lie
 
 Der Test läuft ohne Handy und prüft:
 
-* den **QR-Leser**: 163 Prüfungen (Codes des C-Encoders von Nolphin, gedreht, verzerrt, unscharf, verrauscht, ein Bildschirmfoto und ein echtes dunkles, unscharfes Handyfoto),
+* den **QR-Leser**: 163 Prüfungen (Codes des C-Encoders von Nolphin, gedreht, verzerrt, unscharf, verrauscht, ein Bildschirmfoto und ein künstlich verwischtes, dunkles Testbild mit erfundenem Link),
 * die **Link-Prüfung**: 34 Prüfungen,
 * die **Sortierung und die Listen für Favoriten und zuletzt geöffnete Orte** (`SortOrder`, `PlaceLists`): 22 Prüfungen (alle vier Schlüssel, beide Richtungen, „Ordner zuerst“, Gleichstand nach Namen, Endungen, Begrenzung und Reihenfolge der Listen, Pfade mit Leerzeichen und Umlauten),
 * der **Papierkorb** (`TrashOps`): 39 Prüfungen (nur Umbenennen, jeder Speicher sein eigener Papierkorb, Zurückholen an den alten Ort, Namensgleichheit „(2)“ ohne Überschreiben, fehlender alter Ordner, Verknüpfungen, Original bleibt bei Fehler und Abbruch, 30 Tage, Absturz ohne Infodatei, kaputte Infodatei, nie aus dem Papierkorb erneut hinein),

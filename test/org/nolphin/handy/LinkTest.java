@@ -3,7 +3,7 @@ package org.nolphin.handy;
 /** Prüft den Verbindungslink (Link.parse): gültige Formen und Fälle, die abgelehnt werden müssen. */
 public class LinkTest {
     static int fails = 0, runs = 0;
-    static final String T = "4d6d1633ec8ca225aaeb5ddfbc5a1b6d";
+    static final String T = "0123456789abcdef0123456789abcdef";   // erfunden
     static final long NOW = 1_800_000_000L;
 
     static void ok(String what, String link) {
@@ -37,9 +37,9 @@ public class LinkTest {
     }
 
     public static void main(String[] args) {
-        ok("Link aus dem QR-Code (Version 1)", "http://192.168.178.20:43913/?t=" + T + "&v=1&e=" + (NOW + 3600));
-        ok("Link ohne Version und Ablauf (ältere Nolphin-Version)", "http://192.168.178.20:43913/?t=" + T);
-        ok("nolphin-Link von der Seite", "nolphin://connect?host=192.168.178.20:43913&t=" + T);
+        ok("Link aus dem QR-Code (Version 1)", "http://192.168.1.10:40000/?t=" + T + "&v=1&e=" + (NOW + 3600));
+        ok("Link ohne Version und Ablauf (ältere Nolphin-Version)", "http://192.168.1.10:40000/?t=" + T);
+        ok("nolphin-Link von der Seite", "nolphin://connect?host=192.168.1.10:40000&t=" + T);
         ok("Netz 10.x", "http://10.0.2.2:8080/?t=" + T);
         ok("Netz 172.16 bis 172.31", "http://172.31.255.254:65535/?t=" + T);
         ok("Leerzeichen und Zeilenumbruch drumherum", "  http://192.168.1.5:1024/?t=" + T + "\n");

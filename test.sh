@@ -42,4 +42,4 @@ java -cp "$TMP/classes" org.nolphin.handy.SortTest
 java -cp "$TMP/classes" org.nolphin.handy.ZipBatchTest
 java -cp "$TMP/classes" org.nolphin.handy.StorageScanTest
 java -cp "$TMP/classes" org.nolphin.handy.TrashTest
-java -cp "$TMP/classes" org.nolphin.handy.QrDecoderTest "$TMP/drv" "$ROOT/docs/bilder/panel-handy.png" "$HERE/test/resources/echtes-foto.png"
+java -cp "$TMP/classes" org.nolphin.handy.QrDecoderTest "$TMP/drv" "$ROOT/docs/bilder/panel-handy.png" "$HERE/test/resources/testfoto-verwischt.png"
