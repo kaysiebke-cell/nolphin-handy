@@ -14,11 +14,19 @@ Das Aussehen folgt Linux Mint (Mint-Grün), sachlich und ruhig: flache Listen, e
 
 | Start | Zum PC: Übersicht | Liste |
 |:--:|:--:|:--:|
-| ![Start, hell](docs/bilder/start-hell.png) | ![Übersicht, hell](docs/bilder/uebersicht-hell.png) | ![Liste, hell](docs/bilder/liste-hell.png) |
+| ![Start, hell](docs/bilder/start-hell.png) | ![Übersicht mit Google Fotos und Cloud, hell](docs/bilder/uebersicht-hell.png) | ![Liste, hell](docs/bilder/liste-hell.png) |
 
-| Auswahl | Dokumente mit Reitern | Dunkel |
+| Auswahl | Dokumente mit Reitern und Speicher-Schalter | Kopieren und Verschieben |
 |:--:|:--:|:--:|
-| ![Auswahl, hell](docs/bilder/auswahl-hell.png) | ![Dokumente, dunkel](docs/bilder/dokumente-dunkel.png) | ![Liste, dunkel](docs/bilder/liste-dunkel.png) |
+| ![Auswahl, hell](docs/bilder/auswahl-hell.png) | ![Dokumente, hell](docs/bilder/dokumente-hell.png) | ![Einfügen-Leiste, hell](docs/bilder/einfuegen-hell.png) |
+
+| Dunkel: Liste | Dunkel: Auswahl | Dunkel: Dokumente |
+|:--:|:--:|:--:|
+| ![Liste, dunkel](docs/bilder/liste-dunkel.png) | ![Auswahl, dunkel](docs/bilder/auswahl-dunkel.png) | ![Dokumente, dunkel](docs/bilder/dokumente-dunkel.png) |
+
+| Vom PC | Vom PC: Auswahl, dunkel | Start, dunkel |
+|:--:|:--:|:--:|
+| ![Vom PC, hell](docs/bilder/vompc-hell.png) | ![Vom PC mit Auswahl, dunkel](docs/bilder/vompcauswahl-dunkel.png) | ![Start, dunkel](docs/bilder/start-dunkel.png) |
 
 ## Die vier Reiter
 
@@ -30,8 +38,6 @@ Unten stehen vier Reiter. Die Einstellungen öffnen Sie oben rechts.
 | **Vom PC** | Dateien aus dem Ordner „Handy“ am PC, mit Vorschaubild. Antippen lädt eine Datei. Geladene Dateien lassen sich öffnen, teilen oder speichern. |
 | **Zum PC** | Der Dateimanager des Handys. Hier senden Sie Dateien und Ordner an den PC. |
 | **Verlauf** | Alle Übertragungen (bis 200) mit Ergebnis. |
-
-![Vom PC, hell](docs/bilder/vompc-hell.png)
 
 Die **Einstellungen** enthalten: Verbindung trennen, neue Dateien automatisch laden (aus: erst nach Antippen), Zielordner für Dateien vom PC, Verlauf löschen.
 
@@ -126,7 +132,7 @@ google-chrome --headless=new --hide-scrollbars --virtual-time-budget=6000 \
   --screenshot=docs/bilder/liste-hell.png "file://$PWD/docs/bilder/quelle.html#liste-hell"
 ```
 
-Seiten: `start`, `uebersicht`, `liste`, `auswahl`, `dokumente`, `vompc`, jeweils mit `-hell` oder `-dunkel`. Die Quelle braucht beim Rendern Internet für die Symbolschrift.
+Seiten: `start`, `uebersicht`, `liste`, `auswahl`, `dokumente`, `einfuegen`, `vompc`, `vompcauswahl`, jeweils mit `-hell` oder `-dunkel`. Die Seite `uebersicht` ist höher: `--window-size=360,900`. Die Quelle braucht beim Rendern Internet für die Symbolschrift.
 
 ## Aufbau des Quelltexts
 

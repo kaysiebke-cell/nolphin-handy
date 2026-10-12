@@ -3,7 +3,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Bilder für die README (Beispieldaten)</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
-<!-- Quelle der README-Bilder. Aufruf: quelle.html#<seite>-<hell|dunkel>. Seiten: start, uebersicht, liste, auswahl, dokumente, vompc.
+<!-- Quelle der README-Bilder. Aufruf: quelle.html#<seite>-<hell|dunkel>. Seiten: start, uebersicht, liste, auswahl, dokumente, einfuegen, vompc, vompcauswahl.
      Rendern: google-chrome --headless --screenshot=OUT.png --window-size=360,740 --force-device-scale-factor=2 "file:///…/quelle.html#liste-hell" -->
 <style>
 :root{--font:Roboto,"Noto Sans","DejaVu Sans",system-ui,sans-serif}
@@ -40,7 +40,7 @@ body.dunkel .cb.on{color:#10200A}
 .nav{display:flex;border-top:1px solid var(--ln);background:var(--sf);flex:none;height:64px}
 .nav div{flex:1;text-align:center;padding-top:8px;font-size:12px;color:var(--dm)}.nav div i{display:block;font-size:24px}.nav .on{color:var(--pr);font-weight:500}
 .card{background:var(--sf);border:1px solid var(--ln);border-radius:10px;padding:16px}
-.card h3{margin:0;font-size:20px;font-weight:500}.card p{margin:2px 0 0;font-size:14px;color:var(--dm)}
+.grp,.card,.mini,.two{flex:none}.card h3{margin:0;font-size:20px;font-weight:500}.card p{margin:2px 0 0;font-size:14px;color:var(--dm)}
 .head{display:flex;gap:16px;align-items:center}.badge{width:64px;height:64px;border-radius:12px;background:var(--pr);color:#fff;display:flex;align-items:center;justify-content:center;font-size:32px}
 body.dunkel .badge{color:#10200A}
 .btn{margin-top:12px;border:1.5px solid var(--pr);color:var(--pr);border-radius:8px;text-align:center;padding:13px;font-size:15px;font-weight:500}
@@ -53,12 +53,19 @@ body.dunkel .badge{color:#10200A}
 .vol{padding:12px 16px}.bar{height:6px;border-radius:3px;background:var(--ln);margin:10px 0 0 40px}.bar i{display:block;height:6px;border-radius:3px;background:var(--pr)}
 .vt{display:flex;align-items:center;gap:16px}.vt .pc{margin-left:auto;color:var(--pr);font-weight:500;font-size:14px}
 .recent .r{border:0;height:52px;padding-left:0}.recent .r>i{font-size:22px;color:var(--pr);width:28px}.recent .ico{font-size:22px;color:var(--pr);width:28px}
+.bt{display:flex;align-items:center;justify-content:center;height:44px;min-width:112px;padding:0 16px;box-sizing:border-box;border-radius:8px;font-size:14px;font-weight:500;border:1.5px solid var(--pr);color:var(--pr);white-space:nowrap}
+.bt.f{background:var(--pr);color:#fff}body.dunkel .bt.f{color:#10200A}
+.paste{display:flex;align-items:center;gap:8px;padding:8px 16px;background:var(--sf);border-top:1px solid var(--ln);flex:none}
+.paste span{flex:1;font-size:14px;font-weight:500}
+.stor{display:flex;background:var(--bg);border-bottom:1px solid var(--ln);flex:none;padding:0 8px;font-size:14px}
+.stor div{flex:1;text-align:center;padding:10px 8px 8px;color:var(--dm);border-bottom:3px solid transparent}.stor .on{color:var(--pr);font-weight:500;border-color:var(--pr)}
+.actions{display:flex;justify-content:flex-end;gap:8px;padding:2px 16px 8px;background:var(--bg);flex:none}
 .cap{font-size:12px;color:var(--dm);text-align:center;padding:6px}
 </style></head>
 <body><div id="root" style="display:contents"></div>
 <script>
 const h=(location.hash||'#start-hell').slice(1).split('-');const page=h[0],theme=h[1]||'hell';
-document.body.className=theme;
+document.body.className=theme;if(page==='uebersicht')document.body.style.height='900px';
 const ic=n=>`<i class="ti ti-${n}"></i>`;
 const nav=a=>`<div class="nav">${[['home','Start'],['download','Vom PC'],['upload','Zum PC'],['history','Verlauf']].map((x,i)=>`<div class="${i==a?'on':''}">${ic(x[0])}${x[1]}</div>`).join('')}</div>`;
 const app=`<div class="app"><img src="../../res/mipmap-xxxhdpi/ic_launcher.png" alt=""><div><b>Nolphin Handy</b><small>Verbunden mit Mein-Laptop</small></div><div class="set">${ic('adjustments-horizontal')}</div></div>`;
@@ -75,17 +82,21 @@ if(page==='start'){html=app+`<div class="body"><div class="pad">
 </div></div>`+nav(0);}
 if(page==='uebersicht'){html=app+`<div class="top"><span>Zum PC</span></div><div class="search">${ic('search')}Auf dem Handy suchen${ic('x')}</div><div class="body"><div class="pad" style="padding-top:8px">
 <div class="sec">SPEICHER</div><div class="grp"><div class="vol"><div class="vt">${ic('device-mobile')}<div><div style="font-size:16px;font-weight:500">Hauptspeicher</div><div class="s">74 GB von 128 GB belegt</div></div><div class="pc">58 %</div></div><div class="bar"><i style="width:58%"></i></div></div>
-<div class="vol" style="border-top:1px solid var(--ln)"><div class="vt">${ic('sd-card')}<div><div style="font-size:16px;font-weight:500">SD-Karte</div><div class="s">7 GB von 60 GB belegt</div></div><div class="pc">12 %</div></div><div class="bar"><i style="width:12%"></i></div></div></div>
-<div class="sec">SCHNELLZUGRIFF</div><div class="grp">${row('download','Downloads','12 Elemente',{more:false})}${row('apps','Apps','1 App',{more:false})}</div>
+<div class="vol" style="border-top:1px solid var(--ln)"><div class="vt">${ic('database')}<div><div style="font-size:16px;font-weight:500">SD-Karte</div><div class="s">7 GB von 60 GB belegt</div></div><div class="pc">12 %</div></div><div class="bar"><i style="width:12%"></i></div></div></div>
+<div class="sec">SCHNELLZUGRIFF</div><div class="grp">${row('download','Downloads','12 Elemente',{more:false})}${row('apps','Apps','1 App',{more:false})}${row('photo','Google Fotos','Fotos und Videos aus der Cloud',{more:false})}${row('cloud','Cloud und andere Apps','Google Drive und Dateien anderer Apps',{more:false})}</div>
 <div class="sec">KATEGORIEN</div><div class="grp">${row('photo','Bilder','120 MB · 83 Dateien',{more:false})}${row('music','Audio','12 GB · 2437 Dateien',{more:false})}${row('file-text','Dokumente','31 MB · 17 Dateien',{more:false})}</div>
 </div></div>`+nav(2);}
 if(page==='liste'){html=app+`<div class="top">${ic('arrow-left')}<span>Dokumente</span>${ic('folder-plus')}${ic('layout-grid')}</div><div class="search">${ic('search')}Auf dem Handy suchen${ic('x')}</div><div class="path">${ic('home')}<span>›</span><em>Speicher</em><em>›</em><b>Dokumente</b></div><div class="body">
 ${F('Steuer 2025','14 Elemente')}${F('Versicherungen','6 Elemente')}${row('file-type-pdf','Rechnung_Oktober.pdf','214 KB · 12.10.2026')}${row('file-text','Brief Finanzamt.docx','48 KB · 10.10.2026')}${row('table','Haushalt 2026.xlsx','96 KB · 03.10.2026')}${row('photo','Urlaub_001.jpg','3,2 MB · 01.10.2026',{th:'#8DB6D9,#3E6B8E'})}${row('file-zip','Sicherung.zip','128 MB · 28.09.2026')}${row('box','Zahnrad.step','201 KB · 11.10.2026')}</div>`+nav(2);}
 if(page==='auswahl'){html=app+`<div class="sel">${ic('x')}<span>3 gewählt</span>${ic('upload')}${ic('copy')}${ic('arrows-move')}${ic('trash')}${ic('dots-vertical')}</div><div class="search">${ic('search')}Auf dem Handy suchen${ic('x')}</div><div class="body">
 ${row('folder-filled','Steuer 2025','14 Elemente',{fo:1,cb:1,on:1,more:false})}${row('folder-filled','Versicherungen','6 Elemente',{fo:1,cb:0,more:false})}${row('file-type-pdf','Rechnung_Oktober.pdf','214 KB · 12.10.2026',{cb:1,on:1,more:false})}${row('file-text','Brief Finanzamt.docx','48 KB · 10.10.2026',{cb:0,more:false})}${row('table','Haushalt 2026.xlsx','96 KB · 03.10.2026',{cb:1,on:1,more:false})}${row('photo','Urlaub_001.jpg','3,2 MB · 01.10.2026',{cb:0,more:false,th:'#8DB6D9,#3E6B8E'})}${row('file-zip','Sicherung.zip','128 MB · 28.09.2026',{cb:0,more:false})}</div>`+nav(2);}
-if(page==='dokumente'){html=app+`<div class="top">${ic('arrow-left')}<span>Dokumente</span>${ic('layout-grid')}</div><div class="search">${ic('search')}Auf dem Handy suchen${ic('x')}</div><div class="path">${ic('home')}<span>›</span><b>Dokumente</b></div><div class="tabs"><div>Alle</div><div>DOC</div><div>XLS</div><div class="on">PDF</div><div>PPT</div><div>Sonstige</div></div><div class="body">
+if(page==='dokumente'){html=app+`<div class="top">${ic('arrow-left')}<span>Dokumente</span>${ic('layout-grid')}</div><div class="search">${ic('search')}Auf dem Handy suchen${ic('x')}</div><div class="path">${ic('home')}<span>›</span><b>Dokumente</b></div><div class="tabs"><div>Alle</div><div>DOC</div><div>XLS</div><div class="on">PDF</div><div>PPT</div><div>Sonstige</div></div><div class="stor"><div class="on">Beides</div><div>Intern</div><div>SD-Karte</div></div><div class="body">
 ${row('file-type-pdf','Rechnung_Oktober.pdf','Download · 214 KB · 12.10.2026')}${row('file-type-pdf','Vertrag Wohnung.pdf','Documents · 1,2 MB · 02.10.2026')}${row('file-type-pdf','Bedienungsanleitung.pdf','SD-Karte · Download · 3,4 MB · 28.09.2026')}${row('file-type-pdf','Fahrplan.pdf','Download · 180 KB · 20.09.2026')}</div>`+nav(2);}
-if(page==='vompc'){html=app+`<div class="top"><span>Vom PC</span>${ic('layout-grid')}</div><div class="body">
-${row('file-type-pdf','Angebot Maler.pdf','214 KB  ·  auf dem Handy',{more:false})}${row('table','Haushalt 2026.xlsx','96 KB  ·  noch nicht geladen',{more:false})}${row('photo','Plan.png','1,1 MB  ·  noch nicht geladen',{more:false})}</div>`+nav(1);}
+if(page==='vompc'){html=app+`<div class="top"><span>Vom PC</span>${ic('layout-grid')}</div><div class="search" style="padding-left:16px">${ic('search')}Auf dem PC suchen${ic('x')}</div><div class="path">${ic('home')}<span>›</span><b>Handy</b></div><div class="actions"><div class="bt">Auswählen</div><div class="bt f">Alle laden</div></div><div class="body">
+${row('file-type-pdf','Angebot Maler.pdf','214 KB  ·  auf dem Handy',{more:false})}${row('table','Haushalt 2026.xlsx','96 KB  ·  noch nicht geladen',{more:false})}${row('photo','Plan.png','1,1 MB  ·  noch nicht geladen',{more:false,th:'#D9B98D,#8E6A3E'})}${row('folder-filled','Urlaub','Ordner',{fo:1,more:false})}</div>`+nav(1);}
+if(page==='einfuegen'){html=app+`<div class="top">${ic('arrow-left')}<span>Ziel</span>${ic('folder-plus')}${ic('layout-grid')}</div><div class="search">${ic('search')}Auf dem Handy suchen${ic('x')}</div><div class="path">${ic('home')}<span>›</span><em>Speicher</em><em>›</em><em>Download</em><em>›</em><b>Ziel</b></div><div class="body">
+${row('file-text','Notizen.txt','8 B · 12.10.2026')}${row('file-type-pdf','Plan.pdf','412 KB · 11.10.2026')}</div><div class="paste"><span>2 Elemente verschieben</span><div class="bt">Abbrechen</div><div class="bt f">Hierher</div></div>`+nav(2);}
+if(page==='vompcauswahl'){html=app+`<div class="sel">${ic('x')}<span>2 gewählt</span>${ic('checks')}${ic('download')}${ic('share')}${ic('device-floppy')}</div><div class="search" style="padding-left:16px">${ic('search')}Auf dem PC suchen${ic('x')}</div><div class="body">
+${row('file-type-pdf','Angebot Maler.pdf','214 KB  ·  auf dem Handy',{cb:1,on:1,more:false})}${row('table','Haushalt 2026.xlsx','96 KB  ·  noch nicht geladen',{cb:1,on:1,more:false})}${row('photo','Plan.png','1,1 MB  ·  noch nicht geladen',{cb:0,more:false,th:'#D9B98D,#8E6A3E'})}</div>`+nav(1);}
 document.getElementById('root').outerHTML=html;
 </script></body></html>
