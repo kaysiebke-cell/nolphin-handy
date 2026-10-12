@@ -72,7 +72,7 @@ final class FileOps {
             return failed.isEmpty() && !cancelled;
         }
 
-        private void touch(File f) {
+        void touch(File f) {
             if (touched.size() < 500) {
                 touched.add(f);
             }

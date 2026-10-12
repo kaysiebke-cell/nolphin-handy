@@ -1584,7 +1584,12 @@ final class ToPcScreen implements Screen {
                         if (conflicts.isEmpty()) {
                             startTransfer(items, target, move, FileOps.Conflict.RENAME);
                         } else {
-                            askConflict(items, target, move, conflicts);
+                            askConflict(target, conflicts, new ConflictChoice() {
+                                @Override
+                                public void chosen(FileOps.Conflict conflict) {
+                                    startTransfer(items, target, move, conflict);
+                                }
+                            });
                         }
                     }
                 });
@@ -1615,7 +1620,13 @@ final class ToPcScreen implements Screen {
     }
 
     /** Einmal pro Vorgang fragen: beide behalten, überspringen oder ersetzen. */
-    private void askConflict(final List<File> items, final File target, final boolean move, final List<String> conflicts) {
+    /** Wird mit der gewählten Regel aufgerufen, wenn die Konfliktfrage beantwortet ist. */
+    private interface ConflictChoice {
+        void chosen(FileOps.Conflict conflict);
+    }
+
+    /** Einmal pro Vorgang fragen: beide behalten, überspringen oder ersetzen. */
+    private void askConflict(final File target, final List<String> conflicts, final ConflictChoice cb) {
         File example = new File(target, conflicts.get(0));
         String renamed = FileOps.uniqueIn(example.getParentFile(), example.getName()).getName();
         LinearLayout v = new LinearLayout(c);
@@ -1652,16 +1663,16 @@ final class ToPcScreen implements Screen {
                     public void onClick(android.content.DialogInterface d, int which) {
                         int id = group.getCheckedRadioButtonId();
                         if (id == 3) {
-                            confirmReplace(items, target, move, conflicts);
+                            confirmReplace(target, conflicts, cb);
                         } else {
-                            startTransfer(items, target, move, id == 2 ? FileOps.Conflict.SKIP : FileOps.Conflict.RENAME);
+                            cb.chosen(id == 2 ? FileOps.Conflict.SKIP : FileOps.Conflict.RENAME);
                         }
                     }
                 }).show();
     }
 
     /** Ersetzen verlangt eine ausdrückliche Bestätigung mit der Liste der betroffenen Dateien. */
-    private void confirmReplace(final List<File> items, final File target, final boolean move, final List<String> conflicts) {
+    private void confirmReplace(final File target, final List<String> conflicts, final ConflictChoice cb) {
         StringBuilder b = new StringBuilder("Diese Dateien im Ziel werden überschrieben. Das lässt sich nicht rückgängig machen.\n\n");
         int shown = Math.min(conflicts.size(), 10);
         for (int i = 0; i < shown; i++) {
@@ -1676,13 +1687,13 @@ final class ToPcScreen implements Screen {
                 .setNegativeButton("Zurück", new android.content.DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(android.content.DialogInterface dialog, int which) {
-                        askConflict(items, target, move, conflicts);
+                        askConflict(target, conflicts, cb);
                     }
                 })
                 .setPositiveButton("Ersetzen", new android.content.DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(android.content.DialogInterface dialog, int which) {
-                        startTransfer(items, target, move, FileOps.Conflict.REPLACE);
+                        cb.chosen(FileOps.Conflict.REPLACE);
                     }
                 }).create();
         d.show();
@@ -1727,24 +1738,392 @@ final class ToPcScreen implements Screen {
         if (selected.isEmpty()) {
             return;
         }
-        final File one = selected.size() == 1 ? new File(selected.keySet().iterator().next()) : null;
-        final String[] names = one != null ? new String[] { "Alle auswählen", "Umbenennen", "Eigenschaften" }
-                : new String[] { "Alle auswählen" };
+        final List<File> items = selectedFiles();
+        final File one = items.size() == 1 ? items.get(0) : null;
+        final List<String> labels = new ArrayList<>();
+        labels.add("Alle auswählen");
+        labels.add(one != null ? "Umbenennen" : "Umbenennen …");
+        if (one != null) {
+            labels.add("Eigenschaften");
+        }
+        labels.add("Als ZIP packen");
         new AlertDialog.Builder(host.activity(), R.style.NolphinDialog)
-                .setTitle(one != null ? one.getName() : selected.size() + " Elemente gewählt")
-                .setItems(names, new android.content.DialogInterface.OnClickListener() {
+                .setTitle(one != null ? one.getName() : items.size() + " Elemente gewählt")
+                .setItems(labels.toArray(new String[0]), new android.content.DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(android.content.DialogInterface d, int which) {
-                        if (which == 0) {
+                        String what = labels.get(which);
+                        if (what.equals("Alle auswählen")) {
                             selectAll();
-                        } else if (which == 1) {
+                        } else if (what.equals("Umbenennen")) {
                             askRename(one);
-                        } else {
+                        } else if (what.equals("Umbenennen …")) {
+                            askBatchRename(items);
+                        } else if (what.equals("Eigenschaften")) {
                             showProperties(one);
+                        } else {
+                            selected.clear();
+                            render();
+                            startZip(items);
                         }
                     }
                 }).show();
     }
+
+    // ---- ZIP und Stapelumbenennung ---------------------------------------------------------------
+
+    private void startZip(final List<File> items) {
+        final File outDir = items.get(0).getParentFile();
+        final String name = items.size() == 1 ? items.get(0).getName() + ".zip" : "Archiv.zip";
+        runBatch("Packe …", "gepackt", new BatchWork() {
+            @Override
+            public FileOps.Result run(FileOps.Progress p) {
+                return ZipOps.zipItems(items, outDir, name, p);
+            }
+        }, null);
+    }
+
+    private void showZipContents(final File zip) {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                ZipOps.Info info = null;
+                String err = null;
+                try {
+                    info = ZipOps.inspect(zip);
+                } catch (java.io.IOException e) {
+                    err = e.getMessage() != null ? e.getMessage() : "Archiv nicht lesbar";
+                }
+                final ZipOps.Info fi = info;
+                final String fe = err;
+                ui.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (fi == null) {
+                            Toast.makeText(c, zip.getName() + ": " + fe, Toast.LENGTH_LONG).show();
+                            return;
+                        }
+                        String head = fi.files + (fi.files == 1 ? " Datei" : " Dateien") + " in " + fi.folders
+                                + (fi.folders == 1 ? " Ordner" : " Ordnern") + ", entpackt " + ZipOps.sizeText(fi.uncompressed);
+                        new AlertDialog.Builder(host.activity(), R.style.NolphinDialog)
+                                .setTitle(zip.getName())
+                                .setMessage(head + "\n\n" + joinLimited(fi.names, 40)
+                                        + (fi.unsafe.isEmpty() ? "" : "\n\nWürde nicht entpackt (unsicher): " + fi.unsafe.size()))
+                                .setPositiveButton("Schließen", null)
+                                .show();
+                    }
+                });
+            }
+        }, "nolphin-ziplist").start();
+    }
+
+    private static String joinLimited(List<String> list, int max) {
+        StringBuilder b = new StringBuilder();
+        int shown = Math.min(list.size(), max);
+        for (int i = 0; i < shown; i++) {
+            b.append(list.get(i)).append("\n");
+        }
+        if (list.size() > shown) {
+            b.append("… und ").append(list.size() - shown).append(" weitere");
+        }
+        return b.toString().trim();
+    }
+
+    /** Entpacken: erst prüfen (Inhalt, unsichere Einträge, Speicherplatz), dann bestätigen lassen. */
+    private void askUnzip(final File zip) {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                ZipOps.Info info = null;
+                String err = null;
+                try {
+                    info = ZipOps.inspect(zip);
+                } catch (java.io.IOException e) {
+                    err = e.getMessage() != null ? e.getMessage() : "Archiv nicht lesbar";
+                }
+                final ZipOps.Info fi = info;
+                final String fe = err;
+                ui.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (fi == null) {
+                            Toast.makeText(c, zip.getName() + ": " + fe, Toast.LENGTH_LONG).show();
+                            return;
+                        }
+                        confirmUnzip(zip, fi);
+                    }
+                });
+            }
+        }, "nolphin-zipinfo").start();
+    }
+
+    private void confirmUnzip(final File zip, final ZipOps.Info info) {
+        final File parent = zip.getParentFile();
+        String name = zip.getName();
+        final String stem = name.toLowerCase(Locale.ROOT).endsWith(".zip") ? name.substring(0, name.length() - 4) : name;
+        final long free = parent.getUsableSpace();
+        final long need = info.uncompressed;
+        StringBuilder msg = new StringBuilder();
+        msg.append("Das Archiv enthält ").append(info.files).append(info.files == 1 ? " Datei" : " Dateien").append(" in ")
+                .append(info.folders).append(info.folders == 1 ? " Ordner" : " Ordnern").append(" (")
+                .append(ZipOps.sizeText(info.compressed)).append(", entpackt ").append(ZipOps.sizeText(need)).append(").");
+        msg.append("\n\nZiel: Ordner „").append(stem).append("“ in ").append(parent.getName());
+        boolean tooBig = need > Math.max(0, free - 20L * 1024 * 1024);
+        if (!info.unsafe.isEmpty()) {
+            msg.append("\n\n").append(info.unsafe.size()).append(info.unsafe.size() == 1 ? " Eintrag wird" : " Einträge werden")
+                    .append(" aus Sicherheitsgründen übersprungen.");
+        }
+        if (tooBig) {
+            msg.append("\n\nNicht genug Speicherplatz: nötig ").append(ZipOps.sizeText(need)).append(", frei ")
+                    .append(ZipOps.sizeText(free)).append(".");
+        }
+        AlertDialog.Builder b = new AlertDialog.Builder(host.activity(), R.style.NolphinDialog)
+                .setTitle("„" + name + "“ entpacken?")
+                .setMessage(msg.toString())
+                .setNegativeButton(tooBig ? "Schließen" : "Abbrechen", null);
+        if (!tooBig) {
+            b.setPositiveButton("Entpacken", new android.content.DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(android.content.DialogInterface d, int which) {
+                    File dest = new File(parent, stem);
+                    if (dest.exists()) {
+                        List<String> conflicts = new ArrayList<>();
+                        conflicts.add(stem);
+                        askConflict(parent, conflicts, new ConflictChoice() {
+                            @Override
+                            public void chosen(FileOps.Conflict conflict) {
+                                File target = conflict == FileOps.Conflict.RENAME ? FileOps.uniqueIn(parent, stem) : new File(parent, stem);
+                                startUnzip(zip, target, conflict);
+                            }
+                        });
+                    } else {
+                        startUnzip(zip, dest, FileOps.Conflict.RENAME);
+                    }
+                }
+            });
+        }
+        b.show();
+    }
+
+    private void startUnzip(final File zip, final File dest, final FileOps.Conflict conflict) {
+        final long limit = Math.max(0, zip.getParentFile().getUsableSpace() - 20L * 1024 * 1024);
+        runBatch("Entpacke …", "entpackt", new BatchWork() {
+            @Override
+            public FileOps.Result run(FileOps.Progress p) {
+                return ZipOps.unzip(zip, dest, conflict, limit, p);
+            }
+        }, null);
+    }
+
+    private EditText field(String hint, String text, boolean number) {
+        final EditText e = new EditText(c);
+        e.setSingleLine(true);
+        e.setHint(hint);
+        e.setText(text);
+        e.setTextSize(15);
+        e.setTextColor(Ui.text(c));
+        e.setHintTextColor(Ui.dim(c));
+        if (number) {
+            e.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
+        }
+        return e;
+    }
+
+    private static int parseInt(String s, int fallback) {
+        try {
+            return Integer.parseInt(s.trim());
+        } catch (NumberFormatException e) {
+            return fallback;
+        }
+    }
+
+    /** Stapelumbenennung mit Vorschau "alt → neu"; der Knopf bleibt gesperrt, solange es Probleme gibt oder nichts zu ändern ist. */
+    private void askBatchRename(final List<File> picked) {
+        final List<File> files = new ArrayList<>(picked);
+        Collections.sort(files, new Comparator<File>() {
+            @Override
+            public int compare(File a, File b) {
+                return a.getName().compareToIgnoreCase(b.getName());
+            }
+        });
+        final String[] tabNames = { "Ersetzen", "Nummerieren", "Anhängen", "Schreibweise" };
+        final BatchRename.Mode[] modes = { BatchRename.Mode.REPLACE, BatchRename.Mode.NUMBER, BatchRename.Mode.AFFIX, BatchRename.Mode.CASE };
+        final int[] current = { 1 };
+        final EditText find = field("Suchen", "", false);
+        final EditText repl = field("Ersetzen durch", "", false);
+        final EditText prefix = field("Name davor, zum Beispiel „Urlaub - “", "", false);
+        final EditText start = field("Start bei", "1", true);
+        final EditText digits = field("Stellen", "3", true);
+        final EditText pre = field("Text vorn", "", false);
+        final EditText suf = field("Text hinten (vor der Endung)", "", false);
+        final android.widget.RadioGroup caseGroup = new android.widget.RadioGroup(c);
+        caseGroup.addView(radio("klein schreiben", 21));
+        caseGroup.addView(radio("GROSS SCHREIBEN", 22));
+        caseGroup.addView(radio("Erster Buchstabe groß", 23));
+        caseGroup.check(21);
+        final LinearLayout fields = new LinearLayout(c);
+        fields.setOrientation(LinearLayout.VERTICAL);
+        final TextView preview = Ui.label(c, "", 13, Ui.text(c), false);
+        preview.setPadding(Ui.dp(c, 10), Ui.dp(c, 8), Ui.dp(c, 10), Ui.dp(c, 8));
+        preview.setBackground(Ui.outlined(c, Ui.surface(c)));
+        final TextView warn = Ui.label(c, "", 13, Ui.danger(c), false);
+        warn.setPadding(0, Ui.dp(c, 6), 0, 0);
+        final LinearLayout tabs = new LinearLayout(c);
+        tabs.setOrientation(LinearLayout.HORIZONTAL);
+        final AlertDialog[] dialog = { null };
+        final BatchRename.Plan[] last = { null };
+
+        final Runnable recalc = new Runnable() {
+            @Override
+            public void run() {
+                BatchRename.Options o = new BatchRename.Options();
+                o.mode = modes[current[0]];
+                o.find = find.getText().toString();
+                o.replacement = repl.getText().toString();
+                o.prefix = o.mode == BatchRename.Mode.AFFIX ? pre.getText().toString() : prefix.getText().toString();
+                o.suffix = suf.getText().toString();
+                o.start = parseInt(start.getText().toString(), 1);
+                o.digits = parseInt(digits.getText().toString(), 3);
+                int cm = caseGroup.getCheckedRadioButtonId();
+                o.caseMode = cm == 22 ? BatchRename.CaseMode.UPPER : cm == 23 ? BatchRename.CaseMode.FIRST : BatchRename.CaseMode.LOWER;
+                BatchRename.Plan plan = BatchRename.plan(files, o);
+                last[0] = plan;
+                android.text.SpannableStringBuilder sb = new android.text.SpannableStringBuilder();
+                int shown = Math.min(plan.items.size(), 8);
+                for (int i = 0; i < shown; i++) {
+                    BatchRename.Item it = plan.items.get(i);
+                    int from = sb.length();
+                    sb.append(it.file.getName()).append("  →  ").append(it.newName);
+                    if (it.problem != null) {
+                        sb.setSpan(new android.text.style.ForegroundColorSpan(Ui.danger(c)), from, sb.length(), 0);
+                    } else if (!it.changes()) {
+                        sb.setSpan(new android.text.style.ForegroundColorSpan(Ui.dim(c)), from, sb.length(), 0);
+                    }
+                    sb.append("\n");
+                }
+                if (plan.items.size() > shown) {
+                    sb.append("… und ").append(Integer.toString(plan.items.size() - shown)).append(" weitere");
+                }
+                preview.setText(sb);
+                String problem = plan.firstProblem();
+                warn.setText(problem != null ? problem : plan.changes() == 0 ? "Bisher ändert sich kein Name." : "");
+                warn.setTextColor(problem != null ? Ui.danger(c) : Ui.dim(c));
+                if (dialog[0] != null) {
+                    dialog[0].getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(plan.ready());
+                }
+            }
+        };
+        final Runnable showFields = new Runnable() {
+            @Override
+            public void run() {
+                fields.removeAllViews();
+                switch (current[0]) {
+                    case 0:
+                        fields.addView(find);
+                        fields.addView(repl);
+                        break;
+                    case 1:
+                        fields.addView(prefix);
+                        fields.addView(start);
+                        fields.addView(digits);
+                        break;
+                    case 2:
+                        fields.addView(pre);
+                        fields.addView(suf);
+                        break;
+                    default:
+                        fields.addView(caseGroup);
+                }
+                tabs.removeAllViews();
+                for (int i = 0; i < tabNames.length; i++) {
+                    final int k = i;
+                    boolean on = i == current[0];
+                    TextView t = Ui.label(c, tabNames[i], 13, on ? Ui.primary(c) : Ui.dim(c), on);
+                    t.setGravity(Gravity.CENTER);
+                    t.setPadding(Ui.dp(c, 2), Ui.dp(c, 10), Ui.dp(c, 2), Ui.dp(c, 8));
+                    LinearLayout tab = new LinearLayout(c);
+                    tab.setOrientation(LinearLayout.VERTICAL);
+                    tab.addView(t);
+                    View bar = new View(c);
+                    bar.setBackgroundColor(on ? Ui.primary(c) : 0x00000000);
+                    tab.addView(bar, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, Ui.dp(c, 3)));
+                    tab.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            current[0] = k;
+                            showFieldsRef[0].run();
+                            recalcRef[0].run();
+                        }
+                    });
+                    tabs.addView(tab, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
+                }
+            }
+        };
+        showFieldsRef[0] = showFields;
+        recalcRef[0] = recalc;
+        android.text.TextWatcher watcher = new android.text.TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int a, int b, int n) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int a, int b, int n) {}
+
+            @Override
+            public void afterTextChanged(android.text.Editable s) {
+                recalc.run();
+            }
+        };
+        for (EditText e : new EditText[] { find, repl, prefix, start, digits, pre, suf }) {
+            e.addTextChangedListener(watcher);
+        }
+        caseGroup.setOnCheckedChangeListener(new android.widget.RadioGroup.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(android.widget.RadioGroup g, int id) {
+                recalc.run();
+            }
+        });
+        LinearLayout v = new LinearLayout(c);
+        v.setOrientation(LinearLayout.VERTICAL);
+        v.setPadding(Ui.dp(c, 24), Ui.dp(c, 4), Ui.dp(c, 24), 0);
+        v.addView(tabs);
+        v.addView(fields);
+        LinearLayout.LayoutParams pp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        pp.topMargin = Ui.dp(c, 10);
+        v.addView(preview, pp);
+        v.addView(warn);
+        android.widget.ScrollView scroll = new android.widget.ScrollView(c);
+        scroll.addView(v);
+        dialog[0] = new AlertDialog.Builder(host.activity(), R.style.NolphinDialog)
+                .setTitle(files.size() + " Dateien umbenennen")
+                .setView(scroll)
+                .setNegativeButton("Abbrechen", null)
+                .setPositiveButton("Umbenennen", null)
+                .create();
+        dialog[0].show();
+        dialog[0].getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View b) {
+                final BatchRename.Plan plan = last[0];
+                if (plan == null || !plan.ready()) {
+                    return;
+                }
+                dialog[0].dismiss();
+                selected.clear();
+                render();
+                runBatch("Benenne um …", "umbenannt", new BatchWork() {
+                    @Override
+                    public FileOps.Result run(FileOps.Progress p) {
+                        return BatchRename.apply(plan, p);
+                    }
+                }, null);
+            }
+        });
+        showFields.run();
+        recalc.run();
+    }
+
+    private final Runnable[] showFieldsRef = new Runnable[1];
+    private final Runnable[] recalcRef = new Runnable[1];
 
     /** Der Knopf ⋮ in jeder Zeile: alle Funktionen für dieses eine Element, gut lesbar in einer Liste. */
     private void rowMenu(final Entry e) {
@@ -1755,6 +2134,11 @@ final class ToPcScreen implements Screen {
             boolean fav = Conn.isFavorite(c, f.getPath());
             labels.add(fav ? "Aus Favoriten entfernen" : "Zu Favoriten hinzufügen");
             codes.add(FAVORITE);
+        } else if (Ui.ext(f.getName()).equals("zip")) {
+            labels.add("Entpacken");
+            codes.add(UNZIP);
+            labels.add("Inhalt ansehen");
+            codes.add(ZIPLIST);
         }
         String[] base = { "An den PC senden", "Kopieren", "Verschieben", "Umbenennen", "Eigenschaften", "Löschen" };
         int[] baseCodes = { SEND, COPY, MOVE, RENAME, PROPS, DELETE };
@@ -1772,6 +2156,14 @@ final class ToPcScreen implements Screen {
                             toggleFavorite(f);
                             return;
                         }
+                        if (code == UNZIP) {
+                            askUnzip(f);
+                            return;
+                        }
+                        if (code == ZIPLIST) {
+                            showZipContents(f);
+                            return;
+                        }
                         selected.clear();
                         selected.put(f.getPath(), e.size);
                         switch (code) {
@@ -1786,7 +2178,7 @@ final class ToPcScreen implements Screen {
                 }).show();
     }
 
-    private static final int FAVORITE = 0, SEND = 1, COPY = 2, MOVE = 3, RENAME = 4, PROPS = 5, DELETE = 6;
+    private static final int FAVORITE = 0, SEND = 1, COPY = 2, MOVE = 3, RENAME = 4, PROPS = 5, DELETE = 6, UNZIP = 7, ZIPLIST = 8;
 
     private void toggleFavorite(File f) {
         List<String> favs = Conn.favorites(c);
