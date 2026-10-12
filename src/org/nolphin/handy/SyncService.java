@@ -383,7 +383,7 @@ public class SyncService extends Service {
         Uri target = null;
         try {
             URL url = new URL("http://" + host + "/dl?t=" + Uri.encode(token) + "&n=" + Uri.encode(name)
-                    + (dir.isEmpty() ? "" : "&p=" + Uri.encode(dir)));
+                    + RemoteFile.params(dir));
             HttpURLConnection c = (HttpURLConnection) url.openConnection();
             c.setConnectTimeout(8000);
             c.setReadTimeout(30000);

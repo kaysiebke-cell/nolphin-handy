@@ -59,6 +59,17 @@ final class FromPcScreen implements Screen {
 
     /** Aktueller Unterordner relativ zu „Handy“, mit "/" getrennt; leer = oberste Ebene. */
     private String dir = "";
+    /** Übersicht (Handy-Ordner und persönlicher Ordner) statt einer Ordneransicht. */
+    private boolean overview = true;
+    private final android.widget.ScrollView homeScroll;
+    private final LinearLayout homeBox;
+    private final ImageView back;
+    private final List<String> homeDirs = new ArrayList<>();
+    private Boolean homeSupported;       // null = unbekannt, sonst: kennt der PC den persönlichen Ordner?
+    private long lastOverview;
+    private boolean overviewLoading;
+    private boolean overviewFailed;     // der PC hat auf die letzte Anfrage nicht geantwortet
+    private String overviewSig = "";
     private final List<String> dirs = new ArrayList<>();
     private final List<RemoteFile> files = new ArrayList<>();
     private String signature = "";
@@ -112,6 +123,19 @@ final class FromPcScreen implements Screen {
         head.setOrientation(LinearLayout.HORIZONTAL);
         head.setGravity(Gravity.CENTER_VERTICAL);
         head.setPadding(p, p, p, Ui.dp(c, 4));
+        back = Ui.icon(c, R.drawable.ic_back, Ui.primary(c), 24);
+        back.setPadding(Ui.dp(c, 6), Ui.dp(c, 6), Ui.dp(c, 6), Ui.dp(c, 6));
+        LinearLayout.LayoutParams blp = new LinearLayout.LayoutParams(Ui.dp(c, 40), Ui.dp(c, 40));
+        blp.rightMargin = Ui.dp(c, 6);
+        back.setLayoutParams(blp);
+        back.setContentDescription("Zurück");
+        back.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                onBack();
+            }
+        });
+        head.addView(back);
         head.addView(Ui.label(c, "Vom PC", 22, Ui.text(c), true),
                 new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
         toggle = Ui.icon(c, useGrid ? R.drawable.ic_list : R.drawable.ic_grid, Ui.primary(c), 24);
@@ -130,7 +154,7 @@ final class FromPcScreen implements Screen {
         root.addView(head);
 
         search = new EditText(c);
-        search.setHint("Suchen in diesem Ordner");
+        search.setHint("Auf dem PC suchen");
         search.setSingleLine(true);
         search.setTextSize(15);
         search.setTextColor(Ui.text(c));
@@ -228,6 +252,14 @@ final class FromPcScreen implements Screen {
         selectBar.addView(selSave);
         root.addView(selectBar);
 
+        homeScroll = new android.widget.ScrollView(c);
+        homeScroll.setVerticalScrollBarEnabled(false);
+        homeBox = new LinearLayout(c);
+        homeBox.setOrientation(LinearLayout.VERTICAL);
+        homeBox.setPadding(Ui.dp(c, 16), 0, Ui.dp(c, 16), Ui.dp(c, 16));
+        homeScroll.addView(homeBox);
+        root.addView(homeScroll, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1));
+
         grid = new GridView(c);
         grid.setSelector(android.R.color.transparent);
         grid.setVerticalSpacing(Ui.dp(c, 6));
@@ -280,6 +312,7 @@ final class FromPcScreen implements Screen {
     // ---- Navigation ------------------------------------------------------------------------
 
     private void go(String to) {
+        overview = false;
         selected.clear();
         if (!query.isEmpty()) {
             search.setText("");   // setzt query über den TextWatcher zurück
@@ -301,22 +334,50 @@ final class FromPcScreen implements Screen {
             clearSelection();
             return true;
         }
-        if (dir.isEmpty()) {
+        if (overview) {
             return false;
+        }
+        if (dir.isEmpty() || dir.equals("~")) {
+            goOverview();
+            return true;
         }
         int slash = dir.lastIndexOf('/');
         go(slash < 0 ? "" : dir.substring(0, slash));
         return true;
     }
 
+    private void goOverview() {
+        selected.clear();
+        overview = true;
+        signature = "";
+        overviewSig = "";
+        lastOverview = 0;
+        refresh();
+    }
+
     private void buildCrumbs() {
         crumbs.removeAllViews();
-        addCrumb("Handy", "", dir.isEmpty());
-        if (!dir.isEmpty()) {
-            String[] parts = dir.split("/");
-            StringBuilder path = new StringBuilder();
+        ImageView home = Ui.icon(c, R.drawable.ic_home, Ui.primary(c), 48);
+        home.setPadding(Ui.dp(c, 10), Ui.dp(c, 10), Ui.dp(c, 10), Ui.dp(c, 10));
+        home.setBackground(Ui.round(c, Ui.chip(c), 24));
+        home.setContentDescription("Übersicht");
+        home.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                goOverview();
+            }
+        });
+        crumbs.addView(home);
+        boolean personal = dir.equals("~") || dir.startsWith("~/");
+        String rootKey = personal ? "~" : "";
+        String rel = personal ? (dir.length() > 2 ? dir.substring(2) : "") : dir;
+        crumbs.addView(Ui.label(c, "  ›  ", 14, Ui.dim(c), false));
+        addCrumb(personal ? "Persönlicher Ordner" : "Handy-Ordner", rootKey, rel.isEmpty());
+        if (!rel.isEmpty()) {
+            String[] parts = rel.split("/");
+            StringBuilder path = new StringBuilder(personal ? "~" : "");
             for (int i = 0; i < parts.length; i++) {
-                if (i > 0) {
+                if (path.length() > 0) {
                     path.append('/');
                 }
                 path.append(parts[i]);
@@ -328,7 +389,7 @@ final class FromPcScreen implements Screen {
 
     private void addCrumb(String text, final String target, boolean last) {
         TextView t = Ui.label(c, text, 14, last ? Ui.primary(c) : Ui.dim(c), last);
-        t.setPadding(0, Ui.dp(c, 6), 0, Ui.dp(c, 6));
+        t.setPadding(Ui.dp(c, 4), Ui.dp(c, 14), Ui.dp(c, 4), Ui.dp(c, 14));
         if (!last) {
             t.setOnClickListener(new View.OnClickListener() {
                 @Override
@@ -358,8 +419,7 @@ final class FromPcScreen implements Screen {
                 final List<RemoteFile> newFiles = new ArrayList<>();
                 String error = null;
                 try {
-                    URL url = new URL("http://" + host + "/dir?t=" + Uri.encode(token)
-                            + (want.isEmpty() ? "" : "&p=" + Uri.encode(want)));
+                    URL url = new URL("http://" + host + "/dir?t=" + Uri.encode(token) + RemoteFile.params(want));
                     HttpURLConnection h = (HttpURLConnection) url.openConnection();
                     h.setConnectTimeout(5000);
                     h.setReadTimeout(10000);
@@ -453,6 +513,18 @@ final class FromPcScreen implements Screen {
     @Override
     public void refresh() {
         boolean connected = Conn.connected(c);
+        homeScroll.setVisibility(overview ? View.VISIBLE : View.GONE);
+        search.setVisibility(overview ? View.GONE : View.VISIBLE);
+        toggle.setVisibility(overview ? View.GONE : View.VISIBLE);
+        back.setVisibility(overview ? View.GONE : View.VISIBLE);
+        if (overview) {
+            normalBar.setVisibility(View.GONE);
+            selectBar.setVisibility(View.GONE);
+            grid.setVisibility(View.GONE);
+            empty.setVisibility(View.GONE);
+            refreshOverview(connected);
+            return;
+        }
         if (connected && System.currentTimeMillis() - lastLoad > RELOAD_MS) {
             load();
         }
@@ -483,6 +555,180 @@ final class FromPcScreen implements Screen {
         }
         empty.setVisibility(none || !connected ? View.VISIBLE : View.GONE);
         grid.setVisibility(none || !connected ? View.GONE : View.VISIBLE);
+    }
+
+    // ---- Übersicht ---------------------------------------------------------------------------
+
+    private void refreshOverview(boolean connected) {
+        if (connected && !overviewLoading && System.currentTimeMillis() - lastOverview > 10000) {
+            loadOverview();
+        }
+        String sig = connected + "|" + homeSupported + "|" + homeDirs + "|" + overviewFailed;
+        if (!sig.equals(overviewSig)) {
+            overviewSig = sig;
+            buildOverview(connected);
+        }
+    }
+
+    /** Fragt den PC, ob er den persönlichen Ordner kennt (/info), und holt dessen Ordner der obersten Ebene. */
+    private void loadOverview() {
+        final String host = Conn.host(c);
+        final String token = Conn.token(c);
+        if (host == null || token == null) {
+            return;
+        }
+        overviewLoading = true;
+        lastOverview = System.currentTimeMillis();
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                Boolean supported = null;
+                final List<String> found = new ArrayList<>();
+                try {
+                    String info = httpText("http://" + host + "/info?t=" + Uri.encode(token));
+                    supported = info != null && info.contains("\"home\":true");
+                    if (supported) {
+                        String dirsJson = httpText("http://" + host + "/dir?t=" + Uri.encode(token) + "&r=home");
+                        if (dirsJson != null) {
+                            JSONArray d = new JSONObject(dirsJson).getJSONArray("dirs");
+                            for (int i = 0; i < d.length(); i++) {
+                                found.add(d.getJSONObject(i).getString("n"));
+                            }
+                        } else {
+                            supported = null;
+                        }
+                    }
+                } catch (Exception ignored) {
+                    supported = null;
+                }
+                final Boolean sup = supported;
+                main.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        overviewLoading = false;
+                        homeSupported = sup;
+                        overviewFailed = sup == null;
+                        homeDirs.clear();
+                        homeDirs.addAll(found);
+                        overviewSig = "";
+                        refresh();
+                    }
+                });
+            }
+        }, "nolphin-overview").start();
+    }
+
+    private static String httpText(String address) throws java.io.IOException {
+        HttpURLConnection h = (HttpURLConnection) new URL(address).openConnection();
+        h.setConnectTimeout(5000);
+        h.setReadTimeout(10000);
+        try {
+            if (h.getResponseCode() != 200) {
+                return null;
+            }
+            ByteArrayOutputStream buf = new ByteArrayOutputStream();
+            try (InputStream in = h.getInputStream()) {
+                byte[] b = new byte[8192];
+                int n;
+                while ((n = in.read(b)) > 0) {
+                    buf.write(b, 0, n);
+                }
+            }
+            return buf.toString("UTF-8");
+        } finally {
+            h.disconnect();
+        }
+    }
+
+    private int folderIcon(String name) {
+        String n = name.toLowerCase(Locale.ROOT);
+        if (n.equals("bilder") || n.equals("pictures")) {
+            return R.drawable.ic_image;
+        }
+        if (n.equals("musik") || n.equals("music")) {
+            return R.drawable.ic_audio;
+        }
+        if (n.equals("videos") || n.equals("video")) {
+            return R.drawable.ic_video;
+        }
+        if (n.equals("dokumente") || n.equals("documents")) {
+            return R.drawable.ic_doc;
+        }
+        if (n.equals("downloads") || n.equals("herunterladen")) {
+            return R.drawable.ic_download;
+        }
+        return R.drawable.ic_folder;
+    }
+
+    private void buildOverview(boolean connected) {
+        homeBox.removeAllViews();
+        if (!connected) {
+            LinearLayout card = Ui.card(c);
+            card.addView(Ui.label(c, "Nicht mit dem PC verbunden", 18, Ui.text(c), true));
+            TextView d = Ui.label(c, "Verbinde dich zuerst auf der Startseite.", 14, Ui.dim(c), false);
+            d.setPadding(0, Ui.dp(c, 8), 0, Ui.dp(c, 4));
+            card.addView(d);
+            card.addView(Ui.button(c, "Zur Startseite", true, new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    host.show(Host.TAB_HOME);
+                }
+            }));
+            homeBox.addView(card);
+            return;
+        }
+        homeBox.addView(Ui.heading(c, "Handy-Ordner"));
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+        lp.bottomMargin = Ui.dp(c, 8);
+        View handy = Ui.shortcut(c, R.drawable.ic_phone, Ui.accent(c), "Zum Handy", "Vom PC bereitgestellt",
+                new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        go("");
+                    }
+                });
+        handy.setLayoutParams(lp);
+        homeBox.addView(handy);
+
+        homeBox.addView(Ui.heading(c, "Persönlicher Ordner"));
+        if (homeSupported == null) {
+            homeBox.addView(Ui.label(c, overviewFailed ? "PC nicht erreichbar. Läuft der Handy-Austausch in Nolphin?" : "Lade …",
+                    14, Ui.dim(c), false));
+            return;
+        }
+        if (!homeSupported) {
+            homeBox.addView(Ui.label(c, "Dieser PC kennt den persönlichen Ordner noch nicht. Nolphin am PC aktualisieren.", 14,
+                    Ui.dim(c), false));
+            return;
+        }
+        LinearLayout.LayoutParams lp2 = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+        lp2.bottomMargin = Ui.dp(c, 8);
+        View all = Ui.shortcut(c, R.drawable.ic_home, Ui.primary(c), "Persönlicher Ordner", "Alles auf dem PC durchsuchen",
+                new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        go("~");
+                    }
+                });
+        all.setLayoutParams(lp2);
+        homeBox.addView(all);
+        for (int i = 0; i < homeDirs.size(); i += 2) {
+            View a = folderShortcut(homeDirs.get(i));
+            View b = i + 1 < homeDirs.size() ? folderShortcut(homeDirs.get(i + 1)) : new View(c);
+            homeBox.addView(Ui.pair(c, a, b));
+        }
+    }
+
+    private View folderShortcut(final String name) {
+        int icon = folderIcon(name);
+        return Ui.shortcut(c, icon, icon == R.drawable.ic_folder ? 0xFFE0A93B : Ui.primary(c), name, "", new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                go("~/" + name);
+            }
+        });
     }
 
     // ---- Suche und Auswahl -------------------------------------------------------------------

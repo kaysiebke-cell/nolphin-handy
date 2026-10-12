@@ -144,4 +144,51 @@ final class Ui {
                 && now.get(Calendar.DAY_OF_YEAR) == then.get(Calendar.DAY_OF_YEAR);
         return new SimpleDateFormat(today ? "HH:mm" : "dd.MM. HH:mm", Locale.GERMANY).format(new Date(ms));
     }
+
+    /** Kleine Abschnittsüberschrift. */
+    static TextView heading(Context c, String text) {
+        TextView t = label(c, text, 13, dim(c), true);
+        t.setPadding(dp(c, 4), dp(c, 14), 0, dp(c, 6));
+        return t;
+    }
+
+    /** Zwei gleich breite Karten nebeneinander. */
+    static LinearLayout pair(Context c, View a, View b) {
+        LinearLayout row = new LinearLayout(c);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        LinearLayout.LayoutParams l = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1);
+        l.rightMargin = dp(c, 4);
+        LinearLayout.LayoutParams r = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1);
+        r.leftMargin = dp(c, 4);
+        row.addView(a, l);
+        row.addView(b, r);
+        LinearLayout.LayoutParams rp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+        rp.bottomMargin = dp(c, 8);
+        row.setLayoutParams(rp);
+        return row;
+    }
+
+    /** Kompakte Karte: Symbol links, Name und Angabe rechts. */
+    static View shortcut(Context c, int icon, int color, String name, String sub, View.OnClickListener l) {
+        LinearLayout card = new LinearLayout(c);
+        card.setOrientation(LinearLayout.HORIZONTAL);
+        card.setGravity(Gravity.CENTER_VERTICAL);
+        card.setBackground(round(c, surface(c), 14));
+        card.setPadding(dp(c, 12), dp(c, 12), dp(c, 12), dp(c, 12));
+        card.addView(badge(c, icon, chip(c), color, 44));
+        LinearLayout text = new LinearLayout(c);
+        text.setOrientation(LinearLayout.VERTICAL);
+        text.setPadding(dp(c, 10), 0, 0, 0);
+        TextView n = label(c, name, 15, text(c), true);
+        n.setSingleLine(true);
+        text.addView(n);
+        TextView s = label(c, sub.isEmpty() ? " " : sub, 12, dim(c), false);
+        s.setSingleLine(true);
+        s.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        text.addView(s);
+        card.addView(text, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
+        card.setOnClickListener(l);
+        return card;
+    }
 }

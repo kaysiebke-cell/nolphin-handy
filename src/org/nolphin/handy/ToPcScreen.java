@@ -449,48 +449,16 @@ final class ToPcScreen implements Screen {
     }
 
     private TextView heading(String text) {
-        TextView t = Ui.label(c, text, 13, Ui.dim(c), true);
-        t.setPadding(Ui.dp(c, 4), Ui.dp(c, 14), 0, Ui.dp(c, 6));
-        return t;
+        return Ui.heading(c, text);
     }
 
     private LinearLayout pair(View a, View b) {
-        LinearLayout row = new LinearLayout(c);
-        row.setOrientation(LinearLayout.HORIZONTAL);
-        LinearLayout.LayoutParams l = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1);
-        l.rightMargin = Ui.dp(c, 4);
-        LinearLayout.LayoutParams r = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1);
-        r.leftMargin = Ui.dp(c, 4);
-        row.addView(a, l);
-        row.addView(b, r);
-        LinearLayout.LayoutParams rp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT);
-        rp.bottomMargin = Ui.dp(c, 8);
-        row.setLayoutParams(rp);
-        return row;
+        return Ui.pair(c, a, b);
     }
 
     /** Kompakte Karte: Symbol links, Name und Angabe rechts. */
     private View shortcut(int icon, int color, String name, String sub, View.OnClickListener l) {
-        LinearLayout card = new LinearLayout(c);
-        card.setOrientation(LinearLayout.HORIZONTAL);
-        card.setGravity(Gravity.CENTER_VERTICAL);
-        card.setBackground(Ui.round(c, Ui.surface(c), 14));
-        card.setPadding(Ui.dp(c, 12), Ui.dp(c, 12), Ui.dp(c, 12), Ui.dp(c, 12));
-        card.addView(Ui.badge(c, icon, Ui.chip(c), color, 44));
-        LinearLayout text = new LinearLayout(c);
-        text.setOrientation(LinearLayout.VERTICAL);
-        text.setPadding(Ui.dp(c, 10), 0, 0, 0);
-        TextView n = Ui.label(c, name, 15, Ui.text(c), true);
-        n.setSingleLine(true);
-        text.addView(n);
-        TextView sTxt = Ui.label(c, sub.isEmpty() ? " " : sub, 12, Ui.dim(c), false);
-        sTxt.setSingleLine(true);
-        sTxt.setEllipsize(android.text.TextUtils.TruncateAt.END);
-        text.addView(sTxt);
-        card.addView(text, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
-        card.setOnClickListener(l);
-        return card;
+        return Ui.shortcut(c, icon, color, name, sub, l);
     }
 
     /** Breite Karte für einen Speicher mit Füllstand. */
