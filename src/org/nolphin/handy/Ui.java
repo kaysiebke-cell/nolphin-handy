@@ -124,6 +124,36 @@ final class Ui {
         return b;
     }
 
+    /** Kleiner Knopf für Leisten: immer gleiche Höhe, Form und Mindestbreite; gefüllt (Hauptaktion) oder umrandet. */
+    static Button actionButton(Context c, String text, boolean filled, View.OnClickListener l) {
+        Button b = new Button(c);
+        b.setText(text);
+        b.setAllCaps(false);
+        b.setTextSize(14);
+        b.setTypeface(android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL));
+        b.setStateListAnimator(null);
+        b.setSingleLine(true);
+        b.setMinWidth(dp(c, 112));
+        b.setMinimumWidth(dp(c, 112));
+        b.setMinHeight(dp(c, 44));
+        b.setMinimumHeight(dp(c, 44));
+        b.setPadding(dp(c, 16), 0, dp(c, 16), 0);
+        GradientDrawable g = new GradientDrawable();
+        g.setCornerRadius(dp(c, 8));
+        if (filled) {
+            g.setColor(primary(c));
+            b.setTextColor(dark(c) ? 0xFF10200A : Color.WHITE);
+        } else {
+            g.setColor(Color.TRANSPARENT);
+            g.setStroke(dp(c, 1) + dp(c, 1) / 2, primary(c));
+            b.setTextColor(primary(c));
+        }
+        b.setBackground(g);
+        b.setOnClickListener(l);
+        b.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, dp(c, 44)));
+        return b;
+    }
+
     static ImageView icon(Context c, int res, int tint, int sizeDp) {
         ImageView v = new ImageView(c);
         v.setImageResource(res);

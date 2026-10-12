@@ -2,6 +2,7 @@ package org.nolphin.handy;
 
 import android.app.AlertDialog;
 import android.content.Context;
+import android.graphics.Color;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Handler;
@@ -53,10 +54,11 @@ final class FromPcScreen implements Screen {
     private final GridView grid;
     private final TextView empty;
     private final ImageView toggle;
+    private final LinearLayout head;
     private final LinearLayout normalBar;
     private final LinearLayout selectBar;
     private final TextView selCount;
-    private final TextView selSave;
+    private final ImageView selSave;
     private final EditText search;
     private final Handler main = new Handler(Looper.getMainLooper());
 
@@ -122,14 +124,15 @@ final class FromPcScreen implements Screen {
         root.setBackgroundColor(Ui.bg(c));
         int p = Ui.dp(c, 16);
 
-        LinearLayout head = new LinearLayout(c);
+        head = new LinearLayout(c);
         head.setOrientation(LinearLayout.HORIZONTAL);
         head.setGravity(Gravity.CENTER_VERTICAL);
-        head.setPadding(p, p, p, Ui.dp(c, 4));
-        back = Ui.icon(c, R.drawable.ic_back, Ui.primary(c), 24);
-        back.setPadding(Ui.dp(c, 6), Ui.dp(c, 6), Ui.dp(c, 6), Ui.dp(c, 6));
-        LinearLayout.LayoutParams blp = new LinearLayout.LayoutParams(Ui.dp(c, 40), Ui.dp(c, 40));
-        blp.rightMargin = Ui.dp(c, 6);
+        head.setBackgroundColor(Ui.surface(c));
+        head.setPadding(Ui.dp(c, 8), 0, Ui.dp(c, 4), 0);
+        back = Ui.icon(c, R.drawable.ic_back, Ui.iconTint(c), 24);
+        back.setPadding(Ui.dp(c, 10), Ui.dp(c, 10), Ui.dp(c, 10), Ui.dp(c, 10));
+        LinearLayout.LayoutParams blp = new LinearLayout.LayoutParams(Ui.dp(c, 44), Ui.dp(c, 44));
+        blp.rightMargin = Ui.dp(c, 4);
         back.setLayoutParams(blp);
         back.setContentDescription("Zurück");
         back.setOnClickListener(new View.OnClickListener() {
@@ -139,11 +142,11 @@ final class FromPcScreen implements Screen {
             }
         });
         head.addView(back);
-        head.addView(Ui.label(c, "Vom PC", 22, Ui.text(c), true),
+        head.addView(Ui.label(c, "Vom PC", 18, Ui.text(c), true),
                 new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
-        toggle = Ui.icon(c, useGrid ? R.drawable.ic_list : R.drawable.ic_grid, Ui.primary(c), 24);
-        toggle.setPadding(Ui.dp(c, 6), Ui.dp(c, 6), Ui.dp(c, 6), Ui.dp(c, 6));
-        toggle.setLayoutParams(new LinearLayout.LayoutParams(Ui.dp(c, 40), Ui.dp(c, 40)));
+        toggle = Ui.icon(c, useGrid ? R.drawable.ic_list : R.drawable.ic_grid, Ui.iconTint(c), 24);
+        toggle.setPadding(Ui.dp(c, 10), Ui.dp(c, 10), Ui.dp(c, 10), Ui.dp(c, 10));
+        toggle.setLayoutParams(new LinearLayout.LayoutParams(Ui.dp(c, 44), Ui.dp(c, 44)));
         toggle.setContentDescription("Ansicht wechseln");
         toggle.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -154,7 +157,8 @@ final class FromPcScreen implements Screen {
             }
         });
         head.addView(toggle);
-        root.addView(head);
+        root.addView(head, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, Ui.dp(c, 52)));
+        root.addView(divider());
 
         search = new EditText(c);
         search.setHint("Auf dem PC suchen");
@@ -162,7 +166,7 @@ final class FromPcScreen implements Screen {
         search.setTextSize(15);
         search.setTextColor(Ui.text(c));
         search.setHintTextColor(Ui.dim(c));
-        search.setBackground(Ui.outlined(c, Ui.surface(c)));
+        search.setBackgroundColor(Ui.bg(c));
         search.setPadding(Ui.dp(c, 16), Ui.dp(c, 8), Ui.dp(c, 16), Ui.dp(c, 8));
         search.setImeOptions(android.view.inputmethod.EditorInfo.IME_ACTION_SEARCH);
         search.addTextChangedListener(new android.text.TextWatcher() {
@@ -181,12 +185,13 @@ final class FromPcScreen implements Screen {
         });
         LinearLayout.LayoutParams slp = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, Ui.dp(c, 44));
-        slp.setMargins(p, 0, p, Ui.dp(c, 6));
         root.addView(search, slp);
+        root.addView(divider());
 
         normalBar = new LinearLayout(c);
         normalBar.setOrientation(LinearLayout.VERTICAL);
-        normalBar.setPadding(p, 0, p, Ui.dp(c, 6));
+        normalBar.setPadding(Ui.dp(c, 8), 0, p, Ui.dp(c, 8));
+        normalBar.setBackgroundColor(Ui.bg(c));
         final HorizontalScrollView scroll = new HorizontalScrollView(c);
         crumbScroll = scroll;
         scroll.setHorizontalScrollBarEnabled(false);
@@ -203,9 +208,8 @@ final class FromPcScreen implements Screen {
                 }
             }
         });
-        ImageView homeBtn = Ui.icon(c, R.drawable.ic_home, Ui.primary(c), 48);
+        ImageView homeBtn = Ui.icon(c, R.drawable.ic_home, Ui.primary(c), 44);
         homeBtn.setPadding(Ui.dp(c, 10), Ui.dp(c, 10), Ui.dp(c, 10), Ui.dp(c, 10));
-        homeBtn.setBackground(Ui.round(c, Ui.chip(c), 10));
         homeBtn.setContentDescription("Übersicht");
         homeBtn.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -224,66 +228,68 @@ final class FromPcScreen implements Screen {
         actionRow.setOrientation(LinearLayout.HORIZONTAL);
         actionRow.setGravity(Gravity.END | Gravity.CENTER_VERTICAL);
         actionRow.setPadding(0, Ui.dp(c, 2), 0, 0);
-        actionRow.addView(chip("Auswählen", false, new View.OnClickListener() {
+        LinearLayout.LayoutParams ap = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, Ui.dp(c, 44));
+        ap.leftMargin = Ui.dp(c, 8);
+        actionRow.setPadding(0, Ui.dp(c, 2), Ui.dp(c, 0), 0);
+        actionRow.addView(Ui.actionButton(c, "Auswählen", false, new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 selectAll();
             }
-        }));
-        actionRow.addView(chip("Alle laden", true, new View.OnClickListener() {
+        }), ap);
+        actionRow.addView(Ui.actionButton(c, "Alle laden", true, new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 loadAll();
             }
-        }));
+        }), ap);
         normalBar.addView(actionRow);
         root.addView(normalBar);
+        root.addView(divider());
 
         selectBar = new LinearLayout(c);
         selectBar.setOrientation(LinearLayout.HORIZONTAL);
         selectBar.setGravity(Gravity.CENTER_VERTICAL);
-        selectBar.setPadding(p, 0, p, Ui.dp(c, 6));
+        selectBar.setBackgroundColor(Ui.selBar(c));
+        selectBar.setPadding(Ui.dp(c, 8), 0, Ui.dp(c, 4), 0);
         selectBar.setVisibility(View.GONE);
-        ImageView closeSel = Ui.icon(c, R.drawable.ic_close, Ui.primary(c), 24);
-        closeSel.setPadding(Ui.dp(c, 4), Ui.dp(c, 4), Ui.dp(c, 4), Ui.dp(c, 4));
-        closeSel.setLayoutParams(new LinearLayout.LayoutParams(Ui.dp(c, 36), Ui.dp(c, 36)));
-        closeSel.setContentDescription("Auswahl beenden");
-        closeSel.setOnClickListener(new View.OnClickListener() {
+        selectBar.addView(barIcon(R.drawable.ic_close, "Auswahl beenden", new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 clearSelection();
             }
-        });
-        selectBar.addView(closeSel);
-        selCount = Ui.label(c, "", 14, Ui.text(c), true);
-        selCount.setPadding(Ui.dp(c, 6), 0, 0, 0);
+        }));
+        selCount = Ui.label(c, "", 16, Color.WHITE, true);
+        selCount.setSingleLine(true);
+        selCount.setPadding(Ui.dp(c, 4), 0, 0, 0);
         selectBar.addView(selCount, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
-        selectBar.addView(chip("Alle", false, new View.OnClickListener() {
+        selectBar.addView(barIcon(R.drawable.ic_checks, "Alle auswählen", new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 selectAll();
             }
         }));
-        selectBar.addView(chip("Laden", true, new View.OnClickListener() {
+        selectBar.addView(barIcon(R.drawable.ic_download, "Auf das Handy laden", new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 loadSelected();
             }
         }));
-        selectBar.addView(chip("Teilen", true, new View.OnClickListener() {
+        selectBar.addView(barIcon(R.drawable.ic_share, "Teilen", new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 shareSelected();
             }
         }));
-        selSave = chip("Speichern", true, new View.OnClickListener() {
+        selSave = barIcon(R.drawable.ic_save, "Speichern unter", new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 saveSelected();
             }
         });
         selectBar.addView(selSave);
-        root.addView(selectBar);
+        root.addView(selectBar, root.indexOfChild(head) + 1, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, Ui.dp(c, 52)));
 
         homeScroll = new android.widget.ScrollView(c);
         homeScroll.setVerticalScrollBarEnabled(false);
@@ -829,23 +835,44 @@ final class FromPcScreen implements Screen {
         selected.retainAll(keep);
     }
 
-    private TextView chip(String text, boolean filled, View.OnClickListener l) {
-        TextView t = Ui.label(c, text, 13, filled ? 0xFFFFFFFF : Ui.primary(c), true);
-        t.setBackground(filled ? Ui.round(c, Ui.primary(c), 8) : Ui.round(c, Ui.chip(c), 8));
-        t.setPadding(Ui.dp(c, 12), Ui.dp(c, 6), Ui.dp(c, 12), Ui.dp(c, 6));
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-        lp.leftMargin = Ui.dp(c, 6);
-        t.setLayoutParams(lp);
-        t.setOnClickListener(l);
+    /** Kästchen für die Auswahl. */
+    private View checkbox(boolean on) {
+        TextView t = new TextView(c);
+        t.setGravity(Gravity.CENTER);
+        t.setTextSize(14);
+        t.setTextColor(Ui.dark(c) ? 0xFF10200A : Color.WHITE);
+        android.graphics.drawable.GradientDrawable g = new android.graphics.drawable.GradientDrawable();
+        g.setCornerRadius(Ui.dp(c, 3));
+        g.setColor(on ? Ui.primary(c) : 0x00000000);
+        g.setStroke(Ui.dp(c, 2), on ? Ui.primary(c) : Ui.dim(c));
+        t.setBackground(g);
+        t.setText(on ? "✓" : "");
         return t;
+    }
+
+    private ImageView barIcon(int icon, String description, View.OnClickListener l) {
+        ImageView v = Ui.icon(c, icon, Color.WHITE, 24);
+        v.setPadding(Ui.dp(c, 10), Ui.dp(c, 10), Ui.dp(c, 10), Ui.dp(c, 10));
+        v.setLayoutParams(new LinearLayout.LayoutParams(Ui.dp(c, 44), Ui.dp(c, 44)));
+        v.setContentDescription(description);
+        v.setBackground(Ui.pressable(c));
+        v.setOnClickListener(l);
+        return v;
+    }
+
+    private View divider() {
+        View v = new View(c);
+        v.setBackgroundColor(Ui.line(c));
+        v.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, Math.max(1, Ui.dp(c, 1) / 2 + 1)));
+        return v;
     }
 
     private void updateBars() {
         boolean sel = !selected.isEmpty();
         normalBar.setVisibility(sel ? View.GONE : View.VISIBLE);
         selectBar.setVisibility(sel ? View.VISIBLE : View.GONE);
-        selCount.setText(selected.size() + " ausgewählt");
+        selCount.setText(selected.size() + " gewählt");
+        head.setVisibility(sel ? View.GONE : View.VISIBLE);
         selSave.setVisibility(selected.size() == 1 ? View.VISIBLE : View.GONE);
     }
 
@@ -1051,7 +1078,7 @@ final class FromPcScreen implements Screen {
 
     private View folderRow(String name) {
         LinearLayout row = rowShell(false);
-        row.addView(folderTile48(), new LinearLayout.LayoutParams(Ui.dp(c, 48), Ui.dp(c, 48)));
+        row.addView(folderTile48(), new LinearLayout.LayoutParams(Ui.dp(c, 36), Ui.dp(c, 36)));
         TextView n = Ui.label(c, name, 16, Ui.text(c), false);
         n.setPadding(Ui.dp(c, 14), 0, Ui.dp(c, 6), 0);
         n.setMaxLines(2);
@@ -1065,8 +1092,12 @@ final class FromPcScreen implements Screen {
         final String uri = Store.uri(c, f.key());
         boolean picked = selected.contains(f.key());
         LinearLayout row = rowShell(picked);
-        ImageView ic = picked ? symbol(R.drawable.ic_check, Ui.primary(c)) : fileIcon(f);
-        row.addView(ic, new LinearLayout.LayoutParams(Ui.dp(c, 48), Ui.dp(c, 48)));
+        if (!selected.isEmpty()) {
+            LinearLayout.LayoutParams cp = new LinearLayout.LayoutParams(Ui.dp(c, 22), Ui.dp(c, 22));
+            cp.rightMargin = Ui.dp(c, 14);
+            row.addView(checkbox(picked), cp);
+        }
+        row.addView(fileIcon(f), new LinearLayout.LayoutParams(Ui.dp(c, 36), Ui.dp(c, 36)));
         LinearLayout text = new LinearLayout(c);
         text.setOrientation(LinearLayout.VERTICAL);
         text.setPadding(Ui.dp(c, 14), 0, Ui.dp(c, 6), 0);

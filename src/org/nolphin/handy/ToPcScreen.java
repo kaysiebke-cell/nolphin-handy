@@ -469,23 +469,21 @@ final class ToPcScreen implements Screen {
         pasteBar.setPadding(p, Ui.dp(c, 8), p, Ui.dp(c, 8));
         pasteText = Ui.label(c, "", 14, Ui.text(c), true);
         pasteBar.addView(pasteText, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
-        TextView cancelPaste = chip("Abbrechen", new View.OnClickListener() {
+        LinearLayout.LayoutParams pb = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, Ui.dp(c, 44));
+        pb.leftMargin = Ui.dp(c, 8);
+        pasteBar.addView(Ui.actionButton(c, "Abbrechen", false, new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 clip = null;
                 render();
             }
-        });
-        pasteBar.addView(cancelPaste);
-        Button here = Ui.button(c, "Hierher", true, new View.OnClickListener() {
+        }), pb);
+        pasteBar.addView(Ui.actionButton(c, "Hierher", true, new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 pasteHere();
             }
-        });
-        LinearLayout.LayoutParams hp = new LinearLayout.LayoutParams(Ui.dp(c, 120), LinearLayout.LayoutParams.WRAP_CONTENT);
-        hp.leftMargin = Ui.dp(c, 8);
-        pasteBar.addView(here, hp);
+        }), pb);
         pasteBar.setVisibility(View.GONE);
         root.addView(pasteBar);
 
@@ -1614,14 +1612,6 @@ final class ToPcScreen implements Screen {
                 }
             });
         }
-        return t;
-    }
-
-    private TextView chip(String text, View.OnClickListener l) {
-        TextView t = Ui.label(c, text, 13, Ui.primary(c), true);
-        t.setBackground(Ui.round(c, Ui.chip(c), 8));
-        t.setPadding(Ui.dp(c, 12), Ui.dp(c, 6), Ui.dp(c, 12), Ui.dp(c, 6));
-        t.setOnClickListener(l);
         return t;
     }
 
