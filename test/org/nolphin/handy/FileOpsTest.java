@@ -79,6 +79,7 @@ public class FileOpsTest {
             loeschenUndLinks(w);
             fehlerfaelle(w, root);
             abbruch(w);
+            stufe2(w, root);
             namen(w);
             zip(w);
         } finally {
@@ -156,8 +157,15 @@ public class FileOpsTest {
         File target3 = dir(t, "ziel3");
         file(target3, "Ordner/gleich.txt", "ZIEL");
         r = FileOps.copyAll(list(folder), target3, FileOps.Conflict.SKIP, null);
-        ok(r.skipped.size() == 1 && read(new File(target3, "Ordner/gleich.txt")).equals("ZIEL") && !new File(target3, "Ordner/neu.txt").exists(),
-                "überspringen mit Ordner: vorhandener Ordner bleibt unberührt");
+        ok(r.ok() && r.skipped.size() == 1 && read(new File(target3, "Ordner/gleich.txt")).equals("ZIEL") && read(new File(target3, "Ordner/neu.txt")).equals("n"),
+                "überspringen mit Ordner: gleiche Datei bleibt, fehlende wird ergänzt, kein Fehler");
+
+        // Konfliktliste vorab
+        List<String> c = FileOps.conflicts(list(folder), target);
+        ok(c.size() == 2 && c.contains("Ordner/gleich.txt") && c.contains("Ordner/neu.txt"), "Konfliktliste: Dateien im vorhandenen Ordner (" + c + ")");
+        File frei = dir(t, "frei");
+        ok(FileOps.conflicts(list(folder), frei).isEmpty(), "Konfliktliste: leer, wenn nichts doppelt ist");
+        ok(FileOps.conflicts(list(f), dst).size() == 1 && FileOps.conflicts(list(f), dst).get(0).equals("doc.txt"), "Konfliktliste: einzelne Datei");
     }
 
     static void verschieben(File w) throws Exception {
@@ -308,7 +316,7 @@ public class FileOpsTest {
             }
 
             @Override
-            public void update(String name, long done, long total) {
+            public void update(String name, long done, long total, int idx, int cnt) {
                 updates[0]++;
             }
         };
@@ -326,7 +334,7 @@ public class FileOpsTest {
             }
 
             @Override
-            public void update(String name, long done, long total) {
+            public void update(String name, long done, long total, int idx, int cnt) {
                 last[0] = done;
                 last[1] = total;
             }
@@ -340,6 +348,82 @@ public class FileOpsTest {
         File dst3 = dir(t, "Ziel3");
         FileOps.Result r3 = FileOps.moveAllByCopy(list(mv), dst3, FileOps.Conflict.RENAME, cancelAfterSome);
         ok(r3.cancelled && mv.isFile() && mv.length() == 16L * 1024 * 1024 && dst3.list().length == 0, "Abbruch beim Verschieben: Original bleibt, nichts im Ziel");
+    }
+
+    static void stufe2(File w, boolean root) throws Exception {
+        File t = dir(w, "stufe2");
+        // Dateizähler im Fortschritt
+        File src = dir(t, "Quelle");
+        file(src, "1.txt", "a");
+        file(src, "U/2.txt", "bb");
+        file(src, "U/V/3.txt", "ccc");
+        final int[] last = { 0, 0 };
+        FileOps.Progress p = new FileOps.Progress() {
+            @Override
+            public boolean cancelled() {
+                return false;
+            }
+
+            @Override
+            public void update(String name, long done, long total, int idx, int cnt) {
+                last[0] = idx;
+                last[1] = cnt;
+            }
+        };
+        FileOps.Result r = FileOps.copyAll(list(src), dir(t, "Ziel"), FileOps.Conflict.RENAME, p);
+        ok(r.ok() && last[0] == 3 && last[1] == 3, "Fortschritt zählt Dateien: " + last[0] + " von " + last[1]);
+        last[0] = 0;
+        last[1] = 0;
+        r = FileOps.deleteAll(list(new File(t, "Ziel")), p);
+        ok(r.ok() && last[0] == 3 && last[1] == 3, "Löschen meldet Fortschritt und Dateizähler: " + last[0] + " von " + last[1]);
+
+        // Abbruch beim Löschen: nichts Falsches gelöscht, Rest bleibt
+        File many = dir(t, "viele");
+        for (int i = 0; i < 40; i++) {
+            file(many, "f" + i + ".txt", "x");
+        }
+        final int[] count = { 0 };
+        FileOps.Progress cancelAt10 = new FileOps.Progress() {
+            @Override
+            public boolean cancelled() {
+                return count[0] >= 10;
+            }
+
+            @Override
+            public void update(String name, long done, long total, int idx, int cnt) {
+                count[0]++;
+            }
+        };
+        r = FileOps.deleteAll(list(many), cancelAt10);
+        int left = many.list() == null ? 0 : many.list().length;
+        ok(r.cancelled && left > 0 && left < 40 && many.isDirectory(), "Abbruch beim Löschen: Ordner und Rest bleiben (" + left + " von 40 übrig)");
+        ok(r.done.isEmpty(), "Abbruch beim Löschen: Ordner gilt nicht als gelöscht");
+
+        // Verschieben mit "überspringen": gleiche Datei bleibt an der Quelle, der Rest wird verschoben
+        File q = dir(t, "mvq");
+        file(q, "gleich.txt", "QUELLE");
+        file(q, "neu.txt", "NEU");
+        File z = dir(t, "mvz");
+        file(z, "mvq/gleich.txt", "ZIEL");
+        r = FileOps.moveAllByCopy(list(q), z, FileOps.Conflict.SKIP, null);
+        ok(r.ok() && r.skipped.size() == 1 && read(new File(z, "mvq/gleich.txt")).equals("ZIEL") && read(new File(z, "mvq/neu.txt")).equals("NEU")
+                && new File(q, "gleich.txt").isFile() && !new File(q, "neu.txt").exists() && q.isDirectory(),
+                "Verschieben mit Überspringen: Rest verschoben, übersprungene Datei und Quellordner bleiben");
+
+        // Wiederholen: nur die fehlgeschlagenen Elemente
+        if (!root) {
+            File s2 = dir(t, "retry");
+            file(s2, "gut.txt", "g");
+            File bad = file(s2, "schlecht.txt", "s");
+            File gut2 = file(t, "ganz-gut.txt", "x");
+            bad.setReadable(false);
+            r = FileOps.copyAll(list(s2, gut2), dir(t, "retry-ziel"), FileOps.Conflict.RENAME, null);
+            ok(!r.ok() && r.retry.size() == 1 && r.retry.get(0).equals(s2), "Wiederholen: nur das fehlgeschlagene Element ist in der Liste");
+            bad.setReadable(true);
+            r = FileOps.copyAll(r.retry, new File(t, "retry-ziel"), FileOps.Conflict.SKIP, null);
+            ok(r.ok() && read(new File(t, "retry-ziel/retry/schlecht.txt")).equals("s") && read(new File(t, "retry-ziel/retry/gut.txt")).equals("g"),
+                    "Wiederholen mit Überspringen: fehlende Datei ergänzt, schon kopierte unverändert");
+        }
     }
 
     static void namen(File w) throws Exception {

@@ -35,8 +35,12 @@ final class FileOps {
     interface Progress {
         boolean cancelled();
 
-        /** @param total Gesamtgröße aller Dateien des Vorgangs in Bytes (0 = unbekannt) */
-        void update(String name, long done, long total);
+        /**
+         * @param total      Gesamtgröße aller Dateien des Vorgangs in Bytes (0 = unbekannt)
+         * @param fileIndex  die wievielte Datei gerade bearbeitet wird (ab 1)
+         * @param fileCount  Anzahl aller Dateien des Vorgangs
+         */
+        void update(String name, long done, long total, int fileIndex, int fileCount);
     }
 
     private static final Progress NO_PROGRESS = new Progress() {
@@ -46,7 +50,7 @@ final class FileOps {
         }
 
         @Override
-        public void update(String name, long done, long total) {
+        public void update(String name, long done, long total, int fileIndex, int fileCount) {
         }
     };
 
@@ -60,6 +64,8 @@ final class FileOps {
         final List<String> skipped = new ArrayList<>();
         /** Dateien, die entstanden oder verschwunden sind (für die Mediensuche; höchstens 500). */
         final List<File> touched = new ArrayList<>();
+        /** Die Elemente der Auswahl, bei denen etwas schiefging: für "Nochmal versuchen". */
+        final List<File> retry = new ArrayList<>();
         boolean cancelled;
 
         boolean ok() {
@@ -129,6 +135,42 @@ final class FileOps {
         }
     }
 
+    // ---- Konflikte vorab ermitteln ---------------------------------------------------------------
+
+    /**
+     * Welche Namen gibt es im Ziel schon? Ordner, die es dort schon gibt, werden durchsucht: dann zählen nur die
+     * gleichen Dateien darin. Die Namen sind relativ zum Zielordner ("Ordner/Unter/datei.txt"). Höchstens 500.
+     */
+    static List<String> conflicts(List<File> sources, File dstDir) {
+        List<String> out = new ArrayList<>();
+        for (File src : sources) {
+            File dst = new File(dstDir, src.getName());
+            if (src.getParentFile() != null && src.getParentFile().equals(dstDir)) {
+                continue;   // liegt schon dort (beim Verschieben ohne Wirkung)
+            }
+            collectConflicts(src, dst, src.getName(), out);
+        }
+        return out;
+    }
+
+    private static void collectConflicts(File src, File dst, String rel, List<String> out) {
+        if (out.size() >= 500 || !exists(dst)) {
+            return;
+        }
+        boolean bothDirs = src.isDirectory() && !isLink(src) && dst.isDirectory() && !isLink(dst);
+        if (!bothDirs) {
+            out.add(rel);
+            return;
+        }
+        File[] children = src.listFiles();
+        if (children == null) {
+            return;
+        }
+        for (File c : children) {
+            collectConflicts(c, new File(dst, c.getName()), rel + "/" + c.getName(), out);
+        }
+    }
+
     // ---- Kopieren -------------------------------------------------------------------------------
 
     static Result copyAll(List<File> sources, File dstDir, Conflict conflict, Progress progress) {
@@ -155,6 +197,8 @@ final class FileOps {
         final byte[] buf = new byte[64 * 1024];
         long done;
         long total;
+        int files;
+        int index;
         String name = "";
 
         Ctx(Conflict conflict, Progress progress, Result result, boolean moving, boolean forceCopy) {
@@ -178,7 +222,9 @@ final class FileOps {
         Result r = new Result();
         Ctx x = new Ctx(conflict == null ? Conflict.RENAME : conflict, progress, r, moving, forceCopy);
         for (File s : sources) {
-            x.total += measure(s)[0];
+            long[] m = measure(s);
+            x.total += m[0];
+            x.files += (int) m[1];
         }
         if (!dstDir.isDirectory()) {
             r.failed.add(dstDir.getName() + ": Zielordner nicht vorhanden");
@@ -199,15 +245,21 @@ final class FileOps {
             }
             File dst = new File(dstDir, name);
             if (exists(dst)) {
-                if (x.conflict == Conflict.SKIP) {
-                    r.skipped.add(name + ": gibt es im Ziel schon");
-                    continue;
-                }
-                if (x.conflict == Conflict.RENAME) {
-                    dst = uniqueIn(dstDir, name);
+                // Ordner werden bei "überspringen" und "ersetzen" zusammengeführt: nur gleiche Dateien sind ein Konflikt
+                boolean mergeDirs = x.conflict != Conflict.RENAME && src.isDirectory() && !isLink(src) && dst.isDirectory() && !isLink(dst);
+                if (!mergeDirs) {
+                    if (x.conflict == Conflict.SKIP) {
+                        r.skipped.add(name + ": gibt es im Ziel schon");
+                        x.index += (int) measure(src)[1];
+                        continue;
+                    }
+                    if (x.conflict == Conflict.RENAME) {
+                        dst = uniqueIn(dstDir, name);
+                    }
                 }
             }
             x.name = name;
+            int failedBefore = r.failed.size();
             int st = x.moving ? moveNode(x, src, dst) : copyNode(x, src, dst);
             if (st == OK) {
                 r.done.add(name);
@@ -217,6 +269,9 @@ final class FileOps {
                 break;
             }
             // bei FAILED steht der Grund schon in r.failed
+            if (st == FAILED || r.failed.size() > failedBefore) {
+                r.retry.add(src);
+            }
         }
         return r;
     }
@@ -271,7 +326,8 @@ final class FileOps {
             x.result.failed.add(src.getName() + ": Ordner nicht lesbar");
             return FAILED;
         }
-        boolean allOk = true;
+        boolean failed = false;
+        boolean skipped = false;
         for (File c : children) {
             File d = new File(dst, c.getName());
             int st;
@@ -285,18 +341,21 @@ final class FileOps {
             if (st == CANCELLED) {
                 return CANCELLED;
             }
-            if (st != OK) {
-                allOk = false;
+            if (st == FAILED) {
+                failed = true;
+            } else if (st == SKIPPED) {
+                skipped = true;
             }
         }
-        if (allOk && deleteSource) {
+        // Original-Ordner erst entfernen, wenn alles daraus erledigt ist (nichts übersprungen, nichts fehlgeschlagen)
+        if (!failed && !skipped && deleteSource) {
             File[] left = src.listFiles();
             if (left != null && left.length == 0 && !src.delete()) {
                 x.result.failed.add(src.getName() + ": Original-Ordner nicht gelöscht");
                 return FAILED;
             }
         }
-        return allOk ? OK : FAILED;
+        return failed ? FAILED : OK;
     }
 
     /**
@@ -323,6 +382,8 @@ final class FileOps {
             tmp = File.createTempFile(".nolphin-", ".tmp", dir);
             CRC32 srcCrc = new CRC32();
             long copied = 0;
+            x.index++;
+            x.progress.update(src.getName(), x.done, x.total, x.index, x.files);
             try (InputStream in = new FileInputStream(src); OutputStream out = new FileOutputStream(tmp)) {
                 int n;
                 while ((n = in.read(x.buf)) > 0) {
@@ -335,7 +396,7 @@ final class FileOps {
                     srcCrc.update(x.buf, 0, n);
                     copied += n;
                     x.done += n;
-                    x.progress.update(src.getName(), x.done, x.total);
+                    x.progress.update(src.getName(), x.done, x.total, x.index, x.files);
                 }
                 out.flush();
             }
@@ -411,7 +472,8 @@ final class FileOps {
             long size = measure(src)[0];
             if (src.renameTo(dst)) {
                 x.done += size;
-                x.progress.update(src.getName(), x.done, x.total);
+                x.index += (int) measure(dst)[1];
+                x.progress.update(src.getName(), x.done, x.total, x.index, x.files);
                 x.result.touch(dst);
                 x.result.touch(src);
                 return OK;
@@ -442,6 +504,14 @@ final class FileOps {
         Result r = new Result();
         Ctx x = new Ctx(Conflict.RENAME, progress, r, false, false);
         for (File f : items) {
+            if (f.getParentFile() == null) {
+                continue;   // die oberste Ebene wird nie gelöscht, also auch nicht gemessen
+            }
+            long[] m = measure(f);
+            x.total += m[0];
+            x.files += (int) m[1];
+        }
+        for (File f : items) {
             if (x.cancelled()) {
                 break;
             }
@@ -453,6 +523,8 @@ final class FileOps {
             deleteNode(x, f);
             if (r.failed.size() == before && !r.cancelled) {
                 r.done.add(f.getName());
+            } else if (r.failed.size() > before) {
+                r.retry.add(f);
             }
         }
         return r;
@@ -475,9 +547,16 @@ final class FileOps {
                 return;
             }
         }
+        boolean plainFile = isLink(f) || !f.isDirectory();
+        long size = plainFile && !isLink(f) ? f.length() : 0;
         try {
             Files.delete(f.toPath());
             x.result.touch(f);
+            if (plainFile) {
+                x.done += size;
+                x.index++;
+                x.progress.update(f.getName(), x.done, x.total, x.index, x.files);
+            }
         } catch (IOException e) {
             x.result.failed.add(f.getName() + ": " + (f.isDirectory() ? "Ordner nicht leer oder nicht löschbar" : reason(e)));
         }

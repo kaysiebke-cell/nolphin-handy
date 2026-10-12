@@ -1225,14 +1225,120 @@ final class ToPcScreen implements Screen {
         final File target = dir;
         clip = null;
         render();
-        runOp(move ? "Verschiebe …" : "Kopiere …", new Op() {
+        // erst prüfen, ob es im Ziel schon gleiche Namen gibt
+        new Thread(new Runnable() {
             @Override
-            public String run() {
-                FileOps.Result r = move ? FileOps.moveAll(items, target, FileOps.Conflict.RENAME, null)
-                        : FileOps.copyAll(items, target, FileOps.Conflict.RENAME, null);
-                return finish(r, move ? "verschoben" : "kopiert");
+            public void run() {
+                final List<String> conflicts = FileOps.conflicts(items, target);
+                ui.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (conflicts.isEmpty()) {
+                            startTransfer(items, target, move, FileOps.Conflict.RENAME);
+                        } else {
+                            askConflict(items, target, move, conflicts);
+                        }
+                    }
+                });
+            }
+        }, "nolphin-conflicts").start();
+    }
+
+    private void startTransfer(final List<File> items, final File target, final boolean move, final FileOps.Conflict conflict) {
+        runBatch(move ? "Verschiebe …" : "Kopiere …", move ? "verschoben" : "kopiert", new BatchWork() {
+            @Override
+            public FileOps.Result run(FileOps.Progress p) {
+                return move ? FileOps.moveAll(items, target, conflict, p) : FileOps.copyAll(items, target, conflict, p);
+            }
+        }, new Retry() {
+            @Override
+            public void run(List<File> failedItems) {
+                // nur das Fehlgeschlagene noch einmal; schon Erledigtes im Ziel bleibt unverändert
+                startTransfer(failedItems, target, move, FileOps.Conflict.SKIP);
             }
         });
+    }
+
+    private CharSequence twoLines(String title, String sub) {
+        android.text.SpannableStringBuilder b = new android.text.SpannableStringBuilder(title + "\n" + sub);
+        b.setSpan(new android.text.style.RelativeSizeSpan(0.82f), title.length() + 1, b.length(), 0);
+        b.setSpan(new android.text.style.ForegroundColorSpan(Ui.dim(c)), title.length() + 1, b.length(), 0);
+        return b;
+    }
+
+    /** Einmal pro Vorgang fragen: beide behalten, überspringen oder ersetzen. */
+    private void askConflict(final List<File> items, final File target, final boolean move, final List<String> conflicts) {
+        File example = new File(target, conflicts.get(0));
+        String renamed = FileOps.uniqueIn(example.getParentFile(), example.getName()).getName();
+        LinearLayout v = new LinearLayout(c);
+        v.setOrientation(LinearLayout.VERTICAL);
+        v.setPadding(Ui.dp(c, 24), Ui.dp(c, 8), Ui.dp(c, 24), 0);
+        TextView msg = Ui.label(c, conflicts.size() + (conflicts.size() == 1 ? " Element gibt es" : " Elemente gibt es")
+                + " im Ziel schon, zum Beispiel „" + example.getName() + "“.", 14, Ui.dim(c), false);
+        msg.setPadding(0, 0, 0, Ui.dp(c, 8));
+        v.addView(msg);
+        final android.widget.RadioGroup group = new android.widget.RadioGroup(c);
+        CharSequence[] labels = {
+            twoLines("Beide behalten", "Die neue Datei heißt „" + renamed + "“"),
+            twoLines("Überspringen", "Vorhandene Dateien bleiben unberührt"),
+            twoLines("Ersetzen", "Vorhandene Dateien werden überschrieben")
+        };
+        for (int i = 0; i < labels.length; i++) {
+            android.widget.RadioButton rb = new android.widget.RadioButton(c);
+            rb.setId(i + 1);
+            rb.setText(labels[i]);
+            rb.setTextSize(15);
+            rb.setTextColor(Ui.text(c));
+            rb.setButtonTintList(android.content.res.ColorStateList.valueOf(Ui.primary(c)));
+            rb.setPadding(Ui.dp(c, 8), Ui.dp(c, 8), 0, Ui.dp(c, 8));
+            group.addView(rb);
+        }
+        group.check(1);
+        v.addView(group);
+        new AlertDialog.Builder(host.activity())
+                .setTitle("Es gibt schon Dateien mit diesem Namen")
+                .setView(v)
+                .setNegativeButton("Abbrechen", null)
+                .setPositiveButton("Weiter", new android.content.DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(android.content.DialogInterface d, int which) {
+                        int id = group.getCheckedRadioButtonId();
+                        if (id == 3) {
+                            confirmReplace(items, target, move, conflicts);
+                        } else {
+                            startTransfer(items, target, move, id == 2 ? FileOps.Conflict.SKIP : FileOps.Conflict.RENAME);
+                        }
+                    }
+                }).show();
+    }
+
+    /** Ersetzen verlangt eine ausdrückliche Bestätigung mit der Liste der betroffenen Dateien. */
+    private void confirmReplace(final List<File> items, final File target, final boolean move, final List<String> conflicts) {
+        StringBuilder b = new StringBuilder("Diese Dateien im Ziel werden überschrieben. Das lässt sich nicht rückgängig machen.\n\n");
+        int shown = Math.min(conflicts.size(), 10);
+        for (int i = 0; i < shown; i++) {
+            b.append("• ").append(conflicts.get(i)).append("\n");
+        }
+        if (conflicts.size() > shown) {
+            b.append("… und ").append(conflicts.size() - shown).append(" weitere");
+        }
+        AlertDialog d = new AlertDialog.Builder(host.activity())
+                .setTitle(conflicts.size() + (conflicts.size() == 1 ? " Datei ersetzen?" : " Dateien ersetzen?"))
+                .setMessage(b.toString().trim())
+                .setNegativeButton("Zurück", new android.content.DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(android.content.DialogInterface dialog, int which) {
+                        askConflict(items, target, move, conflicts);
+                    }
+                })
+                .setPositiveButton("Ersetzen", new android.content.DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(android.content.DialogInterface dialog, int which) {
+                        startTransfer(items, target, move, FileOps.Conflict.REPLACE);
+                    }
+                }).create();
+        d.show();
+        d.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(Ui.danger(c));
     }
 
     private void askDelete() {
@@ -1250,14 +1356,23 @@ final class ToPcScreen implements Screen {
                     public void onClick(android.content.DialogInterface d, int which) {
                         selected.clear();
                         render();
-                        runOp("Lösche …", new Op() {
-                            @Override
-                            public String run() {
-                                return finish(FileOps.deleteAll(items, null), "gelöscht");
-                            }
-                        });
+                        startDelete(items);
                     }
                 }).show();
+    }
+
+    private void startDelete(final List<File> items) {
+        runBatch("Lösche …", "gelöscht", new BatchWork() {
+            @Override
+            public FileOps.Result run(FileOps.Progress p) {
+                return FileOps.deleteAll(items, p);
+            }
+        }, new Retry() {
+            @Override
+            public void run(List<File> failedItems) {
+                startDelete(failedItems);
+            }
+        });
     }
 
     private void more() {
@@ -1386,22 +1501,142 @@ final class ToPcScreen implements Screen {
         String run();
     }
 
-    /** Probleme des letzten Vorgangs (werden nach der Meldung in einem Dialog gezeigt). */
-    private volatile List<String> problems;
+    // ---- Vorgänge mit Fortschritt, Abbruch, Konfliktfrage und Ergebnis -----------------------------
 
-    /** Meldet das Ergebnis eines Vorgangs mit mehreren Elementen und merkt sich die Probleme. */
-    private String finish(FileOps.Result r, String verbPast) {
+    private final android.os.Handler ui = new android.os.Handler(android.os.Looper.getMainLooper());
+
+    private interface BatchWork {
+        FileOps.Result run(FileOps.Progress progress);
+    }
+
+    private interface Retry {
+        void run(List<File> failedItems);
+    }
+
+    /** Fortschritt eines Vorgangs; die Anzeige wird höchstens zehnmal pro Sekunde aufgefrischt. */
+    private final class BatchProgress implements FileOps.Progress {
+        volatile boolean cancel;
+        volatile String name = "";
+        volatile long done;
+        volatile long total;
+        volatile int idx;
+        volatile int cnt;
+        Runnable refresh;
+        private long lastPost;
+
+        @Override
+        public boolean cancelled() {
+            return cancel;
+        }
+
+        @Override
+        public void update(String n, long d, long t, int i, int cn) {
+            name = n;
+            done = d;
+            total = t;
+            idx = i;
+            cnt = cn;
+            long now = System.currentTimeMillis();
+            if (refresh != null && now - lastPost >= 100) {
+                lastPost = now;
+                ui.post(refresh);
+            }
+        }
+    }
+
+    /**
+     * Führt einen Vorgang im Hintergrund aus. Dauert er länger als einen Augenblick, erscheint ein Fenster mit
+     * Fortschritt und "Abbrechen". Danach folgen die Meldung und bei Fehlern eine Liste mit "Nochmal versuchen".
+     */
+    private void runBatch(final String title, final String verbPast, final BatchWork work, final Retry retry) {
+        final BatchProgress prog = new BatchProgress();
+        final boolean[] finished = { false };
+        final AlertDialog[] dlg = { null };
+        final TextView nameView = Ui.label(c, "", 14, Ui.text(c), false);
+        final android.widget.ProgressBar bar = new android.widget.ProgressBar(c, null, android.R.attr.progressBarStyleHorizontal);
+        final TextView sizeView = Ui.label(c, "", 13, Ui.dim(c), false);
+        final TextView countView = Ui.label(c, "", 13, Ui.dim(c), false);
+        bar.setMax(1000);
+        bar.setProgressTintList(android.content.res.ColorStateList.valueOf(Ui.primary(c)));
+        nameView.setSingleLine(true);
+        nameView.setEllipsize(android.text.TextUtils.TruncateAt.MIDDLE);
+        prog.refresh = new Runnable() {
+            @Override
+            public void run() {
+                nameView.setText(prog.name);
+                bar.setProgress(prog.total > 0 ? (int) Math.min(1000, prog.done * 1000 / prog.total) : 0);
+                sizeView.setText(prog.total > 0 ? Ui.size(prog.done) + " von " + Ui.size(prog.total) : "");
+                countView.setText(prog.cnt > 1 ? "Datei " + prog.idx + " von " + prog.cnt : "");
+            }
+        };
+        final Runnable show = new Runnable() {
+            @Override
+            public void run() {
+                if (finished[0]) {
+                    return;
+                }
+                LinearLayout v = new LinearLayout(c);
+                v.setOrientation(LinearLayout.VERTICAL);
+                v.setPadding(Ui.dp(c, 24), Ui.dp(c, 8), Ui.dp(c, 24), 0);
+                v.addView(nameView);
+                v.addView(bar, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, Ui.dp(c, 24)));
+                v.addView(sizeView);
+                v.addView(countView);
+                prog.refresh.run();
+                dlg[0] = new AlertDialog.Builder(host.activity())
+                        .setTitle(title)
+                        .setView(v)
+                        .setCancelable(false)
+                        .setNegativeButton("Abbrechen", null)
+                        .create();
+                dlg[0].show();
+                final android.widget.Button cancelButton = dlg[0].getButton(AlertDialog.BUTTON_NEGATIVE);
+                cancelButton.setTextColor(Ui.danger(c));
+                cancelButton.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View b) {
+                        prog.cancel = true;
+                        cancelButton.setEnabled(false);
+                        cancelButton.setText("Breche ab …");
+                    }
+                });
+            }
+        };
+        ui.postDelayed(show, 600);
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                final FileOps.Result r = work.run(prog);
+                ui.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        finished[0] = true;
+                        ui.removeCallbacks(show);
+                        if (dlg[0] != null) {
+                            dlg[0].dismiss();
+                        }
+                        batchDone(r, verbPast, retry);
+                    }
+                });
+            }
+        }, "nolphin-fileops").start();
+    }
+
+    private void batchDone(FileOps.Result r, String verbPast, Retry retry) {
         for (File f : r.touched) {
             scan(f);
         }
-        List<String> p = new ArrayList<>(r.failed);
-        p.addAll(r.skipped);
-        problems = p;
-        return r.summary(verbPast);
+        Toast.makeText(c, r.summary(verbPast), Toast.LENGTH_LONG).show();
+        reload();
+        if (!r.failed.isEmpty()) {
+            showProblems(r, retry);
+        }
     }
 
-    private void showProblems(List<String> list) {
-        StringBuilder b = new StringBuilder();
+    private void showProblems(final FileOps.Result r, final Retry retry) {
+        List<String> list = new ArrayList<>(r.failed);
+        list.addAll(r.skipped);
+        StringBuilder b = new StringBuilder(r.summary("erledigt")).append("\n\n");
         int shown = Math.min(list.size(), 10);
         for (int i = 0; i < shown; i++) {
             b.append("• ").append(list.get(i)).append("\n");
@@ -1409,30 +1644,33 @@ final class ToPcScreen implements Screen {
         if (list.size() > shown) {
             b.append("… und ").append(list.size() - shown).append(" weitere");
         }
-        new AlertDialog.Builder(host.activity())
+        AlertDialog.Builder d = new AlertDialog.Builder(host.activity())
                 .setTitle("Nicht alles hat geklappt")
                 .setMessage(b.toString().trim())
-                .setPositiveButton("Schließen", null)
-                .show();
+                .setPositiveButton("Schließen", null);
+        if (retry != null && !r.retry.isEmpty() && !r.cancelled) {
+            d.setNeutralButton("Nochmal versuchen", new android.content.DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(android.content.DialogInterface dialog, int which) {
+                    retry.run(new ArrayList<>(r.retry));
+                }
+            });
+        }
+        d.show();
     }
 
+    /** Für kurze Vorgänge mit einer Meldung (Umbenennen, Neuer Ordner). */
     private void runOp(final String start, final Op op) {
         Toast.makeText(c, start, Toast.LENGTH_SHORT).show();
-        problems = null;
         new Thread(new Runnable() {
             @Override
             public void run() {
                 final String msg = op.run();
-                final List<String> p = problems;
-                problems = null;
                 root.post(new Runnable() {
                     @Override
                     public void run() {
                         Toast.makeText(c, msg, Toast.LENGTH_LONG).show();
                         reload();
-                        if (p != null && !p.isEmpty()) {
-                            showProblems(p);
-                        }
                     }
                 });
             }

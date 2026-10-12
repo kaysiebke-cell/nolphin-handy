@@ -92,9 +92,9 @@ Es gibt zwei Wege. Beide bieten dasselbe.
 * **Verschieben ohne Risiko:** Auf demselben Speicher wird nur umbenannt. Zwischen Speichern (zum Beispiel SD-Karte) wird kopiert, die Kopie per Prüfsumme geprüft, und erst dann verschwindet das Original, Datei für Datei. Ein Fehler lässt das Original stehen.
 * **Verknüpfungen (Symlinks) werden nie verfolgt:** Beim Löschen verschwindet nur die Verknüpfung, nie ihr Ziel. Beim Kopieren gibt es dadurch keine Endlosschleifen.
 * **Ein Fehler stoppt nicht alles:** Nicht lesbare Dateien oder Ordner werden ausgelassen. Danach zeigt die App, was geklappt hat und was nicht, mit dem Grund. Ein Ordner mit Fehlern gilt nicht als erledigt.
-* Die Funktionen können Namenskonflikte nach den Regeln überspringen, umbenennen oder ersetzen und Vorgänge abbrechen. In der Oberfläche ist bisher nur „umbenennen“ (`Name (2)`) gewählt. Abbruch, Fortschrittsanzeige und die Auswahl der Regel folgen in einer späteren Stufe.
-
-**Ordner an den PC:** Die App schickt einen Ordner **Datei für Datei mit allen Unterordnern**. Am PC entsteht derselbe Ordner im Eingangsordner „Vom Handy“. Gibt es den Ordner dort schon, kommen die Dateien hinein, und gleiche Namen werden nummeriert (`Name (1).ext`), nichts wird überschrieben. Für den ganzen Ordner gibt es **eine** Meldung und **einen** Eintrag im Verlauf. **Leere Unterordner** werden auch angelegt. Das braucht ein aktuelles Nolphin am PC (Feld `folders` in `/info`). Bei einem älteren Nolphin schickt die App den Ordner als **ZIP-Datei**.
+* **Fortschritt und Abbrechen:** Dauert ein Vorgang länger als einen Augenblick, zeigt die App ein Fenster mit dem Namen der aktuellen Datei, einem Balken, der Größe und „Datei 3 von 8“. Mit **Abbrechen** stoppt der Vorgang. Dabei bleibt nichts Halbes zurück, und schon erledigte Dateien bleiben erledigt.
+* **Gleiche Namen im Ziel:** Gibt es beim Kopieren oder Verschieben schon gleiche Namen, fragt die App **einmal pro Vorgang**: **Beide behalten** (die neue Datei bekommt `(2)`), **Überspringen** oder **Ersetzen**. Ordner, die es im Ziel schon gibt, werden zusammengeführt, und nur gleiche Dateien darin sind ein Konflikt. **Ersetzen** verlangt eine zweite Bestätigung mit der Liste der betroffenen Dateien.
+* **Nochmal versuchen:** Nach Fehlern zeigt die App, was geklappt hat und was nicht, mit Grund. „Nochmal versuchen“ wiederholt nur das Fehlgeschlagene. Schon Kopiertes im Ziel bleibt dabei unverändert.
 
 **Zugriff:** Für den Dateimanager braucht die App „Zugriff auf alle Dateien“ (`MANAGE_EXTERNAL_STORAGE`). Das erlauben Sie einmal in den Systemeinstellungen. Ohne ihn bleibt nur die Systemauswahl.
 
@@ -139,7 +139,7 @@ Der Test läuft ohne Handy und prüft:
 
 * den **QR-Leser**: 163 Prüfungen (Codes des C-Encoders von Nolphin, gedreht, verzerrt, unscharf, verrauscht, ein Bildschirmfoto und ein echtes dunkles, unscharfes Handyfoto),
 * die **Link-Prüfung**: 34 Prüfungen,
-* die **Dateioperationen** (`FileOps`): 50 Prüfungen für Kopieren, Verschieben (auch über Kopieren und Prüfen), Umbenennen, neuer Ordner, ZIP und Löschen. Dazu die Schutzfälle: Ordner nicht in sich selbst, Namenskonflikte (überspringen, umbenennen, ersetzen, Ordner zusammenführen), Verknüpfungen (nie verfolgt, keine Endlosschleife), nicht lesbare Dateien und Ordner (Rest wird erledigt, Fehler genannt), keine halben Dateien nach Fehler oder Abbruch, Original bleibt bei Fehler oder Abbruch, Fortschritt.
+* die **Dateioperationen** (`FileOps`): 60 Prüfungen für Kopieren, Verschieben (auch über Kopieren und Prüfen), Umbenennen, neuer Ordner, ZIP und Löschen. Dazu die Schutzfälle: Ordner nicht in sich selbst, Namenskonflikte (überspringen, umbenennen, ersetzen, Ordner zusammenführen), Verknüpfungen (nie verfolgt, keine Endlosschleife), nicht lesbare Dateien und Ordner (Rest wird erledigt, Fehler genannt), keine halben Dateien nach Fehler oder Abbruch, Original bleibt bei Fehler oder Abbruch, Fortschritt mit Dateizähler, Abbruch auch beim Löschen, Konfliktliste vorab, Wiederholen nur des Fehlgeschlagenen.
 
 Der Test braucht den Nolphin-Quelltext im Nachbarordner `../nolphin-file-manager-master` (oder `NOLPHIN_ROOT`), außerdem `gcc` und GLib.
 
