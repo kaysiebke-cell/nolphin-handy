@@ -96,7 +96,6 @@ final class ToPcScreen implements Screen {
     private final LinearLayout crumbBar;
     private final LinearLayout crumbs;
     private final HorizontalScrollView crumbScroll;
-    private final TextView usage;
     private final LinearLayout head;
     private final LinearLayout selectBar;
     private final TextView selCount;
@@ -316,8 +315,6 @@ final class ToPcScreen implements Screen {
         
         crumbBar.addView(homeBtn);
         crumbBar.addView(scroll, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
-        usage = Ui.label(c, "", 12, Ui.dim(c), false);
-        crumbBar.addView(usage);
         crumbBar.setVisibility(View.GONE);
         root.addView(crumbBar);
         root.addView(divider());
@@ -1577,7 +1574,6 @@ final class ToPcScreen implements Screen {
         if (!show) {
             return;
         }
-        usage.setVisibility(View.GONE);
         if (mode == CATEGORY || mode == APPS) {
             crumbs.addView(Ui.label(c, "  ›  ", 14, Ui.dim(c), false));
             crumbs.addView(crumb(mode == APPS ? "Apps" : CATS[cat], null, true));
@@ -1605,13 +1601,6 @@ final class ToPcScreen implements Screen {
                 crumbScroll.scrollTo(crumbs.getWidth(), 0);
             }
         });
-        try {
-            StatFs s = new StatFs(v.root.getPath());
-            long used = s.getTotalBytes() - s.getAvailableBytes();
-            usage.setText(Math.round(used * 100.0 / s.getTotalBytes()) + " % belegt");
-            usage.setVisibility(View.VISIBLE);
-        } catch (RuntimeException ignored) {
-        }
     }
 
     private TextView crumb(String text, final File target, boolean last) {

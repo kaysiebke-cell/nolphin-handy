@@ -109,7 +109,7 @@ Der Test läuft ohne Handy und prüft:
 
 Der Test braucht den Nolphin-Quelltext im Nachbarordner `../nolphin-file-manager-master` (oder `NOLPHIN_ROOT`), außerdem `gcc` und GLib.
 
-**Nicht automatisch getestet** ist die Oberfläche. Sie wurde auf einem echten Handy angesehen: Start, Liste, Dokument-Reiter, PDF-Vorschau, Auswahl-Leiste, hell und dunkel. Die Funktionen Kopieren, Verschieben, Löschen, Umbenennen und Neuer Ordner sind **auf dem Handy noch nicht von Hand ausprobiert**. Probieren Sie Löschen und Verschieben zuerst an einer Testdatei aus.
+**Von Hand auf einem echten Handy geprüft** (mit Testdateien in einem eigenen Testordner, danach gelöscht): Neuer Ordner, Kopieren (auch mit Namenskonflikt, es entsteht `a (2).txt`), Verschieben, Umbenennen, Löschen mit Abbrechen und Bestätigen, Löschen eines ganzen Ordners, Mehrfachauswahl mit der Leiste oben, Eigenschaften, Ordner als ZIP an den PC (kam mit Unterordnern an) und der Schutz „Ordner nicht in sich selbst kopieren“. Die Oberfläche selbst ist nicht automatisch getestet.
 
 ### Bilder der README neu erzeugen
 
