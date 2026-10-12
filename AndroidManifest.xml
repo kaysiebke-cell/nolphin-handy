@@ -3,8 +3,8 @@
      Nur das Android-Framework, keine Bibliotheken. -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="org.nolphin.handy"
-    android:versionCode="44"
-    android:versionName="4.26">
+    android:versionCode="45"
+    android:versionName="4.27">
 
     <uses-sdk android:minSdkVersion="29" android:targetSdkVersion="34" />
 
@@ -33,7 +33,7 @@
         android:theme="@style/NolphinTheme"
         android:allowBackup="false"
         android:requestLegacyExternalStorage="true"
-        android:usesCleartextTraffic="true">
+        android:usesCleartextTraffic="false">
 
         <activity
             android:name=".MainActivity"

@@ -7,28 +7,33 @@ import java.util.Map;
 import java.util.regex.Pattern;
 
 /**
- * Verbindungslink von Nolphin, Format Version 1:
- *   http://HOST:PORT/?t=SCHLÜSSEL&v=1&e=ABLAUF
- *   nolphin://connect?host=HOST:PORT&t=SCHLÜSSEL&v=1&e=ABLAUF
+ * Verbindungslink von Nolphin, Format Version 2 (verschlüsselt):
+ *   https://HOST:PORT/?t=SCHLÜSSEL&v=2&f=FINGERABDRUCK
+ *   nolphin://connect?host=HOST:PORT&t=SCHLÜSSEL&v=2&f=FINGERABDRUCK
  * HOST ist eine IPv4-Adresse aus einem privaten Netz, SCHLÜSSEL besteht aus 32 Hex-Zeichen,
- * ABLAUF (optional) ist die Unix-Zeit in Sekunden. Reines Java, ohne Android-Klassen.
+ * FINGERABDRUCK (22 Zeichen base64url) gehört zum Zertifikat des PCs; die App verbindet sich nur mit genau
+ * diesem Zertifikat. ABLAUF (e=, optional, Unix-Sekunden) wird noch gelesen, steht aber nicht mehr im QR-Code.
+ * Links der Version 1 (http://, ohne Fingerabdruck) werden abgelehnt. Reines Java, ohne Android-Klassen.
  */
 final class Link {
-    static final int VERSION = 1;
+    static final int VERSION = 2;
     /** Toleranz für Uhren, die nicht genau gehen (Sekunden). */
     static final long CLOCK_SKEW = 600;
 
     private static final Pattern TOKEN = Pattern.compile("[0-9a-f]{32}");
+    private static final Pattern FINGERPRINT = Pattern.compile("[A-Za-z0-9_-]{22}");
 
     final String host;     // nur die Adresse
     final int port;
     final String token;
+    final String fingerprint;   // 22 Zeichen, gehört zum Zertifikat des PCs
     final long expires;    // 0 = nicht angegeben
 
-    private Link(String host, int port, String token, long expires) {
+    private Link(String host, int port, String token, String fingerprint, long expires) {
         this.host = host;
         this.port = port;
         this.token = token;
+        this.fingerprint = fingerprint;
         this.expires = expires;
     }
 
@@ -64,6 +69,9 @@ final class Link {
         Map<String, String> q = query(uri.getRawQuery());
         String authority;
         if ("http".equals(scheme)) {
+            throw new Invalid("Dieser Link ist unverschlüsselt (alte Version). Die App verbindet sich nur noch verschlüsselt. "
+                    + "Bitte Nolphin und die App auf den gleichen Stand bringen und einen neuen QR-Code erzeugen");
+        } else if ("https".equals(scheme)) {
             authority = uri.getRawAuthority();
         } else if ("nolphin".equals(scheme) && "connect".equals(uri.getHost())) {
             authority = q.get("host");
@@ -99,9 +107,13 @@ final class Link {
             throw new Invalid("Der Schlüssel im Link ist ungültig");
         }
         String v = q.get("v");
-        if (v != null && !v.equals(String.valueOf(VERSION))) {
-            throw new Invalid("Der Code hat Version " + v + ", die App kann nur Version " + VERSION
+        if (v == null || !v.equals(String.valueOf(VERSION))) {
+            throw new Invalid("Der Code hat Version " + (v == null ? "1" : v) + ", die App kann nur Version " + VERSION
                     + ". Bitte App und Nolphin auf den gleichen Stand bringen");
+        }
+        String fingerprint = q.get("f");
+        if (fingerprint == null || !FINGERPRINT.matcher(fingerprint).matches()) {
+            throw new Invalid("Im Link fehlt der Fingerabdruck des Zertifikats oder er ist ungültig");
         }
         long expires = 0;
         String e = q.get("e");
@@ -115,7 +127,7 @@ final class Link {
                 throw new Invalid("Der QR-Code ist abgelaufen. Am PC in Nolphin einen neuen Code erzeugen");
             }
         }
-        return new Link(host, port, token, expires);
+        return new Link(host, port, token, fingerprint, expires);
     }
 
     private static Map<String, String> query(String raw) {

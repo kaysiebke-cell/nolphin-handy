@@ -233,8 +233,8 @@ public class SyncService extends Service {
                 return;
             }
             try {
-                URL url = new URL("http://" + host + "/wait?t=" + Uri.encode(token) + "&v=" + Uri.encode(version));
-                HttpURLConnection c = (HttpURLConnection) url.openConnection();
+                URL url = new URL("https://" + host + "/wait?t=" + Uri.encode(token) + "&v=" + Uri.encode(version));
+                HttpURLConnection c = Secure.connect(url, Conn.pin(this));
                 c.setConnectTimeout(8000);
                 c.setReadTimeout(40000);
                 waiting = c;
@@ -260,6 +260,12 @@ public class SyncService extends Service {
                 version = "";
                 if (reconnect) {
                     reconnect = false;   // absichtlich beendet: sofort mit den neuen Daten weitermachen
+                    continue;
+                }
+                if (Secure.isPinMismatch(e)) {
+                    // Nicht still weiterversuchen: entweder neuer Code am PC oder jemand gibt sich als der PC aus
+                    setStatus("Schlüssel ungültig: Das Zertifikat des PCs passt nicht zum QR-Code. QR-Code am PC neu scannen");
+                    sleep(15000);
                     continue;
                 }
                 setStatus("PC nicht erreichbar, neuer Versuch …");
@@ -382,9 +388,9 @@ public class SyncService extends Service {
     private Uri download(String host, String token, String dir, String name) {
         Uri target = null;
         try {
-            URL url = new URL("http://" + host + "/dl?t=" + Uri.encode(token) + "&n=" + Uri.encode(name)
+            URL url = new URL("https://" + host + "/dl?t=" + Uri.encode(token) + "&n=" + Uri.encode(name)
                     + RemoteFile.params(dir));
-            HttpURLConnection c = (HttpURLConnection) url.openConnection();
+            HttpURLConnection c = Secure.connect(url, Conn.pin(this));
             c.setConnectTimeout(8000);
             c.setReadTimeout(30000);
             if (c.getResponseCode() != 200) {
@@ -536,7 +542,7 @@ public class SyncService extends Service {
         }
         HttpURLConnection c = null;
         try {
-            c = (HttpURLConnection) new URL("http://" + host + "/info?t=" + Uri.encode(token)).openConnection();
+            c = Secure.connect(new URL("https://" + host + "/info?t=" + Uri.encode(token)), Conn.pin(this));
             c.setConnectTimeout(5000);
             c.setReadTimeout(5000);
             return c.getResponseCode() == 200 && readAll(c.getInputStream()).contains("\"folders\":true");
@@ -593,9 +599,9 @@ public class SyncService extends Service {
                 long size = temp.length();
                 sentSize = size;
                 InputStream in = new java.io.FileInputStream(temp);
-                URL url = new URL("http://" + host + "/up?t=" + Uri.encode(token) + "&n=" + Uri.encode(name)
+                URL url = new URL("https://" + host + "/up?t=" + Uri.encode(token) + "&n=" + Uri.encode(name)
                         + (job.dir != null ? "&d=" + Uri.encode(job.dir) : ""));
-                HttpURLConnection c = (HttpURLConnection) url.openConnection();
+                HttpURLConnection c = Secure.connect(url, Conn.pin(this));
                 c.setConnectTimeout(8000);
                 c.setReadTimeout(120000);
                 c.setRequestMethod("POST");
@@ -674,7 +680,7 @@ public class SyncService extends Service {
     private boolean makeRemoteFolder(String host, String token, String rel) {
         HttpURLConnection c = null;
         try {
-            c = (HttpURLConnection) new URL("http://" + host + "/mkdir?t=" + Uri.encode(token) + "&d=" + Uri.encode(rel)).openConnection();
+            c = Secure.connect(new URL("https://" + host + "/mkdir?t=" + Uri.encode(token) + "&d=" + Uri.encode(rel)), Conn.pin(this));
             c.setConnectTimeout(8000);
             c.setReadTimeout(20000);
             c.setRequestMethod("POST");

@@ -30,8 +30,8 @@ final class PcCheck {
     static Result check(Link link) {
         HttpURLConnection c = null;
         try {
-            URL url = new URL("http://" + link.authority() + "/info?t=" + URLEncoder.encode(link.token, "UTF-8"));
-            c = (HttpURLConnection) url.openConnection();
+            URL url = new URL("https://" + link.authority() + "/info?t=" + URLEncoder.encode(link.token, "UTF-8"));
+            c = Secure.connect(url, link.fingerprint);
             c.setConnectTimeout(5000);
             c.setReadTimeout(5000);
             int code = c.getResponseCode();
@@ -44,8 +44,8 @@ final class PcCheck {
             if (code == 404) {
                 // Ältere Nolphin-Version ohne /info: Schlüssel und Erreichbarkeit über /ls prüfen
                 c.disconnect();
-                url = new URL("http://" + link.authority() + "/ls?t=" + URLEncoder.encode(link.token, "UTF-8"));
-                c = (HttpURLConnection) url.openConnection();
+                url = new URL("https://" + link.authority() + "/ls?t=" + URLEncoder.encode(link.token, "UTF-8"));
+                c = Secure.connect(url, link.fingerprint);
                 c.setConnectTimeout(5000);
                 c.setReadTimeout(5000);
                 code = c.getResponseCode();
@@ -72,6 +72,10 @@ final class PcCheck {
         } catch (java.net.SocketTimeoutException e) {
             return new Result(false, "Der PC antwortet nicht. Sind Handy und PC im selben WLAN, und läuft der Austausch in Nolphin?");
         } catch (java.io.IOException e) {
+            if (Secure.isPinMismatch(e)) {
+                return new Result(false, "Das Zertifikat des PCs passt nicht zum QR-Code. Entweder wurde am PC ein neuer Code erzeugt "
+                        + "(dann den neuen QR-Code scannen), oder jemand im Netz gibt sich als dein PC aus. Es wurde nichts gesendet");
+            }
             return new Result(false, "Keine Verbindung zum PC (" + link.authority() + "). Sind Handy und PC im selben WLAN, und läuft der Austausch in Nolphin?");
         } finally {
             if (c != null) {

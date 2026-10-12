@@ -24,17 +24,23 @@ final class Conn {
         return prefs(c).getString("token", null);
     }
 
+    /** Fingerabdruck des Zertifikats des PCs (aus dem QR-Code) oder null. */
+    static String pin(Context c) {
+        return prefs(c).getString("pin", null);
+    }
+
+    /** Eine gespeicherte Verbindung ohne Fingerabdruck (aus einer älteren, unverschlüsselten Version) gilt nicht mehr. */
     static boolean connected(Context c) {
-        return host(c) != null && token(c) != null;
+        return host(c) != null && token(c) != null && pin(c) != null;
     }
 
     static void clear(Context c) {
-        prefs(c).edit().remove("host").remove("token").apply();
+        prefs(c).edit().remove("host").remove("token").remove("pin").apply();
     }
 
     /** Speichert eine geprüfte Verbindung (siehe Connector). Ein neuer Schlüssel gilt ab sofort. */
     static void save(Context c, Link link, String pcName) {
-        prefs(c).edit().putString("host", link.authority()).putString("token", link.token)
+        prefs(c).edit().putString("host", link.authority()).putString("token", link.token).putString("pin", link.fingerprint)
                 .putLong("expires", link.expires).putString("pcname", pcName == null ? "" : pcName).apply();
     }
 

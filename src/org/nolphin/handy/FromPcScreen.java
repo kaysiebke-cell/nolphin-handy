@@ -458,8 +458,8 @@ final class FromPcScreen implements Screen {
                 final List<RemoteFile> newFiles = new ArrayList<>();
                 String error = null;
                 try {
-                    URL url = new URL("http://" + host + "/dir?t=" + Uri.encode(token) + RemoteFile.params(want));
-                    HttpURLConnection h = (HttpURLConnection) url.openConnection();
+                    URL url = new URL("https://" + host + "/dir?t=" + Uri.encode(token) + RemoteFile.params(want));
+                    HttpURLConnection h = Secure.connect(url, Conn.pin(c));
                     h.setConnectTimeout(5000);
                     h.setReadTimeout(10000);
                     try {
@@ -624,10 +624,10 @@ final class FromPcScreen implements Screen {
                 Boolean supported = null;
                 final List<String> found = new ArrayList<>();
                 try {
-                    String info = httpText("http://" + host + "/info?t=" + Uri.encode(token));
+                    String info = httpText("https://" + host + "/info?t=" + Uri.encode(token), Conn.pin(c));
                     supported = info != null && info.contains("\"home\":true");
                     if (supported) {
-                        String dirsJson = httpText("http://" + host + "/dir?t=" + Uri.encode(token) + "&r=home");
+                        String dirsJson = httpText("https://" + host + "/dir?t=" + Uri.encode(token) + "&r=home", Conn.pin(c));
                         if (dirsJson != null) {
                             JSONArray d = new JSONObject(dirsJson).getJSONArray("dirs");
                             for (int i = 0; i < d.length(); i++) {
@@ -657,8 +657,8 @@ final class FromPcScreen implements Screen {
         }, "nolphin-overview").start();
     }
 
-    private static String httpText(String address) throws java.io.IOException {
-        HttpURLConnection h = (HttpURLConnection) new URL(address).openConnection();
+    private static String httpText(String address, String pin) throws java.io.IOException {
+        HttpURLConnection h = Secure.connect(new URL(address), pin);
         h.setConnectTimeout(5000);
         h.setReadTimeout(10000);
         try {

@@ -65,7 +65,7 @@ final class Updater {
         if (host == null || token == null) {
             return;
         }
-        HttpURLConnection h = (HttpURLConnection) new URL("http://" + host + "/apk?t=" + token).openConnection();
+        HttpURLConnection h = Secure.connect(new URL("https://" + host + "/apk?t=" + token), Conn.pin(app));
         h.setConnectTimeout(5000);
         h.setReadTimeout(15000);
         try {

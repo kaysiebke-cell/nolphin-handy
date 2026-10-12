@@ -210,14 +210,14 @@ public class MainActivity extends Activity implements Host {
             return null;
         }
         String d = data.getDataString();
-        if (d != null && (d.startsWith("http://") || d.startsWith("nolphin://"))) {
+        if (d != null && (d.startsWith("https://") || d.startsWith("http://") || d.startsWith("nolphin://"))) {
             return d;
         }
         android.os.Bundle extras = data.getExtras();
         if (extras != null) {
             for (String key : extras.keySet()) {
                 Object v = extras.get(key);
-                if (v instanceof String && (((String) v).startsWith("http://") || ((String) v).startsWith("nolphin://"))) {
+                if (v instanceof String && (((String) v).startsWith("https://") || ((String) v).startsWith("http://") || ((String) v).startsWith("nolphin://"))) {
                     return (String) v;
                 }
             }
