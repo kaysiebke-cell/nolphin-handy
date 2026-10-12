@@ -2,6 +2,7 @@ package org.nolphin.handy;
 
 import android.content.Context;
 import android.database.Cursor;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Environment;
 import android.os.StatFs;
@@ -1096,20 +1097,58 @@ final class ToPcScreen implements Screen {
             return symbol(R.drawable.ic_folder, FOLDER_COLOR);
         }
         String x = ext(e.file.getName());
-        final int res = typeIcon(x);
-        final int color = typeColor(x);
-        final ImageView v = symbol(res, color);
-        if (isImage(x) || isVideo(x)) {
+        final ImageView v = symbol(typeIcon(x), typeColor(x));
+        String kind = isImage(x) ? "image" : isVideo(x) ? "video" : isAudio(x) ? "audio" : x.equals("pdf") ? "pdf"
+                : x.equals("apk") ? "apk" : null;
+        if (kind == null || kind.equals("pdf") || kind.equals("audio") || kind.equals("apk")) {
+            // Symbol der Standard-App, die Android für diesen Dateityp eingestellt hat
+            Drawable sys = systemIcon(x);
+            if (sys != null) {
+                v.clearColorFilter();
+                v.setImageDrawable(sys);
+                v.setPadding(Ui.dp(c, 6), Ui.dp(c, 2), Ui.dp(c, 6), Ui.dp(c, 2));
+            }
+        }
+        if (kind != null) {
             v.setBackground(Ui.round(c, Ui.chip(c), 8));
             v.setClipToOutline(true);
             v.setOutlineProvider(ViewOutlineProvider.BACKGROUND);
-            Thumbs.loadFile(e.file, isVideo(x), 168, v, new Runnable() {
+            Thumbs.loadFile(c, e.file, kind, 168, v, new Runnable() {
                 @Override
                 public void run() {
                 }
             });
         }
         return v;
+    }
+
+    private final Map<String, Drawable> systemIcons = new java.util.HashMap<>();
+
+    /** Symbol der App, die Android für diese Endung als Standard zum Öffnen kennt; null, wenn keine eingestellt ist. */
+    private Drawable systemIcon(String x) {
+        if (x.isEmpty()) {
+            return null;
+        }
+        if (!systemIcons.containsKey(x)) {
+            Drawable d = null;
+            String mime = android.webkit.MimeTypeMap.getSingleton().getMimeTypeFromExtension(x);
+            if (mime != null) {
+                try {
+                    android.content.pm.PackageManager pm = c.getPackageManager();
+                    android.content.Intent i = new android.content.Intent(android.content.Intent.ACTION_VIEW)
+                            .setType(mime);
+                    android.content.pm.ResolveInfo ri = pm.resolveActivity(i,
+                            android.content.pm.PackageManager.MATCH_DEFAULT_ONLY);
+                    if (ri != null && ri.activityInfo != null && !"android".equals(ri.activityInfo.packageName)) {
+                        d = ri.loadIcon(pm);
+                    }
+                } catch (RuntimeException ignored) {
+                }
+            }
+            systemIcons.put(x, d);
+        }
+        Drawable d = systemIcons.get(x);
+        return d == null ? null : d.getConstantState() != null ? d.getConstantState().newDrawable() : d;
     }
 
     private View tile(View top, String name, String sub, int subColor, boolean picked) {
