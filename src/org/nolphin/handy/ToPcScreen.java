@@ -110,6 +110,9 @@ final class ToPcScreen implements Screen {
     private final ImageView newFolder;
     private final LinearLayout pasteBar;
     private final TextView pasteText;
+    /** Endungen, die unter „Dokumente“ erscheinen (keine Programm- und Systemdateien anderer Apps). */
+    private static final String[] DOC_EXT = { "pdf", "doc", "docx", "odt", "rtf", "txt", "md", "xls", "xlsx", "ods", "csv",
+            "ppt", "pptx", "odp", "epub", "zip", "rar", "7z", "step", "stp", "stl", "obj", "3mf", "dxf", "dwg", "iges", "igs" };
     private static final String[] DOC_FILTERS = { "Alle", "DOC", "XLS", "PDF", "PPT", "Sonstige" };
     private int docFilter;
     private final LinearLayout docChips;
@@ -340,16 +343,10 @@ final class ToPcScreen implements Screen {
                 render();
             }
         }));
-        selCount = Ui.label(c, "", 17, Color.WHITE, true);
+        selCount = Ui.label(c, "", 16, Color.WHITE, true);
         selCount.setSingleLine(true);
         selCount.setPadding(Ui.dp(c, 4), 0, 0, 0);
         selectBar.addView(selCount, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
-        selectBar.addView(barIcon(R.drawable.ic_checks, "Alle auswählen", new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                selectAll();
-            }
-        }));
         selectBar.addView(barIcon(R.drawable.ic_upload, "An den PC senden", new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -690,11 +687,18 @@ final class ToPcScreen implements Screen {
             case 0: return t + "=" + MediaStore.Files.FileColumns.MEDIA_TYPE_IMAGE;
             case 1: return t + "=" + MediaStore.Files.FileColumns.MEDIA_TYPE_AUDIO;
             case 2: return t + "=" + MediaStore.Files.FileColumns.MEDIA_TYPE_VIDEO;
-            default: return t + "=" + MediaStore.Files.FileColumns.MEDIA_TYPE_NONE + " AND " + m + " IS NOT NULL AND "
-                    + m + " <> 'application/vnd.android.package-archive' AND " + m + " NOT LIKE 'image/%' AND "
-                    + m + " NOT LIKE 'video/%' AND " + m + " NOT LIKE 'audio/%' AND "
-                    + MediaStore.Files.FileColumns.DATA + " NOT LIKE '%/Android/%' AND "
-                    + MediaStore.Files.FileColumns.DISPLAY_NAME + " NOT LIKE '.%'";
+            default: {
+                StringBuilder names = new StringBuilder();
+                for (String e : DOC_EXT) {
+                    names.append(names.length() == 0 ? "" : " OR ")
+                            .append(MediaStore.Files.FileColumns.DISPLAY_NAME).append(" LIKE '%.").append(e).append("'");
+                }
+                // Ab Android 11 haben PDFs und Office-Dateien einen eigenen Medientyp: nur Bilder, Audio und Video ausschließen
+                return t + " NOT IN (" + MediaStore.Files.FileColumns.MEDIA_TYPE_IMAGE + "," + MediaStore.Files.FileColumns.MEDIA_TYPE_AUDIO
+                        + "," + MediaStore.Files.FileColumns.MEDIA_TYPE_VIDEO + ") AND " + m + " IS NOT NULL AND "
+                        + MediaStore.Files.FileColumns.DATA + " NOT LIKE '%/Android/data/%' AND "
+                        + MediaStore.Files.FileColumns.DATA + " NOT LIKE '%/Android/obb/%' AND (" + names + ")";
+            }
         }
     }
 
@@ -952,9 +956,12 @@ final class ToPcScreen implements Screen {
         }, "nolphin-list").start();
     }
 
-    private static String parentName(File f) {
+    /** Ordner, in dem die Datei liegt; bei der SD-Karte mit dem Zusatz "SD-Karte", damit klar ist, wo sie liegt. */
+    private String parentName(File f) {
         File p = f.getParentFile();
-        return p == null ? "" : p.getName();
+        String name = p == null ? "" : p.getName();
+        Vol v = volumeOf(f);
+        return v != null && v.card ? "SD-Karte · " + name : name;
     }
 
     /** Ohne Suchtext die Liste zeigen; sonst in der Kategorie filtern oder ab dem Ordner in der Tiefe suchen. */
@@ -1240,20 +1247,20 @@ final class ToPcScreen implements Screen {
         if (selected.isEmpty()) {
             return;
         }
-        if (selected.size() != 1) {
-            Toast.makeText(c, "Umbenennen und Eigenschaften gehen nur mit einem Element", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        final File f = new File(selected.keySet().iterator().next());
+        final File one = selected.size() == 1 ? new File(selected.keySet().iterator().next()) : null;
+        final String[] names = one != null ? new String[] { "Alle auswählen", "Umbenennen", "Eigenschaften" }
+                : new String[] { "Alle auswählen" };
         new AlertDialog.Builder(host.activity())
-                .setTitle(f.getName())
-                .setItems(new CharSequence[] { "Umbenennen", "Eigenschaften" }, new android.content.DialogInterface.OnClickListener() {
+                .setTitle(one != null ? one.getName() : selected.size() + " Elemente gewählt")
+                .setItems(names, new android.content.DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(android.content.DialogInterface d, int which) {
                         if (which == 0) {
-                            askRename(f);
+                            selectAll();
+                        } else if (which == 1) {
+                            askRename(one);
                         } else {
-                            showProperties(f);
+                            showProperties(one);
                         }
                     }
                 }).show();
@@ -1467,7 +1474,7 @@ final class ToPcScreen implements Screen {
         for (long sz : selected.values()) {
             total += sz;
         }
-        selCount.setText(selected.size() + " ausgewählt" + (total > 0 ? " · " + Ui.size(total) : ""));
+        selCount.setText(selected.size() + " gewählt");
         head.setVisibility(sel ? View.GONE : View.VISIBLE);
         pasteBar.setVisibility(clip != null && mode == FOLDER && !sel ? View.VISIBLE : View.GONE);
         if (clip != null) {
@@ -1620,7 +1627,8 @@ final class ToPcScreen implements Screen {
         }
         String x = Ui.ext(e.file.getName());
         v.setImageDrawable(Ui.typeIcon(c, x));
-        String kind = isImage(x) ? "image" : isVideo(x) ? "video" : x.equals("apk") ? "apk" : null;
+        String kind = isImage(x) ? "image" : isVideo(x) ? "video" : isAudio(x) ? "audio" : x.equals("pdf") ? "pdf"
+                : x.equals("apk") ? "apk" : null;
         if (kind != null) {
             v.setPadding(0, 0, 0, 0);
             v.setBackground(Ui.round(c, 0x00000000, 4));
@@ -1629,6 +1637,9 @@ final class ToPcScreen implements Screen {
             Thumbs.loadFile(c, e.file, kind, 168, v, new Runnable() {
                 @Override
                 public void run() {
+                    // kein Vorschaubild (zum Beispiel Audio ohne Albumbild): das Symbol mit Rand zeigen
+                    v.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+                    v.setPadding(Ui.dp(c, 4), Ui.dp(c, 4), Ui.dp(c, 4), Ui.dp(c, 4));
                 }
             });
         }
