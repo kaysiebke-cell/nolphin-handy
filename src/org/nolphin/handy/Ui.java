@@ -27,24 +27,24 @@ final class Ui {
     }
 
     // Ruhige, neutrale Flächen; Grün nur als Akzent (Auswahl, aktive Reiter, Fortschritt)
-    static int bg(Context c)       { return dark(c) ? 0xFF1A1C19 : 0xFFF4F6F2; }
-    static int surface(Context c)  { return dark(c) ? 0xFF20231F : 0xFFFFFFFF; }
-    static int text(Context c)     { return dark(c) ? 0xFFEAEDE6 : 0xFF1C211A; }
-    static int dim(Context c)      { return dark(c) ? 0xFFA9B2A3 : 0xFF566052; }
-    static int primary(Context c)  { return dark(c) ? 0xFF8CC152 : 0xFF3F8A21; }
+    static int bg(Context c)       { return dark(c) ? 0xFF161815 : 0xFFF4F6F2; }
+    static int surface(Context c)  { return dark(c) ? 0xFF1F211D : 0xFFFFFFFF; }
+    static int text(Context c)     { return dark(c) ? 0xFFF2F5EE : 0xFF1C211A; }
+    static int dim(Context c)      { return dark(c) ? 0xFFB9C4B2 : 0xFF566052; }
+    static int primary(Context c)  { return dark(c) ? 0xFF7ED648 : 0xFF3F8A21; }
     static int accent(Context c)   { return primary(c); }
     static int danger(Context c)   { return dark(c) ? 0xFFE57373 : 0xFFC0392B; }
-    static int bar(Context c)      { return dark(c) ? 0xFF2D4A1F : 0xFF3F8A21; }
+    static int bar(Context c)      { return dark(c) ? 0xFF2E7D18 : 0xFF3F8A21; }
     /** Leiste bei Auswahl: etwas kräftigeres Grün. */
-    static int selBar(Context c)   { return dark(c) ? 0xFF3C6228 : 0xFF2F6E18; }
+    static int selBar(Context c)   { return dark(c) ? 0xFF245F12 : 0xFF2F6E18; }
     static int barEnd(Context c)   { return bar(c); }
     static int line(Context c)     { return dark(c) ? 0xFF33382F : 0xFFD9DDD5; }
     /** Hinterlegung für Auswahl und kleine Schaltflächen. */
-    static int chip(Context c)     { return dark(c) ? 0xFF2A3A22 : 0xFFE3EFD9; }
+    static int chip(Context c)     { return dark(c) ? 0xFF24421A : 0xFFE3EFD9; }
     /** Einheitliche Farbe für Symbole (keine Regenbogenfarben). */
-    static int iconTint(Context c) { return dark(c) ? 0xFFBFC7B9 : 0xFF4D5649; }
+    static int iconTint(Context c) { return dark(c) ? 0xFFD0DAC8 : 0xFF4D5649; }
     /** Ordner: eine ruhige Farbe für alle Ordner. */
-    static int folder(Context c)   { return dark(c) ? 0xFF8FB571 : 0xFF6AA84F; }
+    static int folder(Context c)   { return dark(c) ? 0xFF86C854 : 0xFF6AA84F; }
 
     static final int RADIUS = 10;
 
