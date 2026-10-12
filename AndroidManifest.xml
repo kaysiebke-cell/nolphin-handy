@@ -3,8 +3,8 @@
      Nur das Android-Framework, keine Bibliotheken. -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="org.nolphin.handy"
-    android:versionCode="19"
-    android:versionName="4.1">
+    android:versionCode="20"
+    android:versionName="4.2">
 
     <uses-sdk android:minSdkVersion="29" android:targetSdkVersion="34" />
 
@@ -21,6 +21,8 @@
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
     <!-- Für den Dateimanager im Reiter „Zum PC“: alle Ordner des Handys und der SD-Karte durchsuchen. -->
     <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
+    <!-- Namen und Symbole der Apps im Ordner „Apps“ (Reiter „Zum PC“). -->
+    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
 
     <!-- Der Austausch läuft unverschlüsselt (HTTP) im eigenen WLAN. -->

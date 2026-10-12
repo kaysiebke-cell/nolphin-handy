@@ -38,12 +38,12 @@ import java.util.Locale;
 import java.util.Map;
 
 /**
- * Handy → PC als Dateimanager: Übersicht (Hauptspeicher, SD-Karte, Downloads, Bilder, Audio, Videos, Dokumente),
+ * Handy → PC als Dateimanager: Übersicht (Hauptspeicher, SD-Karte, Downloads, Bilder, Audio, Videos, Dokumente, Apps),
  * Ordneransicht mit Pfadleiste als Kacheln oder Liste, Suche (auch in Unterordnern), Mehrfachauswahl und
  * „An den PC senden“. Braucht den Zugriff auf alle Dateien.
  */
 final class ToPcScreen implements Screen {
-    private static final int HOME = 0, FOLDER = 1, CATEGORY = 2;
+    private static final int HOME = 0, FOLDER = 1, CATEGORY = 2, APPS = 3;
     private static final int FOLDER_COLOR = 0xFFE0A93B;
     private static final String[] CATS = { "Bilder", "Audio", "Videos", "Dokumente" };
     private static final int[] CAT_ICONS = { R.drawable.ic_image, R.drawable.ic_audio, R.drawable.ic_video, R.drawable.ic_doc };
@@ -57,6 +57,8 @@ final class ToPcScreen implements Screen {
         final long modified;
         final int count;      // Elemente in einem Ordner
         String sub = "";      // bei Suchergebnissen: der Ordner, in dem es liegt
+        String label;         // bei App-Ordnern: Name der App
+        String pkg;           // bei App-Ordnern: Paketname (für das Symbol)
 
         Entry(File file, boolean dir, long size, long modified, int count) {
             this.file = file;
@@ -117,6 +119,7 @@ final class ToPcScreen implements Screen {
     private final List<Vol> vols = new ArrayList<>();
     private final String[] catSub = { "", "", "", "" };
     private String downloadsSub = "";
+    private String appsSub = "";
     private final List<Entry> all = new ArrayList<>();       // Inhalt des Ordners oder der Kategorie
     private final List<Entry> entries = new ArrayList<>();   // was angezeigt wird (gefiltert oder Suchergebnis)
     private final Map<String, Long> selected = new LinkedHashMap<>();   // Pfad → Größe
@@ -131,7 +134,7 @@ final class ToPcScreen implements Screen {
     private final BaseAdapter homeAdapter = new BaseAdapter() {
         @Override
         public int getCount() {
-            return vols.size() + 1 + CATS.length;
+            return vols.size() + 2 + CATS.length;
         }
 
         @Override
@@ -155,6 +158,9 @@ final class ToPcScreen implements Screen {
                 return tile(symbol(R.drawable.ic_download, Ui.primary(c)), "Downloads", downloadsSub, Ui.dim(c), false);
             }
             int k = i - vols.size() - 1;
+            if (k == CATS.length) {
+                return tile(symbol(R.drawable.ic_apps, Ui.accent(c)), "Apps", appsSub, Ui.dim(c), false);
+            }
             return tile(symbol(CAT_ICONS[k], CAT_COLORS[k]), CATS[k], catSub[k], Ui.dim(c), false);
         }
     };
@@ -496,11 +502,13 @@ final class ToPcScreen implements Screen {
                 }
                 File[] dl = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).listFiles();
                 final String dls = dl == null ? "" : dl.length + " Elemente";
+                final String apps = appFolders().size() + " Apps";
                 root.post(new Runnable() {
                     @Override
                     public void run() {
                         System.arraycopy(sub, 0, catSub, 0, sub.length);
                         downloadsSub = dls;
+                        appsSub = apps;
                         homeAdapter.notifyDataSetChanged();
                     }
                 });
@@ -537,9 +545,46 @@ final class ToPcScreen implements Screen {
             openFolder(vols.get(i).root);
         } else if (i == vols.size()) {
             openFolder(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS));
+        } else if (i - vols.size() - 1 == CATS.length) {
+            openApps();
         } else {
             openCategory(i - vols.size() - 1);
         }
+    }
+
+    private void openApps() {
+        resetQuery();
+        mode = APPS;
+        loadList();
+    }
+
+    /** Ordner der Apps unter Android/media (WhatsApp, Facebook, Google …); Android/data sperrt das System. */
+    private List<File> appFolders() {
+        List<File> out = new ArrayList<>();
+        for (Vol v : vols) {
+            File[] fs = new File(v.root, "Android/media").listFiles();
+            if (fs != null) {
+                for (File f : fs) {
+                    String[] inside = f.isDirectory() ? f.list() : null;
+                    if (inside != null && inside.length > 0) {   // leere Ordner sind für den Austausch uninteressant
+                        out.add(f);
+                    }
+                }
+            }
+        }
+        return out;
+    }
+
+    private String appLabel(String pkg) {
+        try {
+            return c.getPackageManager().getApplicationLabel(c.getPackageManager().getApplicationInfo(pkg, 0)).toString();
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private static String nameOf(Entry e) {
+        return e.label != null ? e.label : e.file.getName();
     }
 
     private void openFolder(File f) {
@@ -582,6 +627,11 @@ final class ToPcScreen implements Screen {
         }
         if (mode == FOLDER) {
             Vol v = volumeOf(dir);
+            File up = dir.getParentFile();
+            if (up != null && up.getPath().endsWith("/Android/media") && !appFolders().isEmpty()) {
+                openApps();
+                return true;
+            }
             if (dir.getParentFile() == null || (v != null && dir.equals(v.root)) || v == null) {
                 goHome();
             } else {
@@ -589,7 +639,7 @@ final class ToPcScreen implements Screen {
             }
             return true;
         }
-        if (mode == CATEGORY) {
+        if (mode == CATEGORY || mode == APPS) {
             goHome();
             return true;
         }
@@ -631,7 +681,24 @@ final class ToPcScreen implements Screen {
             public void run() {
                 final List<Entry> found = new ArrayList<>();
                 String err = null;
-                if (m == FOLDER) {
+                if (m == APPS) {
+                    for (File f : appFolders()) {
+                        Entry e = entryOf(f);
+                        e.pkg = f.getName();
+                        e.label = appLabel(e.pkg);
+                        Vol v = volumeOf(f);
+                        if (v != null && v.card) {
+                            e.label = (e.label != null ? e.label : e.pkg) + " (SD-Karte)";
+                        }
+                        found.add(e);
+                    }
+                    Collections.sort(found, new Comparator<Entry>() {
+                        @Override
+                        public int compare(Entry a, Entry b) {
+                            return nameOf(a).compareToIgnoreCase(nameOf(b));
+                        }
+                    });
+                } else if (m == FOLDER) {
                     File[] fs = d.listFiles();
                     if (fs == null) {
                         err = "Auf diesen Ordner darf die App nicht zugreifen";
@@ -702,10 +769,10 @@ final class ToPcScreen implements Screen {
             render();
             return;
         }
-        if (mode == CATEGORY) {
+        if (mode == CATEGORY || mode == APPS) {
             entries.clear();
             for (Entry e : all) {
-                if (e.file.getName().toLowerCase(Locale.ROOT).contains(q)) {
+                if (nameOf(e).toLowerCase(Locale.ROOT).contains(q)) {
                     entries.add(e);
                 }
             }
@@ -853,7 +920,7 @@ final class ToPcScreen implements Screen {
             return;
         }
         permCard.setVisibility(View.GONE);
-        title.setText(home ? "Zum PC" : mode == CATEGORY ? CATS[cat] : folderTitle());
+        title.setText(home ? "Zum PC" : mode == APPS ? "Apps" : mode == CATEGORY ? CATS[cat] : folderTitle());
         toggle.setVisibility(home && !searching ? View.GONE : View.VISIBLE);
         showCrumbs(sel);
         selectBar.setVisibility(sel ? View.VISIBLE : View.GONE);
@@ -914,9 +981,9 @@ final class ToPcScreen implements Screen {
         });
         crumbs.addView(home);
         usage.setVisibility(View.GONE);
-        if (mode == CATEGORY) {
+        if (mode == CATEGORY || mode == APPS) {
             crumbs.addView(Ui.label(c, "  ›  ", 14, Ui.dim(c), false));
-            crumbs.addView(crumb(CATS[cat], null, true));
+            crumbs.addView(crumb(mode == APPS ? "Apps" : CATS[cat], null, true));
             return;
         }
         Vol v = volumeOf(dir);
@@ -1015,6 +1082,16 @@ final class ToPcScreen implements Screen {
 
     /** Symbol des Eintrags; bei Fotos und Videos später durch das Vorschaubild ersetzt. */
     private ImageView iconOf(Entry e) {
+        if (e.pkg != null) {
+            ImageView v = new ImageView(c);
+            v.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+            v.setPadding(Ui.dp(c, 6), Ui.dp(c, 2), Ui.dp(c, 6), Ui.dp(c, 2));
+            try {
+                v.setImageDrawable(c.getPackageManager().getApplicationIcon(e.pkg));
+                return v;
+            } catch (Exception ignored) {
+            }
+        }
         if (e.dir) {
             return symbol(R.drawable.ic_folder, FOLDER_COLOR);
         }
@@ -1076,7 +1153,7 @@ final class ToPcScreen implements Screen {
 
     private View entryTile(Entry e) {
         boolean picked = selected.containsKey(e.path());
-        return tile(iconOf(e), e.file.getName(), subOf(e), picked ? Ui.primary(c) : Ui.dim(c), picked);
+        return tile(iconOf(e), nameOf(e), subOf(e), picked ? Ui.primary(c) : Ui.dim(c), picked);
     }
 
     private View entryRow(Entry e) {
@@ -1093,7 +1170,7 @@ final class ToPcScreen implements Screen {
         LinearLayout text = new LinearLayout(c);
         text.setOrientation(LinearLayout.VERTICAL);
         text.setPadding(Ui.dp(c, 10), 0, Ui.dp(c, 6), 0);
-        TextView n = Ui.label(c, e.file.getName(), 15, Ui.text(c), false);
+        TextView n = Ui.label(c, nameOf(e), 15, Ui.text(c), false);
         n.setMaxLines(1);
         n.setEllipsize(android.text.TextUtils.TruncateAt.MIDDLE);
         text.addView(n);
