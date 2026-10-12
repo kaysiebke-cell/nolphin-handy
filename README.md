@@ -30,15 +30,16 @@ Das Aussehen folgt Linux Mint (Mint-Grün), sachlich und ruhig: flache Listen, e
 
 ## Wo die Dateien am PC landen
 
-Alles, was Sie vom Handy senden, liegt am PC im Ordner **`~/Handy/Vom Handy/`** (in Ihrem Home-Ordner, Unterordner `Handy`, darin `Vom Handy`). Das gilt auch für Fotos aus Google Fotos und Dateien aus Google Drive.
+Am PC gibt es **einen** Handy-Ordner: `~/Handy`. In Nolphin stehen links in der Seitenleiste zwei Einträge dafür:
+
+| Seitenleiste in Nolphin | Ordner am PC | Wofür |
+|---|---|---|
+| **Handy** | `~/Handy` | Dateien, die das Handy laden soll. Sie erscheinen in der App unter **Vom PC**. |
+| **Vom Handy** | `~/Handy/Vom Handy` | Alles, was Sie vom Handy senden: Dateien, Fotos aus Google Fotos, Dateien aus Google Drive und Ordner. |
 
 * Einzelne Dateien liegen direkt in `Vom Handy`.
 * Ordner liegen dort als Ordner mit allen Unterordnern.
 * Gibt es einen Namen schon, wird nummeriert (`Name (1).ext`). Nichts wird überschrieben.
-
-In Nolphin öffnen Sie ihn mit einem Klick auf **Handy** in der Seitenleiste. Die Hauptansicht zeigt den Ordner `~/Handy`.
-
-Der Weg in die andere Richtung: Dateien aus `~/Handy` (ohne `Vom Handy`) erscheinen in der App unter **Vom PC**.
 
 ## Die vier Reiter
 
