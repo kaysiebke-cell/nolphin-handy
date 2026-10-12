@@ -1295,7 +1295,7 @@ final class ToPcScreen implements Screen {
         }
         group.check(1);
         v.addView(group);
-        new AlertDialog.Builder(host.activity())
+        new AlertDialog.Builder(host.activity(), R.style.NolphinDialog)
                 .setTitle("Es gibt schon Dateien mit diesem Namen")
                 .setView(v)
                 .setNegativeButton("Abbrechen", null)
@@ -1322,7 +1322,7 @@ final class ToPcScreen implements Screen {
         if (conflicts.size() > shown) {
             b.append("… und ").append(conflicts.size() - shown).append(" weitere");
         }
-        AlertDialog d = new AlertDialog.Builder(host.activity())
+        AlertDialog d = new AlertDialog.Builder(host.activity(), R.style.NolphinDialog)
                 .setTitle(conflicts.size() + (conflicts.size() == 1 ? " Datei ersetzen?" : " Dateien ersetzen?"))
                 .setMessage(b.toString().trim())
                 .setNegativeButton("Zurück", new android.content.DialogInterface.OnClickListener() {
@@ -1347,7 +1347,7 @@ final class ToPcScreen implements Screen {
         }
         final List<File> items = selectedFiles();
         String what = items.size() == 1 ? "„" + items.get(0).getName() + "“" : items.size() + " Elemente";
-        new AlertDialog.Builder(host.activity())
+        new AlertDialog.Builder(host.activity(), R.style.NolphinDialog)
                 .setTitle("Löschen?")
                 .setMessage(what + " wird endgültig gelöscht. Das lässt sich nicht rückgängig machen.")
                 .setNegativeButton("Abbrechen", null)
@@ -1382,7 +1382,7 @@ final class ToPcScreen implements Screen {
         final File one = selected.size() == 1 ? new File(selected.keySet().iterator().next()) : null;
         final String[] names = one != null ? new String[] { "Alle auswählen", "Umbenennen", "Eigenschaften" }
                 : new String[] { "Alle auswählen" };
-        new AlertDialog.Builder(host.activity())
+        new AlertDialog.Builder(host.activity(), R.style.NolphinDialog)
                 .setTitle(one != null ? one.getName() : selected.size() + " Elemente gewählt")
                 .setItems(names, new android.content.DialogInterface.OnClickListener() {
                     @Override
@@ -1403,7 +1403,7 @@ final class ToPcScreen implements Screen {
         final File f = e.file;
         final String[] names = { "An den PC senden", "Kopieren", "Verschieben",
                 "Umbenennen", "Eigenschaften", "Löschen" };
-        new AlertDialog.Builder(host.activity())
+        new AlertDialog.Builder(host.activity(), R.style.NolphinDialog)
                 .setTitle(f.getName())
                 .setItems(names, new android.content.DialogInterface.OnClickListener() {
                     @Override
@@ -1433,7 +1433,7 @@ final class ToPcScreen implements Screen {
 
     private void askRename(final File f) {
         final EditText e = nameField(f.getName());
-        new AlertDialog.Builder(host.activity())
+        new AlertDialog.Builder(host.activity(), R.style.NolphinDialog)
                 .setTitle("Umbenennen")
                 .setView(e)
                 .setNegativeButton("Abbrechen", null)
@@ -1466,7 +1466,7 @@ final class ToPcScreen implements Screen {
         final File parent = dir;
         final EditText e = nameField("");
         e.setHint("Name des Ordners");
-        new AlertDialog.Builder(host.activity())
+        new AlertDialog.Builder(host.activity(), R.style.NolphinDialog)
                 .setTitle("Neuer Ordner")
                 .setView(e)
                 .setNegativeButton("Abbrechen", null)
@@ -1493,7 +1493,7 @@ final class ToPcScreen implements Screen {
         String text = (f.isDirectory() ? "Ordner" : "Datei") + "\n\nOrt: " + f.getParent()
                 + "\nGröße: " + Ui.size(m[0]) + (f.isDirectory() ? "\nDateien darin: " + m[1] : "")
                 + "\nGeändert: " + new SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.GERMANY).format(new Date(f.lastModified()));
-        new AlertDialog.Builder(host.activity()).setTitle(f.getName()).setMessage(text).setPositiveButton("Schließen", null).show();
+        new AlertDialog.Builder(host.activity(), R.style.NolphinDialog).setTitle(f.getName()).setMessage(text).setPositiveButton("Schließen", null).show();
     }
 
     private interface Op {
@@ -1583,7 +1583,7 @@ final class ToPcScreen implements Screen {
                 v.addView(sizeView);
                 v.addView(countView);
                 prog.refresh.run();
-                dlg[0] = new AlertDialog.Builder(host.activity())
+                dlg[0] = new AlertDialog.Builder(host.activity(), R.style.NolphinDialog)
                         .setTitle(title)
                         .setView(v)
                         .setCancelable(false)
@@ -1644,7 +1644,7 @@ final class ToPcScreen implements Screen {
         if (list.size() > shown) {
             b.append("… und ").append(list.size() - shown).append(" weitere");
         }
-        AlertDialog.Builder d = new AlertDialog.Builder(host.activity())
+        AlertDialog.Builder d = new AlertDialog.Builder(host.activity(), R.style.NolphinDialog)
                 .setTitle("Nicht alles hat geklappt")
                 .setMessage(b.toString().trim())
                 .setPositiveButton("Schließen", null);

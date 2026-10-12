@@ -8,4 +8,12 @@
         <item name="android:statusBarColor">@color/bar_bg</item>
         <item name="android:navigationBarColor">@color/nav_bg</item>
     </style>
+    <!-- Einheitliche Dialoge: Mint-Akzent, runde Ecken, Farben wie die App -->
+    <style name="NolphinDialog" parent="android:Theme.DeviceDefault.Light.Dialog.Alert">
+        <item name="android:colorAccent">@color/dialog_accent</item>
+        <item name="android:windowBackground">@drawable/dialog_bg</item>
+        <item name="android:textColorPrimary">@color/dialog_text</item>
+        <item name="android:textColorSecondary">@color/dialog_text2</item>
+        <item name="android:textColor">@color/dialog_text</item>
+    </style>
 </resources>

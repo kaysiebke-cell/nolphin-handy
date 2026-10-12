@@ -4,4 +4,8 @@
     <color name="window_bg">#F4F6F2</color>
     <color name="bar_bg">#3F8A21</color>
     <color name="nav_bg">#F4F6F2</color>
+    <color name="dialog_bg">#FFFFFF</color>
+    <color name="dialog_text">#1C211A</color>
+    <color name="dialog_text2">#566052</color>
+    <color name="dialog_accent">#3F8A21</color>
 </resources>

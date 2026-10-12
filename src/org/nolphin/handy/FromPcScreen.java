@@ -1152,7 +1152,7 @@ final class FromPcScreen implements Screen {
             Toast.makeText(c, "Wird geladen …", Toast.LENGTH_SHORT).show();
             return;
         }
-        new AlertDialog.Builder(host.activity())
+        new AlertDialog.Builder(host.activity(), R.style.NolphinDialog)
                 .setTitle(f.name)
                 .setItems(new CharSequence[] { "Speichern unter …", "Teilen" }, new android.content.DialogInterface.OnClickListener() {
                     @Override
