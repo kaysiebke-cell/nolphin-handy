@@ -99,7 +99,9 @@ final class ToPcScreen implements Screen {
     private final LinearLayout selectBar;
     private final TextView selCount;
     private final FrameLayout body;
-    private final GridView homeGrid;
+    private final android.widget.ScrollView homeScroll;
+    private final LinearLayout homeBox;
+    private final ImageView back;
     private final GridView grid;
     private final TextView empty;
     private final LinearLayout permCard;
@@ -129,40 +131,6 @@ final class ToPcScreen implements Screen {
         @Override
         public void run() {
             applyQuery();
-        }
-    };
-
-    private final BaseAdapter homeAdapter = new BaseAdapter() {
-        @Override
-        public int getCount() {
-            return vols.size() + 2 + CATS.length;
-        }
-
-        @Override
-        public Object getItem(int i) {
-            return i;
-        }
-
-        @Override
-        public long getItemId(int i) {
-            return i;
-        }
-
-        @Override
-        public View getView(int i, View convert, ViewGroup parent) {
-            if (i < vols.size()) {
-                Vol v = vols.get(i);
-                return tile(symbol(v.card ? R.drawable.ic_sd : R.drawable.ic_storage, Ui.primary(c)), v.name, volumeSub(v),
-                        Ui.dim(c), false);
-            }
-            if (i == vols.size()) {
-                return tile(symbol(R.drawable.ic_download, Ui.primary(c)), "Downloads", downloadsSub, Ui.dim(c), false);
-            }
-            int k = i - vols.size() - 1;
-            if (k == CATS.length) {
-                return tile(symbol(R.drawable.ic_apps, Ui.accent(c)), "Apps", appsSub, Ui.dim(c), false);
-            }
-            return tile(symbol(CAT_ICONS[k], CAT_COLORS[k]), CATS[k], catSub[k], Ui.dim(c), false);
         }
     };
 
@@ -202,6 +170,20 @@ final class ToPcScreen implements Screen {
         head.setOrientation(LinearLayout.HORIZONTAL);
         head.setGravity(Gravity.CENTER_VERTICAL);
         head.setPadding(p, p, p, Ui.dp(c, 4));
+        back = Ui.icon(c, R.drawable.ic_back, Ui.primary(c), 24);
+        back.setPadding(Ui.dp(c, 6), Ui.dp(c, 6), Ui.dp(c, 6), Ui.dp(c, 6));
+        LinearLayout.LayoutParams blp = new LinearLayout.LayoutParams(Ui.dp(c, 40), Ui.dp(c, 40));
+        blp.rightMargin = Ui.dp(c, 6);
+        back.setLayoutParams(blp);
+        back.setContentDescription("Zurück");
+        back.setVisibility(View.GONE);
+        back.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                onBack();
+            }
+        });
+        head.addView(back);
         title = Ui.label(c, "Zum PC", 22, Ui.text(c), true);
         title.setSingleLine(true);
         title.setEllipsize(android.text.TextUtils.TruncateAt.END);
@@ -320,16 +302,13 @@ final class ToPcScreen implements Screen {
         body = new FrameLayout(c);
         root.addView(body, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1));
 
-        homeGrid = newGrid();
-        homeGrid.setNumColumns(3);
-        homeGrid.setAdapter(homeAdapter);
-        homeGrid.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> parent, View view, int i, long id) {
-                openHome(i);
-            }
-        });
-        body.addView(homeGrid);
+        homeScroll = new android.widget.ScrollView(c);
+        homeScroll.setVerticalScrollBarEnabled(false);
+        homeBox = new LinearLayout(c);
+        homeBox.setOrientation(LinearLayout.VERTICAL);
+        homeBox.setPadding(Ui.dp(c, 16), 0, Ui.dp(c, 16), Ui.dp(c, 16));
+        homeScroll.addView(homeBox);
+        body.addView(homeScroll);
 
         grid = newGrid();
         grid.setAdapter(adapter);
@@ -432,6 +411,136 @@ final class ToPcScreen implements Screen {
         adapter.notifyDataSetChanged();
     }
 
+    // ---- Übersicht ---------------------------------------------------------------------------
+
+    private void buildHome() {
+        homeBox.removeAllViews();
+        homeBox.addView(heading("Speicher"));
+        for (final Vol v : vols) {
+            homeBox.addView(storageCard(v));
+        }
+        homeBox.addView(heading("Schnellzugriff"));
+        homeBox.addView(pair(
+                shortcut(R.drawable.ic_download, Ui.primary(c), "Downloads", downloadsSub, new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        openFolder(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS));
+                    }
+                }),
+                shortcut(R.drawable.ic_apps, Ui.accent(c), "Apps", appsSub, new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        openApps();
+                    }
+                })));
+        homeBox.addView(heading("Kategorien"));
+        for (int k = 0; k < CATS.length; k += 2) {
+            homeBox.addView(pair(category(k), category(k + 1)));
+        }
+    }
+
+    private View category(final int k) {
+        return shortcut(CAT_ICONS[k], CAT_COLORS[k], CATS[k], catSub[k], new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                openCategory(k);
+            }
+        });
+    }
+
+    private TextView heading(String text) {
+        TextView t = Ui.label(c, text, 13, Ui.dim(c), true);
+        t.setPadding(Ui.dp(c, 4), Ui.dp(c, 14), 0, Ui.dp(c, 6));
+        return t;
+    }
+
+    private LinearLayout pair(View a, View b) {
+        LinearLayout row = new LinearLayout(c);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        LinearLayout.LayoutParams l = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1);
+        l.rightMargin = Ui.dp(c, 4);
+        LinearLayout.LayoutParams r = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1);
+        r.leftMargin = Ui.dp(c, 4);
+        row.addView(a, l);
+        row.addView(b, r);
+        LinearLayout.LayoutParams rp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+        rp.bottomMargin = Ui.dp(c, 8);
+        row.setLayoutParams(rp);
+        return row;
+    }
+
+    /** Kompakte Karte: Symbol links, Name und Angabe rechts. */
+    private View shortcut(int icon, int color, String name, String sub, View.OnClickListener l) {
+        LinearLayout card = new LinearLayout(c);
+        card.setOrientation(LinearLayout.HORIZONTAL);
+        card.setGravity(Gravity.CENTER_VERTICAL);
+        card.setBackground(Ui.round(c, Ui.surface(c), 14));
+        card.setPadding(Ui.dp(c, 12), Ui.dp(c, 12), Ui.dp(c, 12), Ui.dp(c, 12));
+        card.addView(Ui.badge(c, icon, Ui.chip(c), color, 44));
+        LinearLayout text = new LinearLayout(c);
+        text.setOrientation(LinearLayout.VERTICAL);
+        text.setPadding(Ui.dp(c, 10), 0, 0, 0);
+        TextView n = Ui.label(c, name, 15, Ui.text(c), true);
+        n.setSingleLine(true);
+        text.addView(n);
+        TextView sTxt = Ui.label(c, sub.isEmpty() ? " " : sub, 12, Ui.dim(c), false);
+        sTxt.setSingleLine(true);
+        sTxt.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        text.addView(sTxt);
+        card.addView(text, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
+        card.setOnClickListener(l);
+        return card;
+    }
+
+    /** Breite Karte für einen Speicher mit Füllstand. */
+    private View storageCard(final Vol v) {
+        LinearLayout card = new LinearLayout(c);
+        card.setOrientation(LinearLayout.VERTICAL);
+        card.setBackground(Ui.round(c, Ui.surface(c), 14));
+        card.setPadding(Ui.dp(c, 14), Ui.dp(c, 14), Ui.dp(c, 14), Ui.dp(c, 14));
+        LinearLayout.LayoutParams cp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+        cp.bottomMargin = Ui.dp(c, 8);
+        card.setLayoutParams(cp);
+        long total = 0, used = 0;
+        try {
+            StatFs sf = new StatFs(v.root.getPath());
+            total = sf.getTotalBytes();
+            used = total - sf.getAvailableBytes();
+        } catch (RuntimeException ignored) {
+        }
+        int pct = total > 0 ? (int) Math.round(used * 100.0 / total) : 0;
+        LinearLayout top = new LinearLayout(c);
+        top.setOrientation(LinearLayout.HORIZONTAL);
+        top.setGravity(Gravity.CENTER_VERTICAL);
+        top.addView(Ui.badge(c, v.card ? R.drawable.ic_sd : R.drawable.ic_storage, Ui.chip(c), Ui.primary(c), 44));
+        LinearLayout text = new LinearLayout(c);
+        text.setOrientation(LinearLayout.VERTICAL);
+        text.setPadding(Ui.dp(c, 10), 0, 0, 0);
+        text.addView(Ui.label(c, v.name, 16, Ui.text(c), true));
+        text.addView(Ui.label(c, total > 0 ? Ui.size(used) + " von " + Ui.size(total) + " belegt" : "", 12, Ui.dim(c), false));
+        top.addView(text, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
+        top.addView(Ui.label(c, pct + " %", 14, Ui.primary(c), true));
+        card.addView(top);
+        LinearLayout track = new LinearLayout(c);
+        track.setWeightSum(100);
+        track.setBackground(Ui.round(c, Ui.chip(c), 4));
+        View fill = new View(c);
+        fill.setBackground(Ui.round(c, pct > 90 ? Ui.danger(c) : Ui.primary(c), 4));
+        track.addView(fill, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, Math.max(pct, 2)));
+        LinearLayout.LayoutParams tp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, Ui.dp(c, 8));
+        tp.topMargin = Ui.dp(c, 10);
+        card.addView(track, tp);
+        card.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View x) {
+                openFolder(v.root);
+            }
+        });
+        return card;
+    }
+
     // ---- Speicher ----------------------------------------------------------------------------
 
     private void findVolumes() {
@@ -503,14 +612,15 @@ final class ToPcScreen implements Screen {
                 }
                 File[] dl = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).listFiles();
                 final String dls = dl == null ? "" : dl.length + " Elemente";
-                final String apps = appFolders().size() + " Apps";
+                int na = appFolders().size();
+                final String apps = na + (na == 1 ? " App" : " Apps");
                 root.post(new Runnable() {
                     @Override
                     public void run() {
                         System.arraycopy(sub, 0, catSub, 0, sub.length);
                         downloadsSub = dls;
                         appsSub = apps;
-                        homeAdapter.notifyDataSetChanged();
+                        buildHome();
                     }
                 });
             }
@@ -539,18 +649,6 @@ final class ToPcScreen implements Screen {
             search.setText("");
         }
         query = "";
-    }
-
-    private void openHome(int i) {
-        if (i < vols.size()) {
-            openFolder(vols.get(i).root);
-        } else if (i == vols.size()) {
-            openFolder(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS));
-        } else if (i - vols.size() - 1 == CATS.length) {
-            openApps();
-        } else {
-            openCategory(i - vols.size() - 1);
-        }
     }
 
     private void openApps() {
@@ -610,6 +708,7 @@ final class ToPcScreen implements Screen {
         all.clear();
         entries.clear();
         findVolumes();
+        buildHome();
         loadHomeInfo();
         render();
     }
@@ -888,6 +987,7 @@ final class ToPcScreen implements Screen {
         if (access) {
             if (mode == HOME) {
                 findVolumes();
+                buildHome();
                 loadHomeInfo();
             } else if (query.isEmpty()) {
                 loadList();
@@ -911,24 +1011,26 @@ final class ToPcScreen implements Screen {
         if (!access) {
             title.setText("Zum PC");
             permCard.setVisibility(View.VISIBLE);
-            homeGrid.setVisibility(View.GONE);
+            homeScroll.setVisibility(View.GONE);
             grid.setVisibility(View.GONE);
             empty.setVisibility(View.GONE);
             crumbBar.setVisibility(View.GONE);
             selectBar.setVisibility(View.GONE);
             footer.setVisibility(View.GONE);
             toggle.setVisibility(View.GONE);
+            back.setVisibility(View.GONE);
             return;
         }
         permCard.setVisibility(View.GONE);
         title.setText(home ? "Zum PC" : mode == APPS ? "Apps" : mode == CATEGORY ? CATS[cat] : folderTitle());
         toggle.setVisibility(home && !searching ? View.GONE : View.VISIBLE);
+        back.setVisibility(home ? View.GONE : View.VISIBLE);
         showCrumbs(sel);
         selectBar.setVisibility(sel ? View.VISIBLE : View.GONE);
         selCount.setText(selected.size() + " ausgewählt");
 
         boolean showHome = home && !searching;
-        homeGrid.setVisibility(showHome ? View.VISIBLE : View.GONE);
+        homeScroll.setVisibility(showHome ? View.VISIBLE : View.GONE);
         grid.setVisibility(!showHome && !entries.isEmpty() ? View.VISIBLE : View.GONE);
         String msg = null;
         if (!showHome && entries.isEmpty()) {
