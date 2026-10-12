@@ -90,14 +90,13 @@ public class MainActivity extends Activity implements Host {
         root.setOrientation(LinearLayout.VERTICAL);
         root.setBackgroundColor(Ui.bg(this));
 
-        // Kopfleiste: Mint-Verlauf mit runden unteren Ecken, App-Symbol, Name und Verbindungsstatus
+        // Kopfleiste: App-Symbol, Name und Verbindungsstatus
         LinearLayout top = new LinearLayout(this);
         top.setOrientation(LinearLayout.HORIZONTAL);
         top.setGravity(Gravity.CENTER_VERTICAL);
         GradientDrawable barBg = new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,
                 new int[] { Ui.bar(this), Ui.barEnd(this) });
-        float r = Ui.dp(this, 24);
-        barBg.setCornerRadii(new float[] { 0, 0, 0, 0, r, r, r, r });
+        // gerade Unterkante: klare Trennung zwischen Kopfleiste und Inhalt
         top.setBackground(barBg);
         top.setElevation(Ui.dp(this, 3));
         top.setPadding(Ui.dp(this, 16), 0, Ui.dp(this, 12), 0);
@@ -117,7 +116,7 @@ public class MainActivity extends Activity implements Host {
         top.addView(titles, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
 
         ImageView settings = Ui.icon(this, R.drawable.ic_tune, Color.WHITE, 22);
-        settings.setBackground(Ui.round(this, 0x33FFFFFF, 22));
+        settings.setBackground(Ui.round(this, 0x26FFFFFF, 10));
         settings.setPadding(Ui.dp(this, 11), Ui.dp(this, 11), Ui.dp(this, 11), Ui.dp(this, 11));
         settings.setLayoutParams(new LinearLayout.LayoutParams(Ui.dp(this, 44), Ui.dp(this, 44)));
         settings.setContentDescription("Einstellungen");

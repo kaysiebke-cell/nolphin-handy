@@ -45,10 +45,8 @@ import java.util.Map;
  */
 final class ToPcScreen implements Screen {
     private static final int HOME = 0, FOLDER = 1, CATEGORY = 2, APPS = 3;
-    private static final int FOLDER_COLOR = 0xFFE0A93B;
     private static final String[] CATS = { "Bilder", "Audio", "Videos", "Dokumente" };
     private static final int[] CAT_ICONS = { R.drawable.ic_image, R.drawable.ic_audio, R.drawable.ic_video, R.drawable.ic_doc };
-    private static final int[] CAT_COLORS = { 0xFF9B59B6, 0xFF1FA59C, 0xFFD64545, 0xFF3C7DB5 };
 
     /** Ein Eintrag in der Liste: Ordner oder Datei. */
     private static final class Entry {
@@ -207,7 +205,7 @@ final class ToPcScreen implements Screen {
         LinearLayout searchRow = new LinearLayout(c);
         searchRow.setOrientation(LinearLayout.HORIZONTAL);
         searchRow.setGravity(Gravity.CENTER_VERTICAL);
-        searchRow.setBackground(Ui.round(c, Ui.surface(c), 24));
+        searchRow.setBackground(Ui.outlined(c, Ui.surface(c)));
         searchRow.setPadding(Ui.dp(c, 14), 0, Ui.dp(c, 6), 0);
         searchRow.addView(Ui.icon(c, R.drawable.ic_search, Ui.dim(c), 20));
         search = new EditText(c);
@@ -276,7 +274,7 @@ final class ToPcScreen implements Screen {
         });
         ImageView homeBtn = Ui.icon(c, R.drawable.ic_home, Ui.primary(c), 48);
         homeBtn.setPadding(Ui.dp(c, 10), Ui.dp(c, 10), Ui.dp(c, 10), Ui.dp(c, 10));
-        homeBtn.setBackground(Ui.round(c, Ui.chip(c), 24));
+        homeBtn.setBackground(Ui.round(c, Ui.chip(c), 10));
         homeBtn.setContentDescription("Übersicht");
         homeBtn.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -288,7 +286,7 @@ final class ToPcScreen implements Screen {
         crumbBar.addView(homeBtn);
         crumbBar.addView(scroll, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
         usage = Ui.label(c, "", 12, Ui.primary(c), true);
-        usage.setBackground(Ui.round(c, Ui.chip(c), 12));
+        usage.setBackground(Ui.round(c, Ui.chip(c), 8));
         usage.setPadding(Ui.dp(c, 10), Ui.dp(c, 4), Ui.dp(c, 10), Ui.dp(c, 4));
         crumbBar.addView(usage);
         crumbBar.setVisibility(View.GONE);
@@ -430,6 +428,10 @@ final class ToPcScreen implements Screen {
 
     private void applyMode() {
         grid.setNumColumns(useGrid ? 3 : 1);
+        // Kacheln mit Abstand; die Liste als durchgehende Fläche mit Trennlinien
+        grid.setVerticalSpacing(useGrid ? Ui.dp(c, 6) : 0);
+        grid.setHorizontalSpacing(useGrid ? Ui.dp(c, 6) : 0);
+        grid.setPadding(useGrid ? Ui.dp(c, 10) : 0, Ui.dp(c, 4), useGrid ? Ui.dp(c, 10) : 0, Ui.dp(c, 10));
         toggle.setImageResource(useGrid ? R.drawable.ic_list : R.drawable.ic_grid);
         adapter.notifyDataSetChanged();
     }
@@ -439,31 +441,38 @@ final class ToPcScreen implements Screen {
     private void buildHome() {
         homeBox.removeAllViews();
         homeBox.addView(heading("Speicher"));
+        LinearLayout store = Ui.group(c);
         for (final Vol v : vols) {
-            homeBox.addView(storageCard(v));
+            Ui.addRow(c, store, storageRow(v));
         }
+        homeBox.addView(store);
         homeBox.addView(heading("Schnellzugriff"));
-        homeBox.addView(pair(
-                shortcut(R.drawable.ic_download, Ui.primary(c), "Downloads", downloadsSub, new View.OnClickListener() {
+        LinearLayout quick = Ui.group(c);
+        Ui.addRow(c, quick, Ui.row(c, R.drawable.ic_download, Ui.iconTint(c), "Downloads", downloadsSub, null,
+                new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
                         openFolder(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS));
                     }
-                }),
-                shortcut(R.drawable.ic_apps, Ui.accent(c), "Apps", appsSub, new View.OnClickListener() {
+                }));
+        Ui.addRow(c, quick, Ui.row(c, R.drawable.ic_apps, Ui.iconTint(c), "Apps", appsSub, null,
+                new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
                         openApps();
                     }
-                })));
+                }));
+        homeBox.addView(quick);
         homeBox.addView(heading("Kategorien"));
-        for (int k = 0; k < CATS.length; k += 2) {
-            homeBox.addView(pair(category(k), category(k + 1)));
+        LinearLayout cats = Ui.group(c);
+        for (int k = 0; k < CATS.length; k++) {
+            Ui.addRow(c, cats, category(k));
         }
+        homeBox.addView(cats);
     }
 
     private View category(final int k) {
-        return shortcut(CAT_ICONS[k], CAT_COLORS[k], CATS[k], catSub[k], new View.OnClickListener() {
+        return Ui.row(c, CAT_ICONS[k], Ui.iconTint(c), CATS[k], catSub[k], null, new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 openCategory(k);
@@ -475,25 +484,12 @@ final class ToPcScreen implements Screen {
         return Ui.heading(c, text);
     }
 
-    private LinearLayout pair(View a, View b) {
-        return Ui.pair(c, a, b);
-    }
-
-    /** Kompakte Karte: Symbol links, Name und Angabe rechts. */
-    private View shortcut(int icon, int color, String name, String sub, View.OnClickListener l) {
-        return Ui.shortcut(c, icon, color, name, sub, l);
-    }
-
-    /** Breite Karte für einen Speicher mit Füllstand. */
-    private View storageCard(final Vol v) {
-        LinearLayout card = new LinearLayout(c);
-        card.setOrientation(LinearLayout.VERTICAL);
-        card.setBackground(Ui.round(c, Ui.surface(c), 14));
-        card.setPadding(Ui.dp(c, 14), Ui.dp(c, 14), Ui.dp(c, 14), Ui.dp(c, 14));
-        LinearLayout.LayoutParams cp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT);
-        cp.bottomMargin = Ui.dp(c, 8);
-        card.setLayoutParams(cp);
+    /** Zeile für einen Speicher: Name, Belegung und ein schmaler Füllstandsbalken darunter. */
+    private View storageRow(final Vol v) {
+        LinearLayout row = new LinearLayout(c);
+        row.setOrientation(LinearLayout.VERTICAL);
+        row.setBackground(Ui.pressable(c));
+        row.setPadding(Ui.dp(c, 16), Ui.dp(c, 12), Ui.dp(c, 16), Ui.dp(c, 14));
         long total = 0, used = 0;
         try {
             StatFs sf = new StatFs(v.root.getPath());
@@ -505,31 +501,32 @@ final class ToPcScreen implements Screen {
         LinearLayout top = new LinearLayout(c);
         top.setOrientation(LinearLayout.HORIZONTAL);
         top.setGravity(Gravity.CENTER_VERTICAL);
-        top.addView(Ui.badge(c, v.card ? R.drawable.ic_sd : R.drawable.ic_storage, Ui.chip(c), Ui.primary(c), 44));
+        top.addView(Ui.icon(c, v.card ? R.drawable.ic_sd : R.drawable.ic_storage, Ui.iconTint(c), 24));
         LinearLayout text = new LinearLayout(c);
         text.setOrientation(LinearLayout.VERTICAL);
-        text.setPadding(Ui.dp(c, 10), 0, 0, 0);
+        text.setPadding(Ui.dp(c, 16), 0, Ui.dp(c, 8), 0);
         text.addView(Ui.label(c, v.name, 16, Ui.text(c), true));
         text.addView(Ui.label(c, total > 0 ? Ui.size(used) + " von " + Ui.size(total) + " belegt" : "", 12, Ui.dim(c), false));
         top.addView(text, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
-        top.addView(Ui.label(c, pct + " %", 14, Ui.primary(c), true));
-        card.addView(top);
+        top.addView(Ui.label(c, pct + " %", 14, pct > 90 ? Ui.danger(c) : Ui.primary(c), true));
+        row.addView(top);
         LinearLayout track = new LinearLayout(c);
         track.setWeightSum(100);
-        track.setBackground(Ui.round(c, Ui.chip(c), 4));
+        track.setBackground(Ui.round(c, Ui.line(c), 3));
         View fill = new View(c);
-        fill.setBackground(Ui.round(c, pct > 90 ? Ui.danger(c) : Ui.primary(c), 4));
+        fill.setBackground(Ui.round(c, pct > 90 ? Ui.danger(c) : Ui.primary(c), 3));
         track.addView(fill, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, Math.max(pct, 2)));
-        LinearLayout.LayoutParams tp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, Ui.dp(c, 8));
+        LinearLayout.LayoutParams tp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, Ui.dp(c, 6));
         tp.topMargin = Ui.dp(c, 10);
-        card.addView(track, tp);
-        card.setOnClickListener(new View.OnClickListener() {
+        tp.leftMargin = Ui.dp(c, 40);
+        row.addView(track, tp);
+        row.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View x) {
                 openFolder(v.root);
             }
         });
-        return card;
+        return row;
     }
 
     // ---- Speicher ----------------------------------------------------------------------------
@@ -599,7 +596,7 @@ final class ToPcScreen implements Screen {
                         }
                     } catch (Exception ignored) {
                     }
-                    sub[i] = n == 0 ? "leer" : Ui.size(bytes) + " (" + n + ")";
+                    sub[i] = n == 0 ? "leer" : Ui.size(bytes) + " · " + n + (n == 1 ? " Datei" : " Dateien");
                 }
                 File[] dl = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).listFiles();
                 final String dls = dl == null ? "" : dl.length + " Elemente";
@@ -1117,7 +1114,7 @@ final class ToPcScreen implements Screen {
 
     private TextView chip(String text, View.OnClickListener l) {
         TextView t = Ui.label(c, text, 13, Ui.primary(c), true);
-        t.setBackground(Ui.round(c, Ui.chip(c), 16));
+        t.setBackground(Ui.round(c, Ui.chip(c), 8));
         t.setPadding(Ui.dp(c, 12), Ui.dp(c, 6), Ui.dp(c, 12), Ui.dp(c, 6));
         t.setOnClickListener(l);
         return t;
@@ -1160,17 +1157,10 @@ final class ToPcScreen implements Screen {
                 || e.equals("csv");
     }
 
-    private int typeIcon(String e) {
-        return isImage(e) ? R.drawable.ic_image : isVideo(e) ? R.drawable.ic_video : isAudio(e) ? R.drawable.ic_audio
-                : isDoc(e) ? R.drawable.ic_doc : R.drawable.ic_file;
-    }
-
-    private int typeColor(String e) {
-        return isImage(e) ? CAT_COLORS[0] : isVideo(e) ? CAT_COLORS[2] : isAudio(e) ? CAT_COLORS[1]
-                : isDoc(e) ? CAT_COLORS[3] : Ui.primary(c);
-    }
-
-    /** Symbol des Eintrags; bei Fotos und Videos später durch das Vorschaubild ersetzt. */
+    /**
+     * Symbol des Eintrags: Ordner einheitlich, Dateien als Blatt mit Endung (PDF, DOCX …). Fotos und Videos zeigen
+     * ihr Vorschaubild, Apps (APK) ihr eigenes Symbol.
+     */
     private ImageView iconOf(Entry e) {
         if (e.pkg != null) {
             ImageView v = new ImageView(c);
@@ -1183,23 +1173,16 @@ final class ToPcScreen implements Screen {
             }
         }
         if (e.dir) {
-            return symbol(R.drawable.ic_folder, FOLDER_COLOR);
+            return symbol(R.drawable.ic_folder, Ui.folder(c));
         }
-        String x = ext(e.file.getName());
-        final ImageView v = symbol(typeIcon(x), typeColor(x));
-        String kind = isImage(x) ? "image" : isVideo(x) ? "video" : isAudio(x) ? "audio" : x.equals("pdf") ? "pdf"
-                : x.equals("apk") ? "apk" : null;
-        if (kind == null || kind.equals("pdf") || kind.equals("audio") || kind.equals("apk")) {
-            // Symbol der Standard-App, die Android für diesen Dateityp eingestellt hat
-            Drawable sys = systemIcon(x);
-            if (sys != null) {
-                v.clearColorFilter();
-                v.setImageDrawable(sys);
-                v.setPadding(Ui.dp(c, 6), Ui.dp(c, 2), Ui.dp(c, 6), Ui.dp(c, 2));
-            }
-        }
+        String x = Ui.ext(e.file.getName());
+        final ImageView v = new ImageView(c);
+        v.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+        v.setPadding(Ui.dp(c, 4), Ui.dp(c, 2), Ui.dp(c, 4), Ui.dp(c, 2));
+        v.setImageDrawable(Ui.typeIcon(c, x));
+        String kind = isImage(x) ? "image" : isVideo(x) ? "video" : x.equals("apk") ? "apk" : null;
         if (kind != null) {
-            v.setBackground(Ui.round(c, Ui.chip(c), 8));
+            v.setBackground(Ui.round(c, 0x00000000, 6));
             v.setClipToOutline(true);
             v.setOutlineProvider(ViewOutlineProvider.BACKGROUND);
             Thumbs.loadFile(c, e.file, kind, 168, v, new Runnable() {
@@ -1211,40 +1194,11 @@ final class ToPcScreen implements Screen {
         return v;
     }
 
-    private final Map<String, Drawable> systemIcons = new java.util.HashMap<>();
-
-    /** Symbol der App, die Android für diese Endung als Standard zum Öffnen kennt; null, wenn keine eingestellt ist. */
-    private Drawable systemIcon(String x) {
-        if (x.isEmpty()) {
-            return null;
-        }
-        if (!systemIcons.containsKey(x)) {
-            Drawable d = null;
-            String mime = android.webkit.MimeTypeMap.getSingleton().getMimeTypeFromExtension(x);
-            if (mime != null) {
-                try {
-                    android.content.pm.PackageManager pm = c.getPackageManager();
-                    android.content.Intent i = new android.content.Intent(android.content.Intent.ACTION_VIEW)
-                            .setType(mime);
-                    android.content.pm.ResolveInfo ri = pm.resolveActivity(i,
-                            android.content.pm.PackageManager.MATCH_DEFAULT_ONLY);
-                    if (ri != null && ri.activityInfo != null && !"android".equals(ri.activityInfo.packageName)) {
-                        d = ri.loadIcon(pm);
-                    }
-                } catch (RuntimeException ignored) {
-                }
-            }
-            systemIcons.put(x, d);
-        }
-        Drawable d = systemIcons.get(x);
-        return d == null ? null : d.getConstantState() != null ? d.getConstantState().newDrawable() : d;
-    }
-
     private View tile(View top, String name, String sub, int subColor, boolean picked) {
         LinearLayout t = new LinearLayout(c);
         t.setOrientation(LinearLayout.VERTICAL);
         t.setGravity(Gravity.CENTER_HORIZONTAL);
-        t.setBackground(Ui.round(c, picked ? Ui.chip(c) : Ui.surface(c), 12));
+        t.setBackground(Ui.outlined(c, picked ? Ui.chip(c) : Ui.surface(c)));
         t.setPadding(Ui.dp(c, 4), Ui.dp(c, 8), Ui.dp(c, 4), Ui.dp(c, 8));
         t.setLayoutParams(new AbsListView.LayoutParams(AbsListView.LayoutParams.MATCH_PARENT, Ui.dp(c, 132)));
         t.addView(top, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, Ui.dp(c, 56)));
@@ -1286,29 +1240,33 @@ final class ToPcScreen implements Screen {
 
     private View entryRow(Entry e) {
         boolean picked = selected.containsKey(e.path());
-        LinearLayout card = new LinearLayout(c);
-        card.setOrientation(LinearLayout.HORIZONTAL);
-        card.setGravity(Gravity.CENTER_VERTICAL);
-        card.setBackground(Ui.round(c, picked ? Ui.chip(c) : Ui.surface(c), 14));
-        int p = Ui.dp(c, 12);
-        card.setPadding(p, Ui.dp(c, 8), p, Ui.dp(c, 8));
-        card.setLayoutParams(new AbsListView.LayoutParams(AbsListView.LayoutParams.MATCH_PARENT, Ui.dp(c, 68)));
-        ImageView ic = picked ? symbol(R.drawable.ic_check, Ui.accent(c)) : iconOf(e);
-        card.addView(ic, new LinearLayout.LayoutParams(Ui.dp(c, 48), Ui.dp(c, 48)));
+        LinearLayout row = new LinearLayout(c);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        row.setBackground(Ui.listRowBg(c, picked));
+        row.setPadding(Ui.dp(c, 14), Ui.dp(c, 8), Ui.dp(c, 12), Ui.dp(c, 8));
+        row.setLayoutParams(new AbsListView.LayoutParams(AbsListView.LayoutParams.MATCH_PARENT, Ui.dp(c, 68)));
+        ImageView ic = picked ? symbol(R.drawable.ic_check, Ui.primary(c)) : iconOf(e);
+        row.addView(ic, new LinearLayout.LayoutParams(Ui.dp(c, 44), Ui.dp(c, 44)));
         LinearLayout text = new LinearLayout(c);
         text.setOrientation(LinearLayout.VERTICAL);
-        text.setPadding(Ui.dp(c, 10), 0, Ui.dp(c, 6), 0);
+        text.setPadding(Ui.dp(c, 14), 0, Ui.dp(c, 6), 0);
         TextView n = Ui.label(c, nameOf(e), 15, Ui.text(c), false);
         n.setMaxLines(1);
         n.setEllipsize(android.text.TextUtils.TruncateAt.MIDDLE);
         text.addView(n);
-        TextView s = Ui.label(c, subOf(e), 12, Ui.dim(c), false);
+        // Größe und Datum zusammen unter dem Namen, damit alles in einer Spalte steht
+        String sub = e.dir ? subOf(e)
+                : subOf(e) + " · " + new SimpleDateFormat("dd.MM.yyyy", Locale.GERMANY).format(new Date(e.modified));
+        TextView s = Ui.label(c, sub, 12, Ui.dim(c), false);
         s.setSingleLine(true);
         s.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        s.setPadding(0, Ui.dp(c, 2), 0, 0);
         text.addView(s);
-        card.addView(text, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
-        card.addView(Ui.label(c, new SimpleDateFormat("dd.MM.yyyy", Locale.GERMANY).format(new Date(e.modified)), 12,
-                Ui.dim(c), false));
-        return card;
+        row.addView(text, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
+        if (e.dir) {
+            row.addView(Ui.icon(c, R.drawable.ic_chevron, Ui.dim(c), 20));
+        }
+        return row;
     }
 }

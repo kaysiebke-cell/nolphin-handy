@@ -4,7 +4,7 @@ App für den Handy-Austausch von Nolphin, **in beide Richtungen**: Dateien aus d
 
 ## Aufbau der App
 
-Vier Reiter unten, Einstellungen oben rechts; eigenes Design (Karten, Nolphin-Farben, eigenes Symbol, hell und dunkel), ohne Bibliotheken.
+Vier Reiter unten, Einstellungen oben rechts; ruhiges, klares Design (Listen mit Trennlinien, einfarbige Symbole, Dateisymbole mit lesbarer Endung wie PDF oder DOCX, eigenes Symbol, hell und dunkel), ohne Bibliotheken.
 
 * **Start:** großer Status („Verbunden“ / „Nicht verbunden“), Fortschritt einer laufenden Übertragung mit Abbruch, letzte Übertragungen.
 * **Vom PC:** Liste der Dateien aus dem Ordner „Handy“ mit Vorschaubild; Antippen lädt, geladene Dateien lassen sich öffnen und teilen.

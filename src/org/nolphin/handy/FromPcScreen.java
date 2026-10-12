@@ -162,7 +162,7 @@ final class FromPcScreen implements Screen {
         search.setTextSize(15);
         search.setTextColor(Ui.text(c));
         search.setHintTextColor(Ui.dim(c));
-        search.setBackground(Ui.round(c, Ui.surface(c), 24));
+        search.setBackground(Ui.outlined(c, Ui.surface(c)));
         search.setPadding(Ui.dp(c, 16), Ui.dp(c, 8), Ui.dp(c, 16), Ui.dp(c, 8));
         search.setImeOptions(android.view.inputmethod.EditorInfo.IME_ACTION_SEARCH);
         search.addTextChangedListener(new android.text.TextWatcher() {
@@ -205,7 +205,7 @@ final class FromPcScreen implements Screen {
         });
         ImageView homeBtn = Ui.icon(c, R.drawable.ic_home, Ui.primary(c), 48);
         homeBtn.setPadding(Ui.dp(c, 10), Ui.dp(c, 10), Ui.dp(c, 10), Ui.dp(c, 10));
-        homeBtn.setBackground(Ui.round(c, Ui.chip(c), 24));
+        homeBtn.setBackground(Ui.round(c, Ui.chip(c), 10));
         homeBtn.setContentDescription("Übersicht");
         homeBtn.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -338,6 +338,10 @@ final class FromPcScreen implements Screen {
     private void applyMode() {
         int cols = useGrid ? 3 : 1;
         grid.setNumColumns(cols);
+        // Kacheln mit Abstand; die Liste als durchgehende Fläche mit Trennlinien
+        grid.setVerticalSpacing(useGrid ? Ui.dp(c, 6) : 0);
+        grid.setHorizontalSpacing(useGrid ? Ui.dp(c, 6) : 0);
+        grid.setPadding(useGrid ? Ui.dp(c, 10) : 0, 0, useGrid ? Ui.dp(c, 10) : 0, Ui.dp(c, 10));
         toggle.setImageResource(useGrid ? R.drawable.ic_list : R.drawable.ic_grid);
         adapter.notifyDataSetChanged();
     }
@@ -707,18 +711,15 @@ final class FromPcScreen implements Screen {
             return;
         }
         homeBox.addView(Ui.heading(c, "Handy-Ordner"));
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT);
-        lp.bottomMargin = Ui.dp(c, 8);
-        View handy = Ui.shortcut(c, R.drawable.ic_phone, Ui.accent(c), "Zum Handy", "Vom PC bereitgestellt",
+        LinearLayout phone = Ui.group(c);
+        Ui.addRow(c, phone, Ui.row(c, R.drawable.ic_phone, Ui.iconTint(c), "Zum Handy", "Vom PC bereitgestellt", null,
                 new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
                         go("");
                     }
-                });
-        handy.setLayoutParams(lp);
-        homeBox.addView(handy);
+                }));
+        homeBox.addView(phone);
 
         homeBox.addView(Ui.heading(c, "Persönlicher Ordner"));
         if (homeSupported == null) {
@@ -731,18 +732,6 @@ final class FromPcScreen implements Screen {
                     Ui.dim(c), false));
             return;
         }
-        LinearLayout.LayoutParams lp2 = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT);
-        lp2.bottomMargin = Ui.dp(c, 8);
-        View all = Ui.shortcut(c, R.drawable.ic_home, Ui.primary(c), "Persönlicher Ordner", "Alles auf dem PC durchsuchen",
-                new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        go("~");
-                    }
-                });
-        all.setLayoutParams(lp2);
-        homeBox.addView(all);
         // Standardordner zuerst, danach höchstens sechs weitere; der Rest steht hinter „Alle Ordner“
         List<String> standard = new ArrayList<>();
         List<String> other = new ArrayList<>();
@@ -755,29 +744,34 @@ final class FromPcScreen implements Screen {
                 return standardRank(x) - standardRank(y);
             }
         });
-        addFolderRows(standard);
+        LinearLayout home = Ui.group(c);
+        Ui.addRow(c, home, Ui.row(c, R.drawable.ic_home, Ui.iconTint(c), "Persönlicher Ordner",
+                "Alles auf dem PC durchsuchen", null, new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        go("~");
+                    }
+                }));
+        for (String d : standard) {
+            Ui.addRow(c, home, folderShortcut(d));
+        }
+        homeBox.addView(home);
         if (!other.isEmpty()) {
             homeBox.addView(Ui.heading(c, "Weitere Ordner"));
-            addFolderRows(other.subList(0, Math.min(6, other.size())));
+            LinearLayout more = Ui.group(c);
+            for (String d : other.subList(0, Math.min(6, other.size()))) {
+                Ui.addRow(c, more, folderShortcut(d));
+            }
             if (other.size() > 6) {
-                View more = Ui.shortcut(c, R.drawable.ic_folder, 0xFFE0A93B, "Alle Ordner anzeigen", other.size() - 6 + " weitere",
-                        new View.OnClickListener() {
+                Ui.addRow(c, more, Ui.row(c, R.drawable.ic_folder, Ui.folder(c), "Alle Ordner anzeigen",
+                        other.size() - 6 + " weitere", null, new View.OnClickListener() {
                             @Override
                             public void onClick(View v) {
                                 go("~");
                             }
-                        });
-                more.setLayoutParams(lp2);
-                homeBox.addView(more);
+                        }));
             }
-        }
-    }
-
-    private void addFolderRows(List<String> names) {
-        for (int i = 0; i < names.size(); i += 2) {
-            View a = folderShortcut(names.get(i));
-            View b = i + 1 < names.size() ? folderShortcut(names.get(i + 1)) : new View(c);
-            homeBox.addView(Ui.pair(c, a, b));
+            homeBox.addView(more);
         }
     }
 
@@ -800,7 +794,8 @@ final class FromPcScreen implements Screen {
 
     private View folderShortcut(final String name) {
         int icon = folderIcon(name);
-        return Ui.shortcut(c, icon, icon == R.drawable.ic_folder ? 0xFFE0A93B : Ui.primary(c), name, "", new View.OnClickListener() {
+        return Ui.row(c, icon, icon == R.drawable.ic_folder ? Ui.folder(c) : Ui.iconTint(c), name, null, null,
+                new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 go("~/" + name);
@@ -836,7 +831,7 @@ final class FromPcScreen implements Screen {
 
     private TextView chip(String text, boolean filled, View.OnClickListener l) {
         TextView t = Ui.label(c, text, 13, filled ? 0xFFFFFFFF : Ui.primary(c), true);
-        t.setBackground(filled ? Ui.round(c, Ui.primary(c), 16) : Ui.round(c, Ui.chip(c), 16));
+        t.setBackground(filled ? Ui.round(c, Ui.primary(c), 8) : Ui.round(c, Ui.chip(c), 8));
         t.setPadding(Ui.dp(c, 12), Ui.dp(c, 6), Ui.dp(c, 12), Ui.dp(c, 6));
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
@@ -963,7 +958,7 @@ final class FromPcScreen implements Screen {
         LinearLayout t = new LinearLayout(c);
         t.setOrientation(LinearLayout.VERTICAL);
         t.setGravity(Gravity.CENTER_HORIZONTAL);
-        t.setBackground(Ui.round(c, picked ? Ui.chip(c) : Ui.surface(c), 12));
+        t.setBackground(Ui.outlined(c, picked ? Ui.chip(c) : Ui.surface(c)));
         t.setPadding(Ui.dp(c, 4), Ui.dp(c, 8), Ui.dp(c, 4), Ui.dp(c, 8));
         t.setLayoutParams(new AbsListView.LayoutParams(AbsListView.LayoutParams.MATCH_PARENT, Ui.dp(c, 132)));
         t.addView(top, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, Ui.dp(c, 56)));
@@ -987,33 +982,37 @@ final class FromPcScreen implements Screen {
     }
 
     private View folderTile(String name) {
-        return tile(symbol(R.drawable.ic_folder, 0xFFE0A93B), name, "Ordner", Ui.dim(c), false);
+        return tile(symbol(R.drawable.ic_folder, Ui.folder(c)), name, "Ordner", Ui.dim(c), false);
+    }
+
+    /** Dateisymbol mit Endung; bei geladenen Dateien ersetzt das Vorschaubild es, wenn es eines gibt. */
+    private ImageView fileIcon(RemoteFile f) {
+        final ImageView top = new ImageView(c);
+        top.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+        top.setPadding(Ui.dp(c, 4), Ui.dp(c, 2), Ui.dp(c, 4), Ui.dp(c, 2));
+        final android.graphics.drawable.Drawable type = Ui.typeIcon(c, Ui.ext(f.name));
+        top.setImageDrawable(type);
+        String uri = Store.uri(c, f.key());
+        String m = mime(f.name);
+        if (uri != null && (m.startsWith("image/") || m.startsWith("video/"))) {
+            top.setBackground(Ui.round(c, 0x00000000, 6));
+            top.setClipToOutline(true);
+            top.setOutlineProvider(android.view.ViewOutlineProvider.BACKGROUND);
+            Thumbs.load(c, Uri.parse(uri), 168, top, new Runnable() {
+                @Override
+                public void run() {
+                    top.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+                    top.setPadding(Ui.dp(c, 4), Ui.dp(c, 2), Ui.dp(c, 4), Ui.dp(c, 2));
+                    top.setImageDrawable(type);
+                }
+            });
+        }
+        return top;
     }
 
     private View fileTile(RemoteFile f) {
         final String uri = Store.uri(c, f.key());
-        final ImageView top = symbol(R.drawable.ic_file, Ui.primary(c));
-        if (uri != null) {
-            top.setScaleType(ImageView.ScaleType.CENTER_CROP);
-            top.setPadding(0, 0, 0, 0);
-            top.setColorFilter(null);
-            top.setBackground(Ui.round(c, Ui.chip(c), 8));
-            top.setClipToOutline(true);
-            top.setOutlineProvider(android.view.ViewOutlineProvider.BACKGROUND);
-            final Runnable icon = new Runnable() {
-                @Override
-                public void run() {
-                    top.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
-                    top.setPadding(Ui.dp(c, 8), Ui.dp(c, 4), Ui.dp(c, 8), Ui.dp(c, 4));
-                    top.setImageResource(R.drawable.ic_file);
-                    top.setColorFilter(Ui.primary(c));
-                }
-            };
-            icon.run();
-            top.setPadding(0, 0, 0, 0);
-            Thumbs.load(c, Uri.parse(uri), 168, top, icon);
-        }
-        return tile(top, f.name, Ui.size(f.size) + (uri != null ? " · Handy" : ""),
+        return tile(fileIcon(f), f.name, Ui.size(f.size) + (uri != null ? " · Handy" : ""),
                 uri != null ? Ui.accent(c) : Ui.dim(c), selected.contains(f.key()));
     }
 
@@ -1029,47 +1028,49 @@ final class FromPcScreen implements Screen {
         return fl;
     }
 
-    private LinearLayout rowShell() {
-        LinearLayout card = new LinearLayout(c);
-        card.setOrientation(LinearLayout.HORIZONTAL);
-        card.setGravity(Gravity.CENTER_VERTICAL);
-        card.setBackground(Ui.round(c, Ui.surface(c), 14));
-        int p = Ui.dp(c, 12);
-        card.setPadding(p, p, p, p);
-        card.setLayoutParams(new AbsListView.LayoutParams(AbsListView.LayoutParams.MATCH_PARENT, Ui.dp(c, 84)));
-        return card;
+    private LinearLayout rowShell(boolean picked) {
+        LinearLayout row = new LinearLayout(c);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        row.setBackground(Ui.listRowBg(c, picked));
+        row.setPadding(Ui.dp(c, 14), Ui.dp(c, 8), Ui.dp(c, 12), Ui.dp(c, 8));
+        row.setMinimumHeight(Ui.dp(c, 68));
+        row.setLayoutParams(new AbsListView.LayoutParams(AbsListView.LayoutParams.MATCH_PARENT,
+                AbsListView.LayoutParams.WRAP_CONTENT));
+        return row;
     }
 
     private View folderRow(String name) {
-        LinearLayout card = rowShell();
-        ImageView ic = symbol(R.drawable.ic_folder, 0xFFE0A93B);
-        card.addView(ic, new LinearLayout.LayoutParams(Ui.dp(c, 48), Ui.dp(c, 48)));
+        LinearLayout row = rowShell(false);
+        row.addView(symbol(R.drawable.ic_folder, Ui.folder(c)), new LinearLayout.LayoutParams(Ui.dp(c, 44), Ui.dp(c, 44)));
         TextView n = Ui.label(c, name, 15, Ui.text(c), false);
-        n.setPadding(Ui.dp(c, 8), 0, 0, 0);
-        card.addView(n, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
-        return card;
+        n.setPadding(Ui.dp(c, 14), 0, Ui.dp(c, 6), 0);
+        n.setMaxLines(2);
+        n.setEllipsize(android.text.TextUtils.TruncateAt.MIDDLE);
+        row.addView(n, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
+        row.addView(Ui.icon(c, R.drawable.ic_chevron, Ui.dim(c), 20));
+        return row;
     }
 
     private View fileRow(RemoteFile f) {
         final String uri = Store.uri(c, f.key());
-        LinearLayout card = rowShell();
         boolean picked = selected.contains(f.key());
-        if (picked) {
-            card.setBackground(Ui.round(c, Ui.chip(c), 14));
-        }
-        ImageView ic = symbol(picked ? R.drawable.ic_check : R.drawable.ic_file, picked ? Ui.accent(c) : Ui.primary(c));
-        card.addView(ic, new LinearLayout.LayoutParams(Ui.dp(c, 48), Ui.dp(c, 48)));
+        LinearLayout row = rowShell(picked);
+        ImageView ic = picked ? symbol(R.drawable.ic_check, Ui.primary(c)) : fileIcon(f);
+        row.addView(ic, new LinearLayout.LayoutParams(Ui.dp(c, 44), Ui.dp(c, 44)));
         LinearLayout text = new LinearLayout(c);
         text.setOrientation(LinearLayout.VERTICAL);
-        text.setPadding(Ui.dp(c, 8), 0, 0, 0);
+        text.setPadding(Ui.dp(c, 14), 0, Ui.dp(c, 6), 0);
         TextView n = Ui.label(c, f.name, 15, Ui.text(c), false);
         n.setMaxLines(2);
         n.setEllipsize(android.text.TextUtils.TruncateAt.MIDDLE);
         text.addView(n);
-        text.addView(Ui.label(c, Ui.size(f.size) + (uri != null ? "  ·  auf dem Handy" : "  ·  noch nicht geladen"), 12,
-                uri != null ? Ui.accent(c) : Ui.dim(c), false));
-        card.addView(text, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
-        return card;
+        TextView s = Ui.label(c, Ui.size(f.size) + (uri != null ? "  ·  auf dem Handy" : "  ·  noch nicht geladen"), 12,
+                uri != null ? Ui.accent(c) : Ui.dim(c), false);
+        s.setPadding(0, Ui.dp(c, 2), 0, 0);
+        text.addView(s);
+        row.addView(text, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
+        return row;
     }
 
     // ---- Aktionen ----------------------------------------------------------------------------
