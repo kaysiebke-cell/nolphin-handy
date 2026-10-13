@@ -1893,8 +1893,8 @@ final class ToPcScreen implements Screen {
         item.setPadding(0, Ui.dp(c, 8), 0, Ui.dp(c, 8));
         item.setBackground(Ui.pressable(c));
         item.setContentDescription(label);
-        item.addView(Ui.icon(c, icon, Ui.primary(c), 24));
-        TextView t = Ui.label(c, label, 11, Ui.primary(c), false);
+        item.addView(Ui.icon(c, icon, Ui.dim(c), 24));
+        TextView t = Ui.label(c, label, 11, Ui.dim(c), false);
         t.setGravity(Gravity.CENTER);
         t.setSingleLine(true);
         item.addView(t);
