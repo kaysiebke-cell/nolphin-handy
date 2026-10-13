@@ -49,6 +49,7 @@ final class DualScreen implements Screen, ToPcScreen.Partner {
     private final ToPcScreen second;
     private final LinearLayout actionBar;
     private final TextView flow;
+    private final ToPcScreen.DualSwitch sw;
     private ToPcScreen active;
 
     DualScreen(Context c, Host host, final ToPcScreen.DualSwitch sw) {
@@ -58,30 +59,7 @@ final class DualScreen implements Screen, ToPcScreen.Partner {
         root.setOrientation(LinearLayout.VERTICAL);
         root.setBackgroundColor(Ui.bg(c));
 
-        // Kopfleiste: Titel und Umschalter zurück auf ein Fenster
-        LinearLayout top = new LinearLayout(c);
-        top.setOrientation(LinearLayout.HORIZONTAL);
-        top.setGravity(Gravity.CENTER_VERTICAL);
-        top.setBackgroundColor(Ui.surface(c));
-        top.setPadding(Ui.dp(c, 16), 0, Ui.dp(c, 4), 0);
-        TextView title = Ui.label(c, "Zum PC", 18, Ui.text(c), true);
-        top.addView(title, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
-        ImageView one = Ui.icon(c, R.drawable.ic_panes, Ui.primary(c), 24);
-        one.setPadding(Ui.dp(c, 10), Ui.dp(c, 10), Ui.dp(c, 10), Ui.dp(c, 10));
-        one.setLayoutParams(new LinearLayout.LayoutParams(Ui.dp(c, 44), Ui.dp(c, 44)));
-        one.setContentDescription("Zurück zu einem Fenster");
-        one.setBackground(Ui.pressable(c));
-        one.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                sw.setDual(false);
-            }
-        });
-        top.addView(one);
-        root.addView(top, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, Ui.dp(c, 48)));
-        View line = new View(c);
-        line.setBackgroundColor(Ui.line(c));
-        root.addView(line, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, Math.max(1, Ui.dp(c, 1) / 2 + 1)));
+        this.sw = sw;
 
         first = new ToPcScreen(c, host, true, "1");
         second = new ToPcScreen(c, host, true, "2");
@@ -260,6 +238,18 @@ final class DualScreen implements Screen, ToPcScreen.Partner {
     @Override
     public View view() {
         return root;
+    }
+
+    @Override
+    public String[] menuLabels() {
+        return new String[] { "Ein Fenster" };
+    }
+
+    @Override
+    public void menuPicked(int index) {
+        if (index == 0) {
+            sw.setDual(false);
+        }
     }
 
     @Override

@@ -112,15 +112,14 @@ final class ToPcScreen implements Screen {
     private final Host host;
     private final LinearLayout root;
     private final TextView title;
-    private final ImageView searchBtn;
     private final ImageView menuBtn;
-    private final ImageView dualBtn;
     private boolean searchOpen;
     private final EditText search;
     private final LinearLayout crumbBar;
     private final LinearLayout crumbs;
     private final HorizontalScrollView crumbScroll;
     private final LinearLayout head;
+    private final View headLine;
     private final LinearLayout selectBar;
     private final TextView selCount;
     private final FrameLayout body;
@@ -146,6 +145,7 @@ final class ToPcScreen implements Screen {
     private final LinearLayout searchRow;
     private final View searchLine;
     private final View crumbLine;
+    private final ImageView homeBtn;
     private View selCopy;
     private View selMove;
     private int docFilter;
@@ -281,9 +281,6 @@ final class ToPcScreen implements Screen {
                 LinearLayout.LayoutParams.WRAP_CONTENT);
         tagLp.leftMargin = Ui.dp(c, 4);
         tagLp.rightMargin = Ui.dp(c, 4);
-        if (compact) {
-            head.addView(paneTag, tagLp);
-        }
         head.addView(back);
         title = Ui.label(c, "Zum PC", 18, Ui.text(c), true);
         title.setSingleLine(true);
@@ -292,32 +289,17 @@ final class ToPcScreen implements Screen {
             title.setTextSize(14);
         }
         head.addView(title, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
-        searchBtn = headButton(R.drawable.ic_search, "Suchen", new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                toggleSearch();
-            }
-        });
         menuBtn = headButton(R.drawable.ic_menu, "Menü", new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 showMenu(v);
             }
         });
-        dualBtn = headButton(R.drawable.ic_panes, "Zwei Fenster", new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                openDual();
-            }
-        });
-        dualBtn.setVisibility(View.GONE);
-        head.addView(dualBtn);
-        head.addView(searchBtn);
-        if (compact) {
-            head.addView(menuBtn);   // im Zwei-Fenster-Modus hat jedes Fenster sein eigenes Menü
-        }
-        root.addView(head, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, Ui.dp(c, compact ? 40 : 44)));
-        root.addView(divider());
+        // Diese Zeile (Zurück, Titel) wird nie angezeigt: Die Pfadleiste, die Zurück-Taste und das Menü erledigen alles, eine zweite
+        // Zeile wäre doppelt. Sie bleibt nur als Anker für die Auswahlleiste im Aufbau.
+        root.addView(head, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, Ui.dp(c, 40)));
+        headLine = divider();
+        root.addView(headLine);
 
         searchRow = new LinearLayout(c);
         searchRow.setOrientation(LinearLayout.HORIZONTAL);
@@ -395,7 +377,7 @@ final class ToPcScreen implements Screen {
                 }
             }
         });
-        ImageView homeBtn = Ui.icon(c, R.drawable.ic_home, Ui.primary(c), 44);
+        homeBtn = Ui.icon(c, R.drawable.ic_home, Ui.primary(c), 44);
         homeBtn.setPadding(Ui.dp(c, 10), Ui.dp(c, 10), Ui.dp(c, 10), Ui.dp(c, 10));
         homeBtn.setContentDescription("Übersicht");
         homeBtn.setOnClickListener(new View.OnClickListener() {
@@ -405,8 +387,14 @@ final class ToPcScreen implements Screen {
             }
         });
         
+        if (compact) {
+            crumbBar.addView(paneTag, tagLp);   // Marke „Fenster 1/2“ steht in der Pfadzeile, nicht in einer eigenen Zeile
+        }
         crumbBar.addView(homeBtn);
         crumbBar.addView(scroll, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
+        if (compact) {
+            crumbBar.addView(menuBtn);   // jedes kleine Fenster hat sein eigenes Menü am Ende der Pfadzeile
+        }
         crumbBar.setVisibility(View.GONE);
         root.addView(crumbBar);
         crumbLine = divider();
@@ -3058,7 +3046,8 @@ final class ToPcScreen implements Screen {
             total += sz;
         }
         selCount.setText(selected.size() + " gewählt");
-        head.setVisibility(sel ? View.GONE : View.VISIBLE);
+        head.setVisibility(View.GONE);
+        headLine.setVisibility(View.GONE);
         pasteBar.setVisibility(clip != null && mode == FOLDER && !sel ? View.VISIBLE : View.GONE);
         if (clip != null) {
             pasteText.setText(clip.size() + (clip.size() == 1 ? " Element " : " Elemente ") + (clipMove ? "verschieben" : "kopieren"));
@@ -3080,12 +3069,7 @@ final class ToPcScreen implements Screen {
         boolean showSearch = !compact && (searchOpen || searching);
         searchRow.setVisibility(showSearch ? View.VISIBLE : View.GONE);
         searchLine.setVisibility(showSearch ? View.VISIBLE : View.GONE);
-        searchBtn.setVisibility(compact ? View.GONE : View.VISIBLE);
-        dualBtn.setVisibility(!compact && dualSwitch != null && Conn.dualAvailable(c) ? View.VISIBLE : View.GONE);
-        searchBtn.setColorFilter(showSearch ? Ui.primary(c) : Ui.iconTint(c));
         if (compact) {
-            crumbBar.setVisibility(View.GONE);
-            crumbLine.setVisibility(View.GONE);
             searchRow.setVisibility(View.GONE);
             searchLine.setVisibility(View.GONE);
             sortHint.setVisibility(View.GONE);
@@ -3200,15 +3184,26 @@ final class ToPcScreen implements Screen {
 
     private void showCrumbs(boolean selecting) {
         crumbs.removeAllViews();
-        boolean show = mode != HOME && !selecting;
+        boolean show = (mode != HOME || compact) && !selecting;
         crumbBar.setVisibility(show ? View.VISIBLE : View.GONE);
+        crumbLine.setVisibility(show ? View.VISIBLE : View.GONE);
+        homeBtn.setVisibility(mode == HOME ? View.GONE : View.VISIBLE);
         if (!show) {
+            return;
+        }
+        if (mode == HOME) {
+            TextView t = Ui.label(c, "Übersicht", 14, Ui.primary(c), true);
+            t.setPadding(Ui.dp(c, 8), Ui.dp(c, 14), Ui.dp(c, 4), Ui.dp(c, 14));
+            crumbs.addView(t);
             return;
         }
         if (mode == CATEGORY || mode == APPS) {
             crumbs.addView(Ui.label(c, "  ›  ", 14, Ui.dim(c), false));
             crumbs.addView(crumb(mode == APPS ? "Apps" : CATS[cat], null, true));
             return;
+        }
+        if (vols.isEmpty()) {
+            findVolumes();   // ein wiederhergestelltes Fenster zeichnet die Pfadzeile vor dem ersten Laden der Speicher
         }
         Vol v = volumeOf(dir);
         if (v == null) {
