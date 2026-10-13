@@ -93,58 +93,91 @@ final class Conn {
 
     static final int VIEW_LIST = ViewModes.LIST, VIEW_GRID = ViewModes.GRID, VIEW_COMPACT = ViewModes.COMPACT;
 
-    /** Darstellung der Dateilisten: Liste, Raster oder Kompakt. Frühere Versionen kannten nur Raster oder Liste. */
-    static int viewMode(Context c) {
-        SharedPreferences p = prefs(c);
-        return ViewModes.fromPrefs(p.getInt("viewmode", -1), p.getBoolean("tiles", true));
+    /**
+     * Einstellungen für Ansicht und Sortierung. {@code pane} ist null im einzelnen Fenster; die zwei Fenster des
+     * Zwei-Fenster-Modus haben je eigene Werte ("Schlüssel@Fenster"). Hat ein Fenster noch keine eigenen, gelten die
+     * des einzelnen Fensters als Ausgangswert.
+     */
+    private static String key(String base, String pane) {
+        return pane == null ? base : base + "@" + pane;
     }
 
-    static void setViewMode(Context c, int mode) {
-        prefs(c).edit().putInt("viewmode", mode).apply();
+    private static String own(SharedPreferences p, String base, String pane) {
+        return pane != null && p.contains(key(base, pane)) ? key(base, pane) : base;
+    }
+
+    /** Darstellung der Dateilisten: Liste, Raster oder Kompakt. Frühere Versionen kannten nur Raster oder Liste. */
+    static int viewMode(Context c, String pane) {
+        SharedPreferences p = prefs(c);
+        return ViewModes.fromPrefs(p.getInt(own(p, "viewmode", pane), -1), p.getBoolean("tiles", true));
+    }
+
+    static void setViewMode(Context c, int mode, String pane) {
+        prefs(c).edit().putInt(key("viewmode", pane), mode).apply();
     }
 
     /** Große Vorschau (unabhängig von der Darstellung). */
-    static boolean largePreview(Context c) {
-        return prefs(c).getBoolean("largepreview", false);
+    static boolean largePreview(Context c, String pane) {
+        SharedPreferences p = prefs(c);
+        return p.getBoolean(own(p, "largepreview", pane), false);
     }
 
-    static void setLargePreview(Context c, boolean on) {
-        prefs(c).edit().putBoolean("largepreview", on).apply();
+    static void setLargePreview(Context c, boolean on, String pane) {
+        prefs(c).edit().putBoolean(key("largepreview", pane), on).apply();
     }
 
-    static boolean hideNames(Context c) {
-        return prefs(c).getBoolean("hidenames", false);
+    static boolean hideNames(Context c, String pane) {
+        SharedPreferences p = prefs(c);
+        return p.getBoolean(own(p, "hidenames", pane), false);
     }
 
-    static void setHideNames(Context c, boolean on) {
-        prefs(c).edit().putBoolean("hidenames", on).apply();
+    static void setHideNames(Context c, boolean on, String pane) {
+        prefs(c).edit().putBoolean(key("hidenames", pane), on).apply();
     }
 
-    static boolean showHidden(Context c) {
-        return prefs(c).getBoolean("showhidden", false);
+    static boolean showHidden(Context c, String pane) {
+        SharedPreferences p = prefs(c);
+        return p.getBoolean(own(p, "showhidden", pane), false);
     }
 
-    static void setShowHidden(Context c, boolean on) {
-        prefs(c).edit().putBoolean("showhidden", on).apply();
+    static void setShowHidden(Context c, boolean on, String pane) {
+        prefs(c).edit().putBoolean(key("showhidden", pane), on).apply();
     }
 
     /** Sortierung der Dateilisten (bleibt gespeichert). */
-    static SortOrder sortOrder(Context c) {
+    static SortOrder sortOrder(Context c, String pane) {
         SharedPreferences p = prefs(c);
-        return new SortOrder(p.getInt("sortkey", SortOrder.NAME), p.getBoolean("sortasc", true), p.getBoolean("foldersfirst", true));
+        String k = own(p, "sortkey", pane);
+        String suffix = k.equals("sortkey") ? "" : "@" + pane;
+        return new SortOrder(p.getInt(k, SortOrder.NAME), p.getBoolean("sortasc" + suffix, true), p.getBoolean("foldersfirst" + suffix, true));
     }
 
     /** Hat der Nutzer schon eine Sortierung gewählt? */
-    static boolean hasSortOrder(Context c) {
-        return prefs(c).contains("sortkey");
+    static boolean hasSortOrder(Context c, String pane) {
+        SharedPreferences p = prefs(c);
+        return p.contains(key("sortkey", pane)) || p.contains("sortkey");
     }
 
-    static void setSortOrder(Context c, SortOrder o) {
-        prefs(c).edit().putInt("sortkey", o.key).putBoolean("sortasc", o.ascending).putBoolean("foldersfirst", o.foldersFirst).apply();
+    static void setSortOrder(Context c, SortOrder o, String pane) {
+        prefs(c).edit().putInt(key("sortkey", pane), o.key).putBoolean(key("sortasc", pane), o.ascending)
+                .putBoolean(key("foldersfirst", pane), o.foldersFirst).apply();
     }
 
-    static void clearSortOrder(Context c) {
-        prefs(c).edit().remove("sortkey").remove("sortasc").remove("foldersfirst").apply();
+    /** Setzt Ansicht, Vorschau, Namen, versteckte Dateien und Sortierung des Fensters auf den Standard zurück. */
+    static void resetView(Context c, String pane) {
+        SharedPreferences.Editor e = prefs(c).edit();
+        for (String base : new String[] { "viewmode", "largepreview", "hidenames", "showhidden", "sortkey", "sortasc", "foldersfirst" }) {
+            e.remove(key(base, pane));
+        }
+        if (pane != null) {
+            // Ausgangswert bleibt der des einzelnen Fensters; ein Zurücksetzen soll wirklich den Standard liefern
+            SortOrder std = SortOrder.standard();
+            e.putInt(key("viewmode", pane), VIEW_LIST).putBoolean(key("largepreview", pane), false)
+                    .putBoolean(key("hidenames", pane), false).putBoolean(key("showhidden", pane), false)
+                    .putInt(key("sortkey", pane), std.key).putBoolean(key("sortasc", pane), std.ascending)
+                    .putBoolean(key("foldersfirst", pane), std.foldersFirst);
+        }
+        e.apply();
     }
 
     /** Wird der Zwei-Fenster-Modus angeboten? (Einstellung, Standard: aus) */

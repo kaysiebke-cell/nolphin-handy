@@ -78,7 +78,7 @@ Das **Raster** passt Spalten und Kachelbreite an die Bildschirmbreite an. Die Ka
 
 **Favoriten und zuletzt geöffnete Orte.** Im Menü **⋮** eines Ordners steht **Zu Favoriten hinzufügen**. In der Übersicht erscheinen die Favoriten oben mit einem Stern, darunter die **zuletzt geöffneten Ordner** (die letzten fünf). Ein Favorit hat ein eigenes Menü mit „Öffnen“ und „Aus Favoriten entfernen“. Ist ein Ordner nicht mehr da (zum Beispiel SD-Karte entfernt), steht dort „Nicht verfügbar“. Die Liste der zuletzt geöffneten Ordner löschen Sie in den Einstellungen.
 
-**Zwei Fenster.** In „Zum PC“ gibt es dafür ein **Symbol in der Leiste** (neben der Lupe) und den Menüeintrag **Zwei Fenster** im ☰-Menü. Ist der Modus noch nicht eingeschaltet, schaltet der Menüeintrag ihn ein (in den Einstellungen unter „Dateimanager“ steht der Schalter **Zwei-Fenster-Modus anbieten**; ohne ihn zeigt die Leiste das Symbol nicht). Im Hochformat stehen die Fenster untereinander, im Querformat nebeneinander. Jedes Fenster hat sein eigenes ☰-Menü (Neuer Ordner, Ansicht und Sortierung) und merkt sich seinen Ordner auch nach dem Drehen oder Neustart. Ansicht, Vorschau und Sortierung sind für beide Fenster gemeinsam eingestellt; in den kleinen Fenstern gelten immer die Standardgrößen und die Namen bleiben sichtbar, auch wenn „Große Vorschau“ oder „Dateinamen ausblenden“ gewählt ist. Das grüne Symbol oben rechts führt zurück zu einem Fenster.
+**Zwei Fenster.** In „Zum PC“ gibt es dafür ein **Symbol in der Leiste** (neben der Lupe) und den Menüeintrag **Zwei Fenster** im ☰-Menü. Ist der Modus noch nicht eingeschaltet, schaltet der Menüeintrag ihn ein (in den Einstellungen unter „Dateimanager“ steht der Schalter **Zwei-Fenster-Modus anbieten**; ohne ihn zeigt die Leiste das Symbol nicht). Im Hochformat stehen die Fenster untereinander, im Querformat nebeneinander. Jedes Fenster hat sein eigenes ☰-Menü (Neuer Ordner, Ansicht und Sortierung) und merkt sich seinen Ordner auch nach dem Drehen oder Neustart. **Jedes Fenster hat seine eigene Ansicht, Vorschau, Namensanzeige, Anzeige versteckter Dateien und Sortierung**; sie bleiben gespeichert. Ein Fenster, das noch nichts eigenes hat, übernimmt die Werte des einzelnen Fensters als Ausgangswert. Das grüne Symbol oben rechts führt zurück zu einem Fenster.
 
 * Das Fenster, das Sie zuletzt angetippt haben, ist **aktiv** (grüne Linie oben). Das Fenster mit der Auswahl ist die **Quelle**, das andere das **Ziel**.
 * Unten steht „Von … nach …“ mit **Kopieren** und **Verschieben**. Vor dem Vorgang fragt die App noch einmal mit dem vollen Zielpfad und bietet **Ziel wechseln** an. Danach läuft alles wie sonst: Fortschritt, Abbrechen, Konfliktfrage, Ergebnisliste.
@@ -100,13 +100,13 @@ Es gibt zwei Wege. Beide bieten dasselbe.
 
 **Kopieren und Verschieben:** Wählen Sie die Elemente, tippen Sie auf Kopieren oder Verschieben, öffnen Sie den Zielordner und tippen Sie unten auf **Hierher**. Gibt es den Namen schon, hängt die App „(2)“ an. Einen Ordner in sich selbst zu kopieren oder zu verschieben lehnt sie ab.
 
-**Speicheranalyse:** Tippen Sie in „Zum PC“ auf die Karte **Hauptspeicher** oder **SD-Karte**. Die App zählt im Hintergrund (mit Zähler und **Abbrechen**) und zeigt dann:
+**Speicheranalyse (nur auf Wunsch):** Ein Tipp auf **Hauptspeicher** oder **SD-Karte** öffnet den Speicher sofort, ohne Analyse. Die Analyse starten Sie im ☰-Menü mit **Speicheranalyse**, und zwar für den Bereich, in dem Sie gerade sind: in einem **Ordner** zählt sie diesen Ordner, in **Bilder, Audio, Videos oder Dokumente** den gewählten Speicher mit dieser Gruppe im Mittelpunkt („Audio hier: …“), auf der Übersicht fragt sie, für welchen Speicher. Die App zählt im Hintergrund (mit Zähler und **Abbrechen**) und zeigt dann:
 
 * oben die Belegung und einen **Balken nach Gruppen** (Bilder, Videos, Audio, Dokumente, Apps, Sonstiges) mit Größen,
 * die **größten Ordner** und die **größten Dateien** mit Anteilsbalken. Ein Tipp öffnet den Ordner,
 * den Knopf **Dateien ansehen**, der den Speicher wie gewohnt öffnet. Mit dem Symbol oben rechts zählen Sie neu.
 
-Das Ergebnis bleibt bis zum Neuzählen oder Beenden der App erhalten. Die Analyse **liest nur** und ändert nichts. Android erlaubt der App nicht, die Daten des Systems und anderer Apps zu sehen. Die App nennt deshalb, wie viel „nicht lesbar“ ist. Im Zwei-Fenster-Modus öffnet die Karte weiter direkt den Ordner.
+Das Ergebnis bleibt bis zum Neuzählen oder Beenden der App erhalten. Die Analyse **liest nur** und ändert nichts. Android erlaubt der App nicht, die Daten des Systems und anderer Apps zu sehen. Die App nennt deshalb, wie viel „nicht lesbar“ ist.
 
 **ZIP entpacken und packen:**
 

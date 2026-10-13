@@ -37,6 +37,10 @@ final class StorageAnalysis {
     private final String name;
     private final File root;
     private final Opener opener;
+    /** Gruppe, die im Mittelpunkt steht (zum Beispiel Audio in der Ansicht „Audio“), oder -1. */
+    private final int focus;
+    /** Ganzer Speicher (Belegung des Speichers und „nicht lesbar“ anzeigen) oder nur ein Ordner. */
+    private final boolean wholeVolume;
     private final Handler ui = new Handler(Looper.getMainLooper());
     private final Dialog dialog;
     private final LinearLayout content;
@@ -44,10 +48,20 @@ final class StorageAnalysis {
     private volatile boolean closed;
 
     static void show(Activity activity, String name, File root, Opener opener) {
-        new StorageAnalysis(activity, name, root, opener).start(false);
+        show(activity, name, root, opener, -1);
     }
 
-    private StorageAnalysis(Activity activity, String name, File root, Opener opener) {
+    static void show(Activity activity, String name, File root, Opener opener, int focus) {
+        show(activity, name, root, opener, focus, true);
+    }
+
+    static void show(Activity activity, String name, File root, Opener opener, int focus, boolean wholeVolume) {
+        new StorageAnalysis(activity, name, root, opener, focus, wholeVolume).start(false);
+    }
+
+    private StorageAnalysis(Activity activity, String name, File root, Opener opener, int focus, boolean wholeVolume) {
+        this.focus = focus;
+        this.wholeVolume = wholeVolume;
         this.activity = activity;
         this.c = activity;
         this.name = name;
@@ -200,9 +214,11 @@ final class StorageAnalysis {
         content.removeAllViews();
         long total = 0, used = 0;
         try {
-            StatFs sf = new StatFs(root.getPath());
-            total = sf.getTotalBytes();
-            used = total - sf.getAvailableBytes();
+            if (wholeVolume) {
+                StatFs sf = new StatFs(root.getPath());
+                total = sf.getTotalBytes();
+                used = total - sf.getAvailableBytes();
+            }
         } catch (RuntimeException ignored) {
         }
         LinearLayout card = Ui.card(c);
@@ -210,13 +226,20 @@ final class StorageAnalysis {
         head.setOrientation(LinearLayout.HORIZONTAL);
         head.setGravity(Gravity.BOTTOM);
         head.addView(Ui.label(c, Ui.size(used > 0 ? used : r.bytes), 22, Ui.text(c), true));
-        TextView of = Ui.label(c, total > 0 ? "  von " + Ui.size(total) + " belegt" : "  belegt", 14, Ui.dim(c), false);
+        TextView of = Ui.label(c, total > 0 ? "  von " + Ui.size(total) + " belegt" : wholeVolume ? "  belegt" : "  in diesem Ordner", 14, Ui.dim(c), false);
         head.addView(of);
         card.addView(head);
 
         long sum = 0;
         for (long v : r.byCat) {
             sum += v;
+        }
+        if (focus >= 0 && focus < r.byCat.length) {
+            int share = sum > 0 ? (int) Math.round(r.byCat[focus] * 100.0 / sum) : 0;
+            TextView f = Ui.label(c, StorageScan.CATS[focus] + " hier: " + Ui.size(r.byCat[focus]) + " (" + share + " % des Gezählten)",
+                    15, CAT_COLORS[focus], true);
+            f.setPadding(0, Ui.dp(c, 6), 0, 0);
+            card.addView(f);
         }
         LinearLayout seg = new LinearLayout(c);
         seg.setOrientation(LinearLayout.HORIZONTAL);
@@ -254,7 +277,7 @@ final class StorageAnalysis {
 
         String when = r.cancelled ? "Abgebrochen, das Ergebnis ist unvollständig." : "Stand: " + Ui.time(r.finishedAt);
         long gap = used - r.bytes;
-        if (!r.cancelled && total > 0 && gap > 1L << 30 && gap > used / 20) {
+        if (wholeVolume && !r.cancelled && total > 0 && gap > 1L << 30 && gap > used / 20) {
             when += "\n" + Ui.size(gap) + " sind für diese App nicht lesbar (System und Daten anderer Apps).";
         }
         if (r.unreadable > 0) {

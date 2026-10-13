@@ -236,15 +236,15 @@ final class ToPcScreen implements Screen {
         this.compact = compact;
         this.paneId = paneId;
         this.c = c;
-        orderChosen = Conn.hasSortOrder(c);
+        orderChosen = Conn.hasSortOrder(c, settingPane());
         if (orderChosen) {
-            order = Conn.sortOrder(c);
+            order = Conn.sortOrder(c, settingPane());
         }
         this.host = host;
-        viewMode = Conn.viewMode(c);
-        largePreview = Conn.largePreview(c);
-        hideNames = Conn.hideNames(c);
-        showHidden = Conn.showHidden(c);
+        viewMode = Conn.viewMode(c, settingPane());
+        largePreview = Conn.largePreview(c, settingPane());
+        hideNames = Conn.hideNames(c, settingPane());
+        showHidden = Conn.showHidden(c, settingPane());
         root = new LinearLayout(c);
         root.setOrientation(LinearLayout.VERTICAL);
         root.setBackgroundColor(Ui.bg(c));
@@ -618,9 +618,13 @@ final class ToPcScreen implements Screen {
         return g;
     }
 
-    /** Große Vorschau gilt nur im ganzen Fenster; die kleinen Fenster des Zwei-Fenster-Modus bleiben bei den Standardgrößen. */
+    /** Schlüssel der Fenstereinstellungen: null im einzelnen Fenster, sonst die Nummer des kleinen Fensters. */
+    private String settingPane() {
+        return compact ? paneId : null;
+    }
+
     private boolean bigPreview() {
-        return largePreview && !compact;
+        return largePreview;
     }
 
     private void applyMode() {
@@ -841,12 +845,7 @@ final class ToPcScreen implements Screen {
         row.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View x) {
-                StorageAnalysis.show(host.activity(), v.name, v.root, new StorageAnalysis.Opener() {
-                    @Override
-                    public void openFolder(File dir) {
-                        ToPcScreen.this.openFolder(dir);
-                    }
-                });
+                openFolder(v.root);   // direkt in den Speicher; die Analyse gibt es nur auf Wunsch im Menü
             }
         });
         return row;
@@ -1179,7 +1178,7 @@ final class ToPcScreen implements Screen {
     private void saveOrder(SortOrder o) {
         order = o;
         orderChosen = true;
-        Conn.setSortOrder(c, order);
+        Conn.setSortOrder(c, order, settingPane());
         sortEntries(entries);
         render();
     }
@@ -1222,7 +1221,7 @@ final class ToPcScreen implements Screen {
                     @Override
                     public void on(int i) {
                         viewMode = i;
-                        Conn.setViewMode(c, viewMode);
+                        Conn.setViewMode(c, viewMode, settingPane());
                         applyMode();
                         render();
                     }
@@ -1232,7 +1231,7 @@ final class ToPcScreen implements Screen {
                     @Override
                     public void on(int i) {
                         largePreview = i == 1;
-                        Conn.setLargePreview(c, largePreview);
+                        Conn.setLargePreview(c, largePreview, settingPane());
                         applyMode();
                         render();
                     }
@@ -1260,7 +1259,7 @@ final class ToPcScreen implements Screen {
             @Override
             public void onCheckedChanged(android.widget.CompoundButton b, boolean on) {
                 hideNames = on;
-                Conn.setHideNames(c, on);
+                Conn.setHideNames(c, on, settingPane());
                 adapter.notifyDataSetChanged();
             }
         }));
@@ -1268,7 +1267,7 @@ final class ToPcScreen implements Screen {
             @Override
             public void onCheckedChanged(android.widget.CompoundButton b, boolean on) {
                 showHidden = on;
-                Conn.setShowHidden(c, on);
+                Conn.setShowHidden(c, on, settingPane());
                 loadList();
             }
         }));
@@ -1280,17 +1279,13 @@ final class ToPcScreen implements Screen {
         reset.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View x) {
-                Conn.clearSortOrder(c);
+                Conn.resetView(c, settingPane());
                 orderChosen = false;
                 order = SortOrder.standard();
                 viewMode = Conn.VIEW_LIST;
                 largePreview = false;
                 hideNames = false;
                 showHidden = false;
-                Conn.setViewMode(c, viewMode);
-                Conn.setLargePreview(c, false);
-                Conn.setHideNames(c, false);
-                Conn.setShowHidden(c, false);
                 dlg.dismiss();
                 applyMode();
                 loadList();
@@ -1360,6 +1355,12 @@ final class ToPcScreen implements Screen {
                     }
                 });
             }
+            menuItem("Speicheranalyse", new Runnable() {
+                @Override
+                public void run() {
+                    openAnalysis();
+                }
+            });
             if (!compact && dualSwitch != null) {
                 menuItem("Zwei Fenster", new Runnable() {
                     @Override
@@ -1386,6 +1387,58 @@ final class ToPcScreen implements Screen {
                 menuPicked(index);
             }
         });
+    }
+
+    private static final int[] CAT_TO_SCAN = { StorageScan.PICTURES, StorageScan.AUDIO, StorageScan.VIDEOS, StorageScan.DOCUMENTS };
+
+    private void runAnalysis(String name, File root, int focus, boolean wholeVolume) {
+        StorageAnalysis.show(host.activity(), name, root, new StorageAnalysis.Opener() {
+            @Override
+            public void openFolder(File dir) {
+                ToPcScreen.this.openFolder(dir);
+            }
+        }, focus, wholeVolume);
+    }
+
+    /**
+     * Speicheranalyse nur auf Wunsch und für den Bereich, in dem man gerade ist: im Ordner dieser Ordner, in einer Gruppe
+     * (Bilder, Audio, Videos, Dokumente) der gewählte Speicher mit dieser Gruppe im Mittelpunkt, sonst ein Speicher zur Wahl.
+     */
+    private void openAnalysis() {
+        if (mode == FOLDER && dir != null) {
+            boolean isRoot = false;
+            for (Vol v : vols) {
+                isRoot |= v.root.equals(dir);
+            }
+            runAnalysis(folderTitle(), dir, -1, isRoot);
+            return;
+        }
+        final int focus = mode == CATEGORY && cat >= 0 && cat < CAT_TO_SCAN.length ? CAT_TO_SCAN[cat] : -1;
+        if (mode == CATEGORY && storage != 0) {
+            for (Vol v : vols) {
+                if (v.card == (storage == 2)) {
+                    runAnalysis(v.name, v.root, focus, true);
+                    return;
+                }
+            }
+        }
+        if (vols.size() == 1) {
+            runAnalysis(vols.get(0).name, vols.get(0).root, focus, true);
+            return;
+        }
+        String[] names = new String[vols.size()];
+        for (int i = 0; i < names.length; i++) {
+            names[i] = vols.get(i).name;
+        }
+        new AlertDialog.Builder(host.activity(), R.style.NolphinDialog)
+                .setTitle("Speicheranalyse für …")
+                .setItems(names, new android.content.DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(android.content.DialogInterface d, int which) {
+                        runAnalysis(vols.get(which).name, vols.get(which).root, focus, true);
+                    }
+                })
+                .show();
     }
 
     /** Zwei Fenster öffnen; ist der Modus noch nicht angeboten, wird er dabei eingeschaltet (Einstellungen: „Zwei-Fenster-Modus anbieten“). */
@@ -3346,7 +3399,7 @@ final class ToPcScreen implements Screen {
                 AbsListView.LayoutParams.WRAP_CONTENT));
         t.addView(top, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT));
-        if (!hideNames || compact) {   // in den kleinen Fenstern bleiben die Namen immer sichtbar
+        if (!hideNames) {
             TextView n = Ui.label(c, name, 12, Ui.text(c), false);
             n.setLines(2);   // feste Höhe: das Raster nimmt die Zeilenhöhe von der ersten Kachel jeder Reihe
             n.setGravity(Gravity.CENTER_HORIZONTAL);
