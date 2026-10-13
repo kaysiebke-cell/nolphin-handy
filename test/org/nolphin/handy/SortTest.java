@@ -92,7 +92,10 @@ public class SortTest {
 
         ok(SortOrder.extension("archiv.tar.gz").equals("gz") && SortOrder.extension(".versteckt").isEmpty() && SortOrder.extension("name.").isEmpty()
                 && SortOrder.extension("FOTO.JPG").equals("jpg") && SortOrder.extension("ohne").isEmpty(), "Endung wird richtig erkannt");
-        ok(new SortOrder(SortOrder.SIZE, false, true).describe().equals("Größe ↓") && SortOrder.standard().describe().equals("Name ↑"), "Hinweistext");
+        ok(new SortOrder(SortOrder.SIZE, false, true).describe().equals("Größe ↓") && SortOrder.standard().describe().equals("Datum ↓"), "Hinweistext");
+        ok(SortOrder.standard().key == SortOrder.DATE && !SortOrder.standard().ascending && SortOrder.standard().foldersFirst, "Standard: Datum absteigend, Ordner zuerst");
+        ok(order(mixed, new SortOrder(SortOrder.NONE, true, true)).equals("zeta.txt,Alpha,beta.pdf,Gamma,alpha.txt,noext,archiv.tar.gz"), "Keine Sortierung: Reihenfolge bleibt wie geliefert: " + order(mixed, new SortOrder(SortOrder.NONE, true, true)));
+        ok(new SortOrder(SortOrder.NONE, false, false).describe().equals("Keine Sortierung"), "Hinweistext ohne Sortierung");
 
         // Reihenfolge ändert sich mit der Richtung genau umgekehrt (außer Ordner und Gleichstand)
         List<Item> files = Arrays.asList(new Item("c", false, 3, 3), new Item("a", false, 1, 1), new Item("b", false, 2, 2));

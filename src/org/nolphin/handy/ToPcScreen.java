@@ -111,7 +111,9 @@ final class ToPcScreen implements Screen {
     private final Host host;
     private final LinearLayout root;
     private final TextView title;
-    private final ImageView toggle;
+    private final ImageView searchBtn;
+    private final ImageView menuBtn;
+    private boolean searchOpen;
     private final EditText search;
     private final LinearLayout crumbBar;
     private final LinearLayout crumbs;
@@ -126,7 +128,6 @@ final class ToPcScreen implements Screen {
     private final GridView grid;
     private final TextView empty;
     private final LinearLayout permCard;
-    private final ImageView newFolder;
     private final LinearLayout pasteBar;
     private final TextView pasteText;
     /** Endungen, die unter „Dokumente“ erscheinen (keine Programm- und Systemdateien anderer Apps). */
@@ -140,7 +141,6 @@ final class ToPcScreen implements Screen {
     private int lastNotified;
     private final TextView paneTag;
     private final View activeBar;
-    private final ImageView dualBtn;
     private final LinearLayout searchRow;
     private final View searchLine;
     private final View crumbLine;
@@ -149,7 +149,6 @@ final class ToPcScreen implements Screen {
     private int docFilter;
     private SortOrder order = SortOrder.standard();
     private boolean orderChosen;
-    private final ImageView sortBtn;
     private final TextView sortHint;
     private final View sortHintLine;
     private static final String[] STORAGE = { "Beides", "Intern", "SD-Karte" };
@@ -165,7 +164,10 @@ final class ToPcScreen implements Screen {
     private File dir;                     // im Modus FOLDER
     private int cat;                      // im Modus CATEGORY
     private String query = "";
-    private boolean useGrid;
+    private int viewMode;
+    private boolean largePreview;
+    private boolean hideNames;
+    private boolean showHidden;
     private boolean loading;
     private String error;
     private boolean access;
@@ -207,7 +209,7 @@ final class ToPcScreen implements Screen {
         @Override
         public View getView(int i, View convert, ViewGroup parent) {
             Entry e = entries.get(i);
-            return useGrid ? entryTile(e) : entryRow(e);
+            return viewMode == Conn.VIEW_GRID ? entryTile(e) : entryRow(e);
         }
     };
 
@@ -237,7 +239,10 @@ final class ToPcScreen implements Screen {
             order = Conn.sortOrder(c);
         }
         this.host = host;
-        useGrid = Conn.grid(c);
+        viewMode = Conn.viewMode(c);
+        largePreview = Conn.largePreview(c);
+        hideNames = Conn.hideNames(c);
+        showHidden = Conn.showHidden(c);
         root = new LinearLayout(c);
         root.setOrientation(LinearLayout.VERTICAL);
         root.setBackgroundColor(Ui.bg(c));
@@ -285,58 +290,23 @@ final class ToPcScreen implements Screen {
             title.setTextSize(14);
         }
         head.addView(title, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
-        newFolder = Ui.icon(c, R.drawable.ic_newfolder, Ui.iconTint(c), 24);
-        newFolder.setPadding(Ui.dp(c, 10), Ui.dp(c, 10), Ui.dp(c, 10), Ui.dp(c, 10));
-        newFolder.setLayoutParams(new LinearLayout.LayoutParams(Ui.dp(c, 44), Ui.dp(c, 44)));
-        newFolder.setContentDescription("Neuer Ordner");
-        newFolder.setVisibility(View.GONE);
-        newFolder.setOnClickListener(new View.OnClickListener() {
+        searchBtn = headButton(R.drawable.ic_search, "Suchen", new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                askNewFolder();
+                toggleSearch();
             }
         });
-        sortBtn = Ui.icon(c, R.drawable.ic_sort, Ui.iconTint(c), 24);
-        sortBtn.setPadding(Ui.dp(c, 10), Ui.dp(c, 10), Ui.dp(c, 10), Ui.dp(c, 10));
-        sortBtn.setLayoutParams(new LinearLayout.LayoutParams(Ui.dp(c, 44), Ui.dp(c, 44)));
-        sortBtn.setContentDescription("Sortieren");
-        sortBtn.setVisibility(View.GONE);
-        sortBtn.setOnClickListener(new View.OnClickListener() {
+        menuBtn = headButton(R.drawable.ic_menu, "Menü", new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                showSortDialog();
+                showMenu(v);
             }
         });
-        dualBtn = Ui.icon(c, R.drawable.ic_panes, Ui.iconTint(c), 24);
-        dualBtn.setPadding(Ui.dp(c, 10), Ui.dp(c, 10), Ui.dp(c, 10), Ui.dp(c, 10));
-        dualBtn.setLayoutParams(new LinearLayout.LayoutParams(Ui.dp(c, 44), Ui.dp(c, 44)));
-        dualBtn.setContentDescription("Zwei Fenster");
-        dualBtn.setVisibility(View.GONE);
-        dualBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (dualSwitch != null) {
-                    dualSwitch.setDual(true);
-                }
-            }
-        });
-        head.addView(dualBtn);
-        head.addView(sortBtn);
-        head.addView(newFolder);
-        toggle = Ui.icon(c, useGrid ? R.drawable.ic_list : R.drawable.ic_grid, Ui.iconTint(c), 24);
-        toggle.setPadding(Ui.dp(c, 10), Ui.dp(c, 10), Ui.dp(c, 10), Ui.dp(c, 10));
-        toggle.setLayoutParams(new LinearLayout.LayoutParams(Ui.dp(c, 44), Ui.dp(c, 44)));
-        toggle.setContentDescription("Ansicht wechseln");
-        toggle.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                useGrid = !useGrid;
-                Conn.setGrid(ToPcScreen.this.c, useGrid);
-                applyMode();
-            }
-        });
-        head.addView(toggle);
-        root.addView(head, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, Ui.dp(c, compact ? 40 : 52)));
+        head.addView(searchBtn);
+        if (compact) {
+            head.addView(menuBtn);   // im Zwei-Fenster-Modus hat jedes Fenster sein eigenes Menü
+        }
+        root.addView(head, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, Ui.dp(c, compact ? 40 : 44)));
         root.addView(divider());
 
         searchRow = new LinearLayout(c);
@@ -380,7 +350,11 @@ final class ToPcScreen implements Screen {
         clear.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                search.setText("");
+                if (search.length() > 0) {
+                    search.setText("");   // erst leeren, ein zweites Tippen schließt die Suche
+                } else {
+                    toggleSearch();
+                }
             }
         });
         searchRow.addView(clear);
@@ -635,12 +609,17 @@ final class ToPcScreen implements Screen {
     }
 
     private void applyMode() {
-        grid.setNumColumns(useGrid ? 3 : 1);
-        // Kacheln mit Abstand; die Liste als durchgehende Fläche mit Trennlinien
-        grid.setVerticalSpacing(useGrid ? Ui.dp(c, 6) : 0);
-        grid.setHorizontalSpacing(useGrid ? Ui.dp(c, 6) : 0);
-        grid.setPadding(useGrid ? Ui.dp(c, 10) : 0, Ui.dp(c, 4), useGrid ? Ui.dp(c, 10) : 0, Ui.dp(c, 10));
-        toggle.setImageResource(useGrid ? R.drawable.ic_list : R.drawable.ic_grid);
+        boolean tiles = viewMode == Conn.VIEW_GRID;
+        if (tiles) {
+            grid.setColumnWidth(Ui.dp(c, largePreview ? 160 : 104));
+            grid.setNumColumns(GridView.AUTO_FIT);
+        } else {
+            grid.setNumColumns(1);
+        }
+        // Kacheln dicht an dicht ohne Rahmen; die Liste als durchgehende Fläche
+        grid.setVerticalSpacing(tiles ? Ui.dp(c, 4) : 0);
+        grid.setHorizontalSpacing(tiles ? Ui.dp(c, 4) : 0);
+        grid.setPadding(tiles ? Ui.dp(c, 6) : 0, Ui.dp(c, 4), tiles ? Ui.dp(c, 6) : 0, Ui.dp(c, 10));
         adapter.notifyDataSetChanged();
     }
 
@@ -1071,12 +1050,9 @@ final class ToPcScreen implements Screen {
         }
     }
 
-    /** Gewählte Sortierung; solange nichts gewählt ist, zeigen Kategorien die neuesten Dateien zuerst. */
+    /** Gewählte Sortierung; solange nichts gewählt ist, kommen die neuesten Dateien zuerst (Ordner davor). */
     private SortOrder effectiveOrder() {
-        if (!orderChosen && mode == CATEGORY) {
-            return new SortOrder(SortOrder.DATE, false, false);
-        }
-        return order;
+        return orderChosen ? order : SortOrder.standard();
     }
 
     private void sortEntries(List<Entry> list) {
@@ -1085,13 +1061,6 @@ final class ToPcScreen implements Screen {
         }
         Collections.sort(list, effectiveOrder().comparator());
     }
-
-    private static final String[][] ORDER_TEXT = {
-        { "Aufsteigend (A bis Z)", "Absteigend (Z bis A)" },
-        { "Aufsteigend (klein zu groß)", "Absteigend (groß zu klein)" },
-        { "Aufsteigend (alt zu neu)", "Absteigend (neu zu alt)" },
-        { "Aufsteigend (A bis Z)", "Absteigend (Z bis A)" }
-    };
 
     private TextView smallHeading(String text) {
         TextView t = Ui.label(c, text, 12, Ui.dim(c), true);
@@ -1106,41 +1075,79 @@ final class ToPcScreen implements Screen {
         rb.setTextSize(15);
         rb.setTextColor(Ui.text(c));
         rb.setButtonTintList(android.content.res.ColorStateList.valueOf(Ui.primary(c)));
-        rb.setPadding(Ui.dp(c, 8), Ui.dp(c, 8), 0, Ui.dp(c, 8));
+        rb.setPadding(Ui.dp(c, 8), Ui.dp(c, 6), 0, Ui.dp(c, 6));
         return rb;
     }
 
-    /** Sortieren nach Name, Größe, Datum oder Typ, auf- oder absteigend; jede Änderung gilt sofort und bleibt gespeichert. */
-    private void showSortDialog() {
+    private android.widget.CheckBox check(String text, boolean on) {
+        android.widget.CheckBox cb = new android.widget.CheckBox(c);
+        cb.setText(text);
+        cb.setTextSize(15);
+        cb.setTextColor(Ui.text(c));
+        cb.setButtonTintList(android.content.res.ColorStateList.valueOf(Ui.primary(c)));
+        cb.setPadding(Ui.dp(c, 8), Ui.dp(c, 6), 0, Ui.dp(c, 6));
+        cb.setChecked(on);
+        return cb;
+    }
+
+    private static final int SORT_NONE_ID = 90;
+
+    private static int sortId(SortOrder o) {
+        return o.key == SortOrder.NONE ? SORT_NONE_ID : 100 + o.key * 2 + (o.ascending ? 0 : 1);
+    }
+
+    /**
+     * Ansicht (Liste, Raster, Kompakt), Vorschaugröße, Namen, versteckte Dateien und Sortierung. Jede Änderung gilt sofort
+     * und bleibt gespeichert; Darstellung und Vorschaugröße sind voneinander unabhängig.
+     */
+    private void showViewDialog() {
         final SortOrder start = effectiveOrder();
-        final android.widget.RadioGroup keys = new android.widget.RadioGroup(c);
-        for (int i = 0; i < SortOrder.LABELS.length; i++) {
-            keys.addView(radio(SortOrder.LABELS[i], i + 1));
+        final android.widget.RadioGroup views = new android.widget.RadioGroup(c);
+        views.addView(radio("Liste / Details", 1 + Conn.VIEW_LIST));
+        views.addView(radio("Raster", 1 + Conn.VIEW_GRID));
+        views.addView(radio("Kompakt", 1 + Conn.VIEW_COMPACT));
+        views.check(1 + viewMode);
+        final android.widget.RadioGroup sizes = new android.widget.RadioGroup(c);
+        sizes.addView(radio("Standard-Vorschau", 1));
+        sizes.addView(radio("Große Vorschau", 2));
+        sizes.check(largePreview ? 2 : 1);
+        final android.widget.CheckBox names = check("Dateinamen ausblenden (nur Raster)", hideNames);
+        final android.widget.CheckBox hidden = check("Ausgeblendete Dateien anzeigen", showHidden);
+        final android.widget.RadioGroup sorts = new android.widget.RadioGroup(c);
+        sorts.addView(radio(SortOrder.LABELS[SortOrder.NONE], SORT_NONE_ID));
+        String[] up = { "Aufsteigend", "Absteigend" };
+        for (int k = 0; k < SortOrder.NONE; k++) {
+            for (int d = 0; d < 2; d++) {
+                sorts.addView(radio(SortOrder.LABELS[k] + (d == 0 ? " ▲ – " : " ▼ – ") + up[d], 100 + k * 2 + d));
+            }
         }
-        keys.check(start.key + 1);
-        final android.widget.RadioGroup dirs = new android.widget.RadioGroup(c);
-        final android.widget.RadioButton up = radio(ORDER_TEXT[start.key][0], 11);
-        final android.widget.RadioButton down = radio(ORDER_TEXT[start.key][1], 12);
-        dirs.addView(up);
-        dirs.addView(down);
-        dirs.check(start.ascending ? 11 : 12);
-        final android.widget.CheckBox first = new android.widget.CheckBox(c);
-        first.setText("Ordner zuerst");
-        first.setTextSize(15);
-        first.setTextColor(Ui.text(c));
-        first.setButtonTintList(android.content.res.ColorStateList.valueOf(Ui.primary(c)));
-        first.setPadding(Ui.dp(c, 8), Ui.dp(c, 8), 0, Ui.dp(c, 8));
-        first.setChecked(start.foldersFirst);
+        sorts.check(sortId(start));
+        final android.widget.CheckBox first = check("Ordner zuerst", start.foldersFirst);
         final Runnable apply = new Runnable() {
             @Override
             public void run() {
-                int key = keys.getCheckedRadioButtonId() - 1;
-                up.setText(ORDER_TEXT[key][0]);
-                down.setText(ORDER_TEXT[key][1]);
-                order = new SortOrder(key, dirs.getCheckedRadioButtonId() == 11, first.isChecked());
+                viewMode = views.getCheckedRadioButtonId() - 1;
+                largePreview = sizes.getCheckedRadioButtonId() == 2;
+                hideNames = names.isChecked();
+                Conn.setViewMode(c, viewMode);
+                Conn.setLargePreview(c, largePreview);
+                Conn.setHideNames(c, hideNames);
+                int id = sorts.getCheckedRadioButtonId();
+                int key = id == SORT_NONE_ID ? SortOrder.NONE : (id - 100) / 2;
+                boolean asc = id == SORT_NONE_ID || (id - 100) % 2 == 0;
+                order = new SortOrder(key, asc, first.isChecked());
                 orderChosen = true;
                 Conn.setSortOrder(c, order);
+                boolean hiddenNow = hidden.isChecked();
+                boolean reload = hiddenNow != showHidden;
+                showHidden = hiddenNow;
+                Conn.setShowHidden(c, showHidden);
+                if (reload) {
+                    loadList();
+                    return;
+                }
                 sortEntries(entries);
+                applyMode();
                 render();
             }
         };
@@ -1150,30 +1157,39 @@ final class ToPcScreen implements Screen {
                 apply.run();
             }
         };
-        keys.setOnCheckedChangeListener(l);
-        dirs.setOnCheckedChangeListener(l);
-        first.setOnCheckedChangeListener(new android.widget.CompoundButton.OnCheckedChangeListener() {
+        android.widget.CompoundButton.OnCheckedChangeListener cl = new android.widget.CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(android.widget.CompoundButton b, boolean checked) {
                 apply.run();
             }
-        });
+        };
+        views.setOnCheckedChangeListener(l);
+        sizes.setOnCheckedChangeListener(l);
+        sorts.setOnCheckedChangeListener(l);
+        names.setOnCheckedChangeListener(cl);
+        hidden.setOnCheckedChangeListener(cl);
+        first.setOnCheckedChangeListener(cl);
         LinearLayout v = new LinearLayout(c);
         v.setOrientation(LinearLayout.VERTICAL);
         v.setPadding(Ui.dp(c, 24), 0, Ui.dp(c, 24), 0);
+        v.addView(smallHeading("ANSICHT"));
+        v.addView(views);
+        v.addView(smallHeading("VORSCHAU"));
+        v.addView(sizes);
+        v.addView(names);
+        v.addView(hidden);
         v.addView(smallHeading("SORTIEREN NACH"));
-        v.addView(keys);
-        v.addView(smallHeading("REIHENFOLGE"));
-        v.addView(dirs);
+        v.addView(sorts);
         v.addView(first);
+        android.widget.ScrollView sv = new android.widget.ScrollView(c);
+        sv.addView(v);
         new AlertDialog.Builder(host.activity(), R.style.NolphinDialog)
-                .setTitle("Sortieren")
-                .setView(v)
+                .setTitle("Ansicht und Sortierung")
+                .setView(sv)
                 .setPositiveButton("Fertig", null)
                 .setNeutralButton("Standard", new android.content.DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(android.content.DialogInterface d, int which) {
-                        // zurück zur automatischen Sortierung (Kategorien: neueste zuerst, Ordner: A bis Z)
                         Conn.clearSortOrder(c);
                         orderChosen = false;
                         order = SortOrder.standard();
@@ -1182,6 +1198,111 @@ final class ToPcScreen implements Screen {
                     }
                 })
                 .show();
+    }
+
+    // ---- Menü und Suche -----------------------------------------------------------------------
+
+    private ImageView headButton(int res, String description, View.OnClickListener l) {
+        ImageView b = Ui.icon(c, res, Ui.iconTint(c), 24);
+        b.setPadding(Ui.dp(c, 10), Ui.dp(c, 10), Ui.dp(c, 10), Ui.dp(c, 10));
+        b.setLayoutParams(new LinearLayout.LayoutParams(Ui.dp(c, 44), Ui.dp(c, 44)));
+        b.setContentDescription(description);
+        b.setBackground(Ui.pressable(c));
+        b.setOnClickListener(l);
+        return b;
+    }
+
+    private final List<String> menuNames = new ArrayList<>();
+    private final List<Runnable> menuRuns = new ArrayList<>();
+
+    private void menuItem(String name, Runnable run) {
+        menuNames.add(name);
+        menuRuns.add(run);
+    }
+
+    /** Einträge für das zentrale Menü; hängen vom aktuellen Ort ab. */
+    @Override
+    public String[] menuLabels() {
+        menuNames.clear();
+        menuRuns.clear();
+        if (access) {
+            if (!compact) {
+                menuItem("Suchen", new Runnable() {
+                    @Override
+                    public void run() {
+                        toggleSearch();
+                    }
+                });
+            }
+            if (mode == FOLDER) {
+                menuItem("Neuer Ordner", new Runnable() {
+                    @Override
+                    public void run() {
+                        askNewFolder();
+                    }
+                });
+            }
+            if (mode == FOLDER || mode == CATEGORY) {
+                menuItem("Ansicht und Sortierung", new Runnable() {
+                    @Override
+                    public void run() {
+                        showViewDialog();
+                    }
+                });
+            }
+            if (!compact && dualSwitch != null && Conn.dualAvailable(c)) {
+                menuItem("Zwei Fenster", new Runnable() {
+                    @Override
+                    public void run() {
+                        dualSwitch.setDual(true);
+                    }
+                });
+            }
+        }
+        return menuNames.toArray(new String[0]);
+    }
+
+    @Override
+    public void menuPicked(int index) {
+        if (index >= 0 && index < menuRuns.size()) {
+            menuRuns.get(index).run();
+        }
+    }
+
+    private void showMenu(View anchor) {
+        android.widget.PopupMenu pm = new android.widget.PopupMenu(host.activity(), anchor);
+        String[] names = menuLabels();
+        for (int i = 0; i < names.length; i++) {
+            pm.getMenu().add(0, i, i, names[i]);
+        }
+        pm.setOnMenuItemClickListener(new android.widget.PopupMenu.OnMenuItemClickListener() {
+            @Override
+            public boolean onMenuItemClick(android.view.MenuItem item) {
+                menuPicked(item.getItemId());
+                return true;
+            }
+        });
+        pm.show();
+    }
+
+    private void toggleSearch() {
+        android.view.inputmethod.InputMethodManager imm = (android.view.inputmethod.InputMethodManager)
+                c.getSystemService(Context.INPUT_METHOD_SERVICE);
+        if (searchOpen || !query.isEmpty()) {
+            searchOpen = false;
+            search.setText("");
+            if (imm != null) {
+                imm.hideSoftInputFromWindow(search.getWindowToken(), 0);
+            }
+            render();
+            return;
+        }
+        searchOpen = true;
+        render();
+        search.requestFocus();
+        if (imm != null) {
+            imm.showSoftInput(search, 0);
+        }
     }
 
     private void resetQuery() {
@@ -1317,6 +1438,14 @@ final class ToPcScreen implements Screen {
         return new Entry(f, false, f.length(), f.lastModified(), 0);
     }
 
+    /** Versteckte Dateien (Punkt am Anfang) nur auf Wunsch; der Papierkorb der App bleibt immer verborgen. */
+    private boolean visibleName(String name) {
+        if (name.equals(TrashOps.DIR_NAME)) {
+            return false;
+        }
+        return showHidden || !name.startsWith(".");
+    }
+
     private void loadList() {
         grid.setSelection(0);   // ein neuer Ordner beginnt oben, nicht an der alten Scrollstelle
         final int my = ++gen;
@@ -1356,7 +1485,7 @@ final class ToPcScreen implements Screen {
                         err = "Auf diesen Ordner darf die App nicht zugreifen";
                     } else {
                         for (File f : fs) {
-                            if (!f.getName().startsWith(".")) {
+                            if (visibleName(f.getName())) {
                                 found.add(entryOf(f));
                             }
                         }
@@ -1468,7 +1597,7 @@ final class ToPcScreen implements Screen {
                     }
                     for (File f : fs) {
                         String n = f.getName();
-                        if (n.startsWith(".")) {
+                        if (!visibleName(n)) {
                             continue;
                         }
                         boolean dirF = f.isDirectory();
@@ -2655,20 +2784,16 @@ final class ToPcScreen implements Screen {
             crumbBar.setVisibility(View.GONE);
             selectBar.setVisibility(View.GONE);
             pasteBar.setVisibility(View.GONE);
-            newFolder.setVisibility(View.GONE);
             docChipScroll.setVisibility(View.GONE);
-            sortBtn.setVisibility(View.GONE);
             sortHint.setVisibility(View.GONE);
             sortHintLine.setVisibility(View.GONE);
             storageRow.setVisibility(View.GONE);
             storageLine.setVisibility(View.GONE);
-            toggle.setVisibility(View.GONE);
             back.setVisibility(View.GONE);
             return;
         }
         permCard.setVisibility(View.GONE);
         title.setText(home ? "Zum PC" : mode == APPS ? "Apps" : mode == CATEGORY ? CATS[cat] : folderTitle());
-        toggle.setVisibility(home && !searching ? View.GONE : View.VISIBLE);
         back.setVisibility(home ? View.GONE : View.VISIBLE);
         showCrumbs(sel);
         selectBar.setVisibility(sel ? View.VISIBLE : View.GONE);
@@ -2703,7 +2828,6 @@ final class ToPcScreen implements Screen {
         if (clip != null) {
             pasteText.setText(clip.size() + (clip.size() == 1 ? " Element " : " Elemente ") + (clipMove ? "verschieben" : "kopieren"));
         }
-        newFolder.setVisibility(mode == FOLDER && !searching ? View.VISIBLE : View.GONE);
         boolean showStorage = hasCard() && (mode == CATEGORY || (mode == HOME && searching));
         storageRow.setVisibility(showStorage ? View.VISIBLE : View.GONE);
         storageLine.setVisibility(showStorage ? View.VISIBLE : View.GONE);
@@ -2711,18 +2835,18 @@ final class ToPcScreen implements Screen {
             buildStorageRow();
         }
         boolean listing = mode == FOLDER || mode == CATEGORY;
-        sortBtn.setVisibility(listing ? View.VISIBLE : View.GONE);
-        sortHint.setVisibility(listing ? View.VISIBLE : View.GONE);
-        sortHintLine.setVisibility(listing ? View.VISIBLE : View.GONE);
-        if (listing) {
-            sortHint.setText("Sortiert nach " + effectiveOrder().describe());
-        }
+        sortHint.setVisibility(View.GONE);   // Platz für die Dateien; die Sortierung steht im Menü „Ansicht und Sortierung“
+        sortHintLine.setVisibility(View.GONE);
         boolean chips = mode == CATEGORY && cat == 3;
         docChipScroll.setVisibility(chips ? View.VISIBLE : View.GONE);
         if (chips) {
             buildDocChips();
         }
-        dualBtn.setVisibility(!compact && dualSwitch != null && Conn.dualAvailable(c) ? View.VISIBLE : View.GONE);
+        boolean showSearch = !compact && (searchOpen || searching);
+        searchRow.setVisibility(showSearch ? View.VISIBLE : View.GONE);
+        searchLine.setVisibility(showSearch ? View.VISIBLE : View.GONE);
+        searchBtn.setVisibility(compact ? View.GONE : View.VISIBLE);
+        searchBtn.setColorFilter(showSearch ? Ui.primary(c) : Ui.iconTint(c));
         if (compact) {
             crumbBar.setVisibility(View.GONE);
             crumbLine.setVisibility(View.GONE);
@@ -2730,7 +2854,6 @@ final class ToPcScreen implements Screen {
             searchLine.setVisibility(View.GONE);
             sortHint.setVisibility(View.GONE);
             sortHintLine.setVisibility(View.GONE);
-            toggle.setVisibility(View.GONE);
             title.setText(pathLabel());
             if (selCopy != null) {
                 selCopy.setVisibility(View.GONE);   // kopiert und verschoben wird mit der unteren Leiste
@@ -2936,10 +3059,21 @@ final class ToPcScreen implements Screen {
     }
 
     /** Symbol des Eintrags: Ordner und Dateien einfarbig; Fotos und Videos zeigen ihr Vorschaubild, Apps ihr Symbol. */
+    /** Symbol- oder Vorschaubildgröße in dp für die Liste (Standard / groß) und die Kompaktansicht. */
+    private int rowIcon() {
+        return viewMode == Conn.VIEW_COMPACT ? (largePreview ? 40 : 28) : (largePreview ? 64 : 40);
+    }
+
+    /**
+     * Symbol oder Vorschaubild. In der Rasteransicht ist die Fläche quadratisch und füllt die Kachelbreite; Dateisymbole
+     * bekommen nur einen kleinen Rand, Fotos und Cover füllen alles aus.
+     */
     private ImageView iconOf(Entry e) {
-        final ImageView v = new ImageView(c);
-        v.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
-        v.setPadding(Ui.dp(c, 4), Ui.dp(c, 4), Ui.dp(c, 4), Ui.dp(c, 4));
+        final boolean tile = viewMode == Conn.VIEW_GRID;
+        final int pad = tile ? Ui.dp(c, 6) : Ui.dp(c, 2);
+        final ImageView v = tile ? new SquareImage(c) : new ImageView(c);
+        v.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        v.setPadding(pad, pad, pad, pad);
         if (e.pkg != null) {
             try {
                 v.setImageDrawable(c.getPackageManager().getApplicationIcon(e.pkg));
@@ -2957,15 +3091,16 @@ final class ToPcScreen implements Screen {
                 : x.equals("apk") ? "apk" : null;
         if (kind != null) {
             v.setPadding(0, 0, 0, 0);
-            v.setBackground(Ui.round(c, 0x00000000, 4));
+            v.setBackground(Ui.round(c, 0x00000000, tile ? 8 : 4));
             v.setClipToOutline(true);
             v.setOutlineProvider(ViewOutlineProvider.BACKGROUND);
-            Thumbs.loadFile(c, e.file, kind, 168, v, new Runnable() {
+            int px = Ui.dp(c, tile ? (largePreview ? 170 : 112) : rowIcon());
+            Thumbs.loadFile(c, e.file, kind, Math.max(96, px), v, new Runnable() {
                 @Override
                 public void run() {
                     // kein Vorschaubild (zum Beispiel Audio ohne Albumbild): das Symbol mit Rand zeigen
-                    v.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
-                    v.setPadding(Ui.dp(c, 4), Ui.dp(c, 4), Ui.dp(c, 4), Ui.dp(c, 4));
+                    v.setScaleType(ImageView.ScaleType.FIT_CENTER);
+                    v.setPadding(pad, pad, pad, pad);
                 }
             });
         }
@@ -2988,24 +3123,25 @@ final class ToPcScreen implements Screen {
         return t;
     }
 
-    private View tile(View top, String name, String sub, int subColor, boolean picked) {
+    /** Kachel ohne Rahmen: das Symbol füllt die Breite, darunter der Name (wenn nicht ausgeblendet). */
+    private View tile(View top, String name, boolean picked) {
         LinearLayout t = new LinearLayout(c);
         t.setOrientation(LinearLayout.VERTICAL);
         t.setGravity(Gravity.CENTER_HORIZONTAL);
-        t.setBackground(Ui.outlined(c, picked ? Ui.chip(c) : Ui.surface(c)));
-        t.setPadding(Ui.dp(c, 4), Ui.dp(c, 8), Ui.dp(c, 4), Ui.dp(c, 8));
-        t.setLayoutParams(new AbsListView.LayoutParams(AbsListView.LayoutParams.MATCH_PARENT, Ui.dp(c, 148)));
-        t.addView(top, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, Ui.dp(c, 64)));
-        TextView n = Ui.label(c, name, 13, Ui.text(c), false);
-        n.setMaxLines(2);
-        n.setGravity(Gravity.CENTER);
-        n.setEllipsize(android.text.TextUtils.TruncateAt.MIDDLE);
-        n.setPadding(Ui.dp(c, 2), Ui.dp(c, 4), Ui.dp(c, 2), 0);
-        t.addView(n);
-        TextView s = Ui.label(c, sub, 11, subColor, false);
-        s.setSingleLine(true);
-        s.setEllipsize(android.text.TextUtils.TruncateAt.END);
-        t.addView(s);
+        t.setBackground(picked ? Ui.round(c, Ui.chip(c), 8) : null);
+        t.setPadding(Ui.dp(c, 2), Ui.dp(c, 2), Ui.dp(c, 2), Ui.dp(c, 2));
+        t.setLayoutParams(new AbsListView.LayoutParams(AbsListView.LayoutParams.MATCH_PARENT,
+                AbsListView.LayoutParams.WRAP_CONTENT));
+        t.addView(top, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT));
+        if (!hideNames) {
+            TextView n = Ui.label(c, name, 12, Ui.text(c), false);
+            n.setMaxLines(2);
+            n.setGravity(Gravity.CENTER);
+            n.setEllipsize(android.text.TextUtils.TruncateAt.MIDDLE);
+            n.setPadding(Ui.dp(c, 2), Ui.dp(c, 1), Ui.dp(c, 2), Ui.dp(c, 2));
+            t.addView(n);
+        }
         return picked ? withCheck(t) : t;
     }
 
@@ -3014,10 +3150,10 @@ final class ToPcScreen implements Screen {
         FrameLayout fl = new FrameLayout(c);
         fl.setLayoutParams(t.getLayoutParams());
         fl.addView(t, new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.MATCH_PARENT));
-        LinearLayout b = Ui.badge(c, R.drawable.ic_check, Ui.primary(c), 0xFFFFFFFF, 24);
-        FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(Ui.dp(c, 24), Ui.dp(c, 24), Gravity.TOP | Gravity.END);
-        lp.setMargins(0, Ui.dp(c, 4), Ui.dp(c, 4), 0);
+                FrameLayout.LayoutParams.WRAP_CONTENT));
+        LinearLayout b = Ui.badge(c, R.drawable.ic_check, Ui.primary(c), 0xFFFFFFFF, 22);
+        FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(Ui.dp(c, 22), Ui.dp(c, 22), Gravity.TOP | Gravity.END);
+        lp.setMargins(0, Ui.dp(c, 6), Ui.dp(c, 6), 0);
         fl.addView(b, lp);
         return fl;
     }
@@ -3029,7 +3165,7 @@ final class ToPcScreen implements Screen {
 
     private View entryTile(Entry e) {
         boolean picked = selected.containsKey(e.path());
-        return tile(iconOf(e), nameOf(e), subOf(e), picked ? Ui.primary(c) : Ui.dim(c), picked);
+        return tile(iconOf(e), nameOf(e), picked);
     }
 
     private View entryRow(Entry e) {
@@ -3039,22 +3175,25 @@ final class ToPcScreen implements Screen {
         row.setOrientation(LinearLayout.HORIZONTAL);
         row.setGravity(Gravity.CENTER_VERTICAL);
         row.setBackground(Ui.listRowBg(c, picked));
-        row.setPadding(Ui.dp(c, 14), Ui.dp(c, 4), Ui.dp(c, 4), Ui.dp(c, 4));
-        row.setLayoutParams(new AbsListView.LayoutParams(AbsListView.LayoutParams.MATCH_PARENT, Ui.dp(c, 60)));
+        boolean slim = viewMode == Conn.VIEW_COMPACT;
+        int icon = rowIcon();
+        row.setPadding(Ui.dp(c, 12), Ui.dp(c, 2), Ui.dp(c, 2), Ui.dp(c, 2));
+        row.setLayoutParams(new AbsListView.LayoutParams(AbsListView.LayoutParams.MATCH_PARENT,
+                Ui.dp(c, slim ? (largePreview ? 52 : 40) : (largePreview ? 80 : 52))));
         if (selecting) {
             LinearLayout.LayoutParams cp = new LinearLayout.LayoutParams(Ui.dp(c, 22), Ui.dp(c, 22));
             cp.rightMargin = Ui.dp(c, 14);
             row.addView(checkbox(picked), cp);
         }
-        row.addView(iconOf(e), new LinearLayout.LayoutParams(Ui.dp(c, 36), Ui.dp(c, 36)));
+        row.addView(iconOf(e), new LinearLayout.LayoutParams(Ui.dp(c, icon), Ui.dp(c, icon)));
         LinearLayout text = new LinearLayout(c);
         text.setOrientation(LinearLayout.VERTICAL);
         text.setPadding(Ui.dp(c, 14), 0, Ui.dp(c, 4), 0);
-        TextView n = Ui.label(c, nameOf(e), 15, Ui.text(c), false);
+        TextView n = Ui.label(c, nameOf(e), slim ? 14 : 15, Ui.text(c), false);
         n.setMaxLines(1);
         n.setEllipsize(android.text.TextUtils.TruncateAt.MIDDLE);
         text.addView(n);
-        String sub = e.dir ? subOf(e)
+        String sub = slim ? (e.dir ? subOf(e) : Ui.size(e.size)) : e.dir ? subOf(e)
                 : subOf(e) + " · " + new SimpleDateFormat("dd.MM.yyyy", Locale.GERMANY).format(new Date(e.modified));
         TextView s = Ui.label(c, sub, 12, Ui.dim(c), false);
         s.setSingleLine(true);
@@ -3064,8 +3203,9 @@ final class ToPcScreen implements Screen {
         row.addView(text, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
         if (e.pkg == null && !selecting) {
             ImageView more = Ui.icon(c, R.drawable.ic_more, Ui.dim(c), 24);
-            more.setPadding(Ui.dp(c, 12), Ui.dp(c, 12), Ui.dp(c, 12), Ui.dp(c, 12));
-            more.setLayoutParams(new LinearLayout.LayoutParams(Ui.dp(c, 48), Ui.dp(c, 48)));
+            int mp = slim ? 8 : 12;
+            more.setPadding(Ui.dp(c, mp), Ui.dp(c, mp), Ui.dp(c, mp), Ui.dp(c, mp));
+            more.setLayoutParams(new LinearLayout.LayoutParams(Ui.dp(c, slim ? 40 : 48), Ui.dp(c, slim ? 40 : 48)));
             more.setContentDescription("Funktionen für " + e.file.getName());
             more.setBackground(Ui.pressable(c));
             final Entry en = e;

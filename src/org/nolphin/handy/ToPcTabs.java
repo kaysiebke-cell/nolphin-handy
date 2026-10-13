@@ -65,6 +65,16 @@ final class ToPcTabs implements Screen, ToPcScreen.DualSwitch {
     }
 
     @Override
+    public String[] menuLabels() {
+        return current().menuLabels();
+    }
+
+    @Override
+    public void menuPicked(int index) {
+        current().menuPicked(index);
+    }
+
+    @Override
     public boolean onBack() {
         return current().onBack();
     }

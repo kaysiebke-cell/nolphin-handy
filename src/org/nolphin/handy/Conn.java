@@ -91,6 +91,47 @@ final class Conn {
         prefs(c).edit().putBoolean("tiles", value).apply();
     }
 
+    static final int VIEW_LIST = 0, VIEW_GRID = 1, VIEW_COMPACT = 2;
+
+    /** Darstellung der Dateilisten: Liste, Raster oder Kompakt. Frühere Versionen kannten nur Raster oder Liste. */
+    static int viewMode(Context c) {
+        SharedPreferences p = prefs(c);
+        int m = p.getInt("viewmode", -1);
+        if (m < VIEW_LIST || m > VIEW_COMPACT) {
+            m = p.getBoolean("tiles", true) ? VIEW_GRID : VIEW_LIST;
+        }
+        return m;
+    }
+
+    static void setViewMode(Context c, int mode) {
+        prefs(c).edit().putInt("viewmode", mode).apply();
+    }
+
+    /** Große Vorschau (unabhängig von der Darstellung). */
+    static boolean largePreview(Context c) {
+        return prefs(c).getBoolean("largepreview", false);
+    }
+
+    static void setLargePreview(Context c, boolean on) {
+        prefs(c).edit().putBoolean("largepreview", on).apply();
+    }
+
+    static boolean hideNames(Context c) {
+        return prefs(c).getBoolean("hidenames", false);
+    }
+
+    static void setHideNames(Context c, boolean on) {
+        prefs(c).edit().putBoolean("hidenames", on).apply();
+    }
+
+    static boolean showHidden(Context c) {
+        return prefs(c).getBoolean("showhidden", false);
+    }
+
+    static void setShowHidden(Context c, boolean on) {
+        prefs(c).edit().putBoolean("showhidden", on).apply();
+    }
+
     /** Sortierung der Dateilisten (bleibt gespeichert). */
     static SortOrder sortOrder(Context c) {
         SharedPreferences p = prefs(c);

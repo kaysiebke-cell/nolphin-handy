@@ -97,35 +97,36 @@ public class MainActivity extends Activity implements Host {
         // gerade Unterkante: klare Trennung zwischen Kopfleiste und Inhalt
         top.setBackground(barBg);
         top.setElevation(Ui.dp(this, 3));
-        top.setPadding(Ui.dp(this, 16), 0, Ui.dp(this, 12), 0);
+        top.setPadding(Ui.dp(this, 14), 0, Ui.dp(this, 6), 0);
 
         ImageView logo = new ImageView(this);
         logo.setImageResource(R.mipmap.ic_launcher);
-        top.addView(logo, new LinearLayout.LayoutParams(Ui.dp(this, 40), Ui.dp(this, 40)));
+        top.addView(logo, new LinearLayout.LayoutParams(Ui.dp(this, 32), Ui.dp(this, 36)));
 
         LinearLayout titles = new LinearLayout(this);
         titles.setOrientation(LinearLayout.VERTICAL);
-        titles.setPadding(Ui.dp(this, 12), 0, 0, 0);
-        titles.addView(Ui.label(this, "Nolphin Handy", 18, Color.WHITE, true));
-        subtitle = Ui.label(this, "", 12, 0xDDFFFFFF, false);
+        titles.setPadding(Ui.dp(this, 10), 0, 0, 0);
+        titles.addView(Ui.label(this, "Nolphin Handy", 16, Color.WHITE, true));
+        subtitle = Ui.label(this, "", 11, 0xDDFFFFFF, false);
         subtitle.setSingleLine(true);
         subtitle.setEllipsize(android.text.TextUtils.TruncateAt.END);
         titles.addView(subtitle);
         top.addView(titles, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
 
-        ImageView settings = Ui.icon(this, R.drawable.ic_tune, Color.WHITE, 22);
-        settings.setBackground(Ui.round(this, 0x26FFFFFF, 10));
-        settings.setPadding(Ui.dp(this, 11), Ui.dp(this, 11), Ui.dp(this, 11), Ui.dp(this, 11));
-        settings.setLayoutParams(new LinearLayout.LayoutParams(Ui.dp(this, 44), Ui.dp(this, 44)));
-        settings.setContentDescription("Einstellungen");
-        settings.setOnClickListener(new View.OnClickListener() {
+        // zentrales Menü: Einträge des aktuellen Bildschirms (zum Beispiel Suchen, Neuer Ordner, Ansicht und Sortierung) und Einstellungen
+        ImageView menu = Ui.icon(this, R.drawable.ic_menu, Color.WHITE, 24);
+        menu.setPadding(Ui.dp(this, 10), Ui.dp(this, 10), Ui.dp(this, 10), Ui.dp(this, 10));
+        menu.setLayoutParams(new LinearLayout.LayoutParams(Ui.dp(this, 44), Ui.dp(this, 44)));
+        menu.setBackground(Ui.pressable(this));
+        menu.setContentDescription("Menü");
+        menu.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                show(TAB_SETTINGS);
+                showMainMenu(v);
             }
         });
-        top.addView(settings);
-        root.addView(top, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, Ui.dp(this, 68)));
+        top.addView(menu);
+        root.addView(top, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, Ui.dp(this, 48)));
 
         content = new FrameLayout(this);
         root.addView(content, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1));
@@ -161,6 +162,27 @@ public class MainActivity extends Activity implements Host {
             flags |= View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
         }
         getWindow().getDecorView().setSystemUiVisibility(flags);
+    }
+
+    private void showMainMenu(View anchor) {
+        android.widget.PopupMenu pm = new android.widget.PopupMenu(this, anchor);
+        final String[] own = screens[current].menuLabels();
+        for (int i = 0; i < own.length; i++) {
+            pm.getMenu().add(0, 100 + i, i, own[i]);
+        }
+        pm.getMenu().add(0, 1, own.length, "Einstellungen");
+        pm.setOnMenuItemClickListener(new android.widget.PopupMenu.OnMenuItemClickListener() {
+            @Override
+            public boolean onMenuItemClick(android.view.MenuItem item) {
+                if (item.getItemId() == 1) {
+                    show(TAB_SETTINGS);
+                } else {
+                    screens[current].menuPicked(item.getItemId() - 100);
+                }
+                return true;
+            }
+        });
+        pm.show();
     }
 
     // ---- Host --------------------------------------------------------------------------------
