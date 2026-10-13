@@ -2627,7 +2627,7 @@ final class ToPcScreen implements Screen {
         pendingFile = null;
         String msg = FileUris.afterReturn(pendingEdit, f.isFile(), pendingSize, pendingModified, f.length(), f.lastModified());
         if (msg != null) {
-            Toast.makeText(c, "„" + f.getName() + "“: " + msg, Toast.LENGTH_LONG).show();
+            Toast.makeText(c, msg, Toast.LENGTH_LONG).show();   // ohne Dateinamen: lange Namen schnitten die Meldung ab
         }
     }
 

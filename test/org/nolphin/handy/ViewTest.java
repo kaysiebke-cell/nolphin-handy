@@ -91,9 +91,13 @@ public class ViewTest {
         ok(!FileUris.isAllowed("/etc/passwd", roots), "Systemdateien nicht erlaubt");
 
         // Meldung nach der Rückkehr
-        ok(FileUris.afterReturn(true, true, 10, 100, 12, 200).equals("Die Datei wurde geändert."), "geändert erkannt");
-        ok(FileUris.afterReturn(true, true, 10, 100, 10, 200).equals("Die Datei wurde geändert."), "nur Zeitstempel geändert");
-        ok(FileUris.afterReturn(true, true, 10, 100, 10, 100).startsWith("Die Originaldatei ist unverändert"), "Bearbeiten ohne Änderung: ehrlicher Hinweis");
+        ok(FileUris.afterReturn(true, true, 10, 100, 12, 200).equals("Datei geändert."), "geändert erkannt");
+        ok(FileUris.afterReturn(true, true, 10, 100, 10, 200).equals("Datei geändert."), "nur Zeitstempel geändert");
+        ok(FileUris.afterReturn(true, true, 10, 100, 10, 100).startsWith("Original unverändert"), "Bearbeiten ohne Änderung: ehrlicher Hinweis");
+        for (int i = 0; i < 3; i++) {
+            String m = i == 0 ? FileUris.afterReturn(true, true, 1, 1, 2, 2) : i == 1 ? FileUris.afterReturn(true, true, 1, 1, 1, 1) : FileUris.afterReturn(true, false, 1, 1, 0, 0);
+            ok(m.length() <= 60, "Meldung passt in einen Toast (höchstens 60 Zeichen): " + m);
+        }
         ok(FileUris.afterReturn(false, true, 10, 100, 10, 100) == null, "nur Ansehen ohne Änderung: keine Meldung");
         ok(FileUris.afterReturn(false, false, 10, 100, 0, 0).contains("nicht mehr"), "Datei weg");
         ok(FileUris.afterReturn(true, false, 10, 100, 0, 0).contains("nicht mehr"), "Datei weg beim Bearbeiten");

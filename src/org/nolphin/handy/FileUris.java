@@ -33,14 +33,14 @@ final class FileUris {
      */
     static String afterReturn(boolean edit, boolean exists, long sizeBefore, long modBefore, long sizeAfter, long modAfter) {
         if (!exists) {
-            return "Die Datei liegt nicht mehr am alten Ort.";
+            return "Datei nicht mehr am alten Ort.";
         }
         boolean changed = sizeBefore != sizeAfter || modBefore != modAfter;
         if (changed) {
-            return "Die Datei wurde geändert.";
+            return "Datei geändert.";
         }
         if (edit) {
-            return "Die Originaldatei ist unverändert. Manche Apps speichern eine Kopie an anderer Stelle.";
+            return "Original unverändert. Manche Apps speichern eine Kopie.";
         }
         return null;
     }
