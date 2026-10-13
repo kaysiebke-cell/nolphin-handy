@@ -23,6 +23,9 @@ Stand: Version 4.28 (versionCode 46). Dieser Bericht nennt, was geändert wurde 
 * **Zwei Fenster:** schnelles Symbol in der Leiste von „Zum PC“ (wenn der Modus angeboten wird) und Menüeintrag „Zwei Fenster“, der den Modus bei Bedarf einschaltet. Kleine Fenster: eigenes ☰-Menü; Ansicht, Vorschau, Namen, versteckte Dateien und Sortierung sind je Fenster gespeichert (Einstellungsschlüssel mit @1 und @2); ohne eigenen Wert gilt der des einzelnen Fensters.
 * **Externe Apps:** „Öffnen mit …“ und „Bearbeiten mit …“ über einen eigenen `FilesProvider` (`content://`, nur mit Berechtigung für die eine Datei, nur unter `/storage`, nie `Android/data` oder `Android/obb`). Danach lädt die Liste neu; die App meldet, ob die Datei geändert wurde.
 
+* **Darstellungsgröße:** Die App wird auf allen Handys auf die Bezugsbreite 360 dp gebracht (`UiScale`, in `MainActivity.attachBaseContext`): Auf einem Handy mit 393 dp Breite sind Schrift, Symbole, Zeilen und Abstände damit rund 9 % größer, so wie in den README-Bildern. Schmalere Handys bleiben unverändert, die Obergrenze ist 25 %.
+* **Startseite:** Die Kacheln „Vom PC“ und „Zum PC“ sind gleich hoch; ein langer PC-Name wird auf eine Zeile gekürzt.
+
 ## Speicherung
 
 Alle Wahlen liegen in den App-Einstellungen (`Conn`): `viewmode`, `largepreview`, `hidenames`, `showhidden`, `sortkey`/`sortasc`/`foldersfirst`. Eine frühere Einstellung Kacheln/Liste wird übernommen, wenn noch keine neue gespeichert ist.

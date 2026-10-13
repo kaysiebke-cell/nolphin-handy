@@ -54,6 +54,21 @@ public class MainActivity extends Activity implements Host {
         }
     };
 
+    /**
+     * Skaliert die App einheitlich auf die Bezugsbreite von 360 dp (siehe {@link UiScale}): Auf breiteren Handys wirken
+     * sonst Schrift, Symbole und Abstände kleiner als im Entwurf.
+     */
+    @Override
+    protected void attachBaseContext(android.content.Context base) {
+        android.content.res.Configuration c = new android.content.res.Configuration(base.getResources().getConfiguration());
+        int dpi = UiScale.densityDpi(c.densityDpi, c.smallestScreenWidthDp);
+        if (dpi != c.densityDpi) {
+            c.densityDpi = dpi;
+            base = base.createConfigurationContext(c);
+        }
+        super.attachBaseContext(base);
+    }
+
     @Override
     protected void onCreate(Bundle state) {
         super.onCreate(state);

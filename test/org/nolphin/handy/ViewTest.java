@@ -67,6 +67,18 @@ public class ViewTest {
         SortOrder std = SortOrder.standard();
         ok(ViewModes.sortIndex(std) == 2 + SortOrder.DATE * 2, "Standard im Menü: Datum absteigend");
 
+        // Darstellungsgröße: schmale Handys bleiben, breite werden auf die Bezugsbreite 360 dp gebracht
+        ok(UiScale.factor(320) == 1f && UiScale.factor(360) == 1f, "bis 360 dp unverändert");
+        ok(Math.abs(UiScale.factor(393) - 393 / 360f) < 1e-6, "393 dp: Faktor 393/360");
+        ok(Math.abs(393 / UiScale.factor(393) - 360) < 0.01, "danach ist die Breite 360 dp");
+        ok(UiScale.factor(800) == UiScale.MAX && UiScale.factor(10000) == UiScale.MAX, "Obergrenze");
+        ok(UiScale.densityDpi(440, 393) == 480 && UiScale.densityDpi(420, 360) == 420, "Dichte wird mitgerechnet: " + UiScale.densityDpi(440, 393));
+        for (int w = 200; w <= 1200; w += 7) {
+            float f = UiScale.factor(w);
+            ok(f >= 1f && f <= UiScale.MAX, "Faktor im erlaubten Bereich bei " + w);
+            ok(w <= 360 || w / f <= 360 + 0.01 || f == UiScale.MAX, "Breite nie über der Bezugsbreite, außer an der Obergrenze: " + w);
+        }
+
         // Externe Apps: nur Dateien unterhalb der Speicher, nie private App-Ordner
         List<String> roots = Collections.singletonList("/storage");
         ok(FileUris.isAllowed("/storage/emulated/0/DCIM/foto.jpg", roots), "Foto im Speicher erlaubt");

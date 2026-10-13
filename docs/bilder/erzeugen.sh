@@ -3,7 +3,7 @@
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 TMP="$(mktemp -d)"; trap 'rm -rf "$TMP"' EXIT
-SEITEN="start uebersicht liste sortieren dokumente auswahl einfuegen zweifenster entpacken umbenennen loeschen papierkorb analyse vompc vompcauswahl"
+SEITEN="start uebersicht raster liste sortieren dokumente auswahl einfuegen zweifenster entpacken umbenennen loeschen papierkorb analyse vompc vompcauswahl"
 CHROME="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
 for t in hell dunkel; do
   for s in $SEITEN; do

@@ -88,7 +88,10 @@ final class HomeScreen implements Screen {
             text.addView(Ui.label(c, problem ? "Verbindung gestört" : "Verbunden", 20,
                     problem ? Ui.danger(c) : Ui.text(c), true));
             String name = Conn.pcName(c);
-            text.addView(Ui.label(c, name.isEmpty() ? Conn.host(c) : "PC: " + name, 14, Ui.dim(c), false));
+            TextView pcName = Ui.label(c, name.isEmpty() ? Conn.host(c) : "PC: " + name, 14, Ui.dim(c), false);
+            pcName.setSingleLine(true);   // ein langer Rechnername kürzt sich, statt die Karte umzubrechen
+            pcName.setEllipsize(android.text.TextUtils.TruncateAt.END);
+            text.addView(pcName);
             if (problem) {
                 text.addView(Ui.label(c, st, 13, Ui.danger(c), false));
             } else if (!name.isEmpty()) {
@@ -192,7 +195,7 @@ final class HomeScreen implements Screen {
         tiles.addView(tile(R.drawable.ic_download, "Vom PC", n == 0 ? "Noch nichts da" : n + (n == 1 ? " Datei" : " Dateien"),
                 Host.TAB_FROM_PC, true));
         tiles.addView(tile(R.drawable.ic_upload, "Zum PC", "Fotos und Dateien senden", Host.TAB_TO_PC, false));
-        col.addView(tiles);
+        col.addView(tiles, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
 
         // Zuletzt
         LinearLayout last = Ui.card(c);
@@ -235,7 +238,8 @@ final class HomeScreen implements Screen {
 
     private View tile(int iconRes, String title, String sub, final int tab, boolean left) {
         LinearLayout t = Ui.card(c);
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1);
+        // beide Kacheln gleich hoch (die höhere bestimmt die Höhe), wie im Entwurf
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1);
         lp.bottomMargin = Ui.dp(c, 12);
         if (left) {
             lp.rightMargin = Ui.dp(c, 6);

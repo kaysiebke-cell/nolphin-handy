@@ -3,7 +3,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Bilder für die README (Beispieldaten)</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
-<!-- Quelle der README-Bilder. Aufruf: quelle.html#<seite>-<hell|dunkel>. Seiten: start, uebersicht, liste, auswahl, dokumente, einfuegen, vompc, vompcauswahl, entpacken, umbenennen, loeschen, analyse, papierkorb, sortieren, zweifenster.
+<!-- Quelle der README-Bilder. Aufruf: quelle.html#<seite>-<hell|dunkel>. Seiten: start, uebersicht, raster, liste, auswahl, dokumente, einfuegen, vompc, vompcauswahl, entpacken, umbenennen, loeschen, analyse, papierkorb, sortieren, zweifenster.
      Rendern: google-chrome --headless --screenshot=OUT.png --window-size=360,740 --force-device-scale-factor=2 "file:///…/quelle.html#liste-hell" -->
 <style>
 :root{--font:Roboto,"Noto Sans","DejaVu Sans",system-ui,sans-serif}
@@ -92,6 +92,13 @@ body.dunkel .sheet .bx.on{color:#10200A}
 .pm{display:flex;align-items:center;gap:6px;height:44px;padding:0 6px 0 8px;font-size:14px;color:var(--dm);background:var(--bg);border-bottom:1px solid var(--ln);flex:none}
 .pm .tag{padding:2px 8px;border-radius:10px;border:1px solid var(--ln);font-size:12px;font-weight:500;background:var(--sf)}.pm .tag.on{background:var(--pr);border-color:var(--pr);color:#fff}body.dunkel .pm .tag.on{color:#10200A}
 .pm i{font-size:22px;color:var(--pr);padding:6px}.pm b{color:var(--pr);font-weight:500}.pm .mn{margin-left:auto;color:var(--ic);font-size:24px}
+
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;padding:6px 6px;background:var(--sf);align-content:start}
+.tl{text-align:center;padding:2px}
+.tl .ib{aspect-ratio:1;display:flex;align-items:center;justify-content:center;padding:10px;box-sizing:border-box}
+.tl .ib i{font-size:60px;color:var(--ic);line-height:1}.tl .ib i.fo{color:var(--fo)}
+.tl .ib div{width:100%;height:100%;border-radius:8px}
+.tl .nm{font-size:12px;line-height:1.25;height:30px;overflow:hidden;word-break:break-word}
 </style></head>
 <body><div id="root" style="display:contents"></div>
 <script>
@@ -102,14 +109,16 @@ const nav=a=>`<div class="nav">${[['home','Start'],['download','Vom PC'],['uploa
 const app=`<div class="app"><img src="../../res/mipmap-xxxhdpi/ic_launcher.png" alt=""><div><b>Nolphin Handy</b><small>Verbunden mit Mein-Laptop</small></div><div class="set">${ic('menu-2')}</div></div>`;
 const row=(i,t,s,o={})=>`<div class="r ${o.on?'on':''}">${o.cb!==undefined?`<div class="cb ${o.cb?'on':''}">${o.cb?'✓':''}</div>`:''}<div class="ico ${o.fo?'fo':''} ${o.th?'th':''}">${o.th?`<div style="width:36px;height:36px;background:linear-gradient(135deg,${o.th})"></div>`:ic(i)}</div><div class="x"><div class="t">${t}</div><div class="s">${s}</div></div>${o.more===false?'':`<div class="mo">${ic('dots-vertical')}</div>`}</div>`;
 const F=(t,s,o={})=>row('folder-filled',t,s,{fo:1,...o});
+const T=(i,n,o={})=>`<div class="tl"><div class="ib">${o.th?`<div style="background:linear-gradient(135deg,${o.th})"></div>`:`<i class="ti ti-${i}${o.fo?' fo':''}"></i>`}</div><div class="nm">${n}</div></div>`;
+const TF=n=>T('folder-filled',n,{fo:1});
 let html='';
 if(page==='start'){html=app+`<div class="body"><div class="pad">
-<div class="card"><div class="head"><div class="badge">${ic('device-mobile')}</div><div><h3>Verbunden</h3><p>PC: Mein-Laptop</p></div></div><div class="btn">Verbindung trennen</div></div>
-<div class="two"><div class="mini"><div class="b2">${ic('download')}</div><b>Vom PC</b><small>3 Dateien</small></div><div class="mini"><div class="b2">${ic('upload')}</div><b>Zum PC</b><small>Fotos und Dateien senden</small></div></div>
+<div class="card"><div class="head"><div class="badge">${ic('device-mobile')}</div><div><h3>Verbunden</h3><p>PC: Mein-Laptop</p><p style="font-size:13px;letter-spacing:.06em">192.168.1.20:40000</p></div></div><div class="btn">Verbindung trennen</div></div>
+<div class="two"><div class="mini"><div class="b2">${ic('download')}</div><b>Vom PC</b><small>Noch nichts da</small></div><div class="mini"><div class="b2">${ic('upload')}</div><b>Zum PC</b><small>Fotos und Dateien senden</small></div></div>
 <div class="card recent"><h3 style="font-size:18px;margin-bottom:8px">Zuletzt</h3>
 <div class="r">${ic('upload')}<div class="x"><div class="t">Urlaub_001.jpg</div><div class="s">11:14</div></div></div>
 <div class="r">${ic('download')}<div class="x"><div class="t">Rechnung_Oktober.pdf</div><div class="s">11.10. 20:50</div></div></div>
-<div class="r">${ic('upload')}<div class="x"><div class="t">Notizen.txt</div><div class="s">11.10. 20:37</div></div></div></div>
+<div class="r">${ic('upload')}<div class="x"><div class="t">Notizen.txt</div><div class="s">11.10. 20:37</div></div></div><div class="btn" style="margin-top:6px">Alle anzeigen</div></div>
 </div></div>`+nav(0);}
 if(page==='uebersicht'){html=app+`<div class="body"><div class="pad" style="padding-top:8px">
 <div class="sec">SPEICHER</div><div class="grp"><div class="vol"><div class="vt">${ic('device-mobile')}<div><div style="font-size:16px;font-weight:500">Hauptspeicher</div><div class="s">74 GB von 128 GB belegt</div></div><div class="pc">58 %</div></div><div class="bar"><i style="width:58%"></i></div></div>
@@ -117,6 +126,7 @@ if(page==='uebersicht'){html=app+`<div class="body"><div class="pad" style="padd
 <div class="sec">SCHNELLZUGRIFF</div><div class="grp">${row('download','Downloads','12 Elemente',{more:false})}${row('apps','Apps','1 App',{more:false})}${row('photo','Google Fotos','Fotos und Videos aus der Cloud',{more:false})}${row('cloud','Cloud und andere Apps','Google Drive und Dateien anderer Apps',{more:false})}</div>
 <div class="sec">KATEGORIEN</div><div class="grp">${row('photo','Bilder','120 MB · 83 Dateien',{more:false})}${row('music','Audio','12 GB · 2437 Dateien',{more:false})}${row('file-text','Dokumente','31 MB · 17 Dateien',{more:false})}</div>
 </div></div>`+nav(2);}
+if(page==='raster'){html=app+`<div class="path">${ic('home')}<span>›</span><em>Speicher</em><em>›</em><b>Dokumente</b></div><div class="body"><div class="g4">${TF('Steuer 2025')}${TF('Versicherungen')}${T('photo','Urlaub_001.jpg',{th:'#9CC6E8,#4C79A8'})}${T('photo','Urlaub_002.jpg',{th:'#E8C79C,#A8794C'})}${T('file-type-pdf','Rechnung_Oktober.pdf')}${T('file-text','Brief Finanzamt.docx')}${T('table','Haushalt 2026.xlsx')}${T('photo','Strand.jpg',{th:'#A8D8B0,#4C8E5A'})}${T('file-zip','Sicherung.zip')}${T('box','Zahnrad.step')}${T('music','Lied.mp3')}${T('photo','Garten.jpg',{th:'#C6E0A0,#6C9A3C'})}</div></div>`+nav(2);}
 if(page==='liste'){html=app+`<div class="path">${ic('home')}<span>›</span><em>Speicher</em><em>›</em><b>Dokumente</b></div><div class="body">
 ${F('Steuer 2025','14 Elemente')}${F('Versicherungen','6 Elemente')}${row('file-type-pdf','Rechnung_Oktober.pdf','214 KB · 12.10.2026')}${row('file-text','Brief Finanzamt.docx','48 KB · 10.10.2026')}${row('table','Haushalt 2026.xlsx','96 KB · 03.10.2026')}${row('photo','Urlaub_001.jpg','3,2 MB · 01.10.2026',{th:'#8DB6D9,#3E6B8E'})}${row('file-zip','Sicherung.zip','128 MB · 28.09.2026')}${row('box','Zahnrad.step','201 KB · 11.10.2026')}</div>`+nav(2);}
 if(page==='auswahl'){html=app+`<div class="sel">${ic('x')}<span>3 gewählt</span>${ic('upload')}${ic('copy')}${ic('arrows-move')}${ic('trash')}${ic('dots-vertical')}</div><div class="search">${ic('search')}Auf dem Handy suchen${ic('x')}</div><div class="body">
@@ -141,7 +151,7 @@ if(page==='papierkorb'){const cr=(i,t,s,on,fo)=>`<div class="r ${on?'on':''}"><d
 html=app+`<div class="top">${ic('arrow-left')}<span>Papierkorb</span>${ic('dots-vertical')}</div><div class="body"><div class="pad" style="gap:10px;padding:12px 16px"><div class="note"><b>12 Elemente · 340 MB.</b> Gelöschtes bleibt 30 Tage hier und belegt weiter Platz. Das gilt nur für Löschen in dieser App.</div><div class="grp">${cr('file-type-pdf','Rechnung_Oktober.pdf','Documents · 214 KB · vor 2 Tagen',1)}${cr('photo','Urlaub_007.jpg','Kamera · 3,1 MB · vor 5 Tagen',1)}${cr('folder-filled','Alte Fotos','Pictures · 41 Dateien · vor 9 Tagen',0,1)}${cr('file-text','Notizen.txt','Download · 8 KB · vor 21 Tagen',0)}</div></div></div><div class="paste"><span>2 gewählt</span><div class="bt">Löschen</div><div class="bt f">Zurück</div></div>`+nav(2);}
 
 if(page==='sortieren'){const rd=(on)=>`<div class="rd ${on?'on':''}"></div>`;
-html=app+`<div class="path">${ic('home')}<span>›</span><em>Speicher</em><span style="margin-left:8px">›</span><b>Dokumente</b></div><div class="body">${F('Steuer 2025','14 Elemente')}${row('file-type-pdf','Rechnung_Oktober.pdf','214 KB · 12.10.2026')}${row('file-text','Brief Finanzamt.docx','48 KB · 10.10.2026')}</div>`+`<div class="dlgwrap" style="align-items:flex-end"><div class="sheet" style="position:static;width:100%"><div class="sh2">Ansicht</div><div class="ch"><div>${rd(0)}${ic('menu-2')}</div><div>${rd(1)}${ic('layout-grid')}</div><div>${rd(0)}${ic('list-details')}</div></div><div class="ch"><div>${rd(1)}${ic('photo')}</div><div>${rd(0)}${ic('photo-filled')}</div><div></div></div><div class="sh2">Sortieren</div><div class="sr">Datum ▼</div><div class="sh2">Sonstiges</div><div class="cr"><span>Ordner zuerst</span><div class="bx on">✓</div></div><div class="cr"><span>Dateinamen ausblenden (nur Raster)</span><div class="bx"></div></div><div class="cr"><span>Ausgeblendete Dateien anzeigen</span><div class="bx"></div></div><div class="rs">Auf Standard zurücksetzen</div></div></div>`;}
+html=app+`<div class="path">${ic('home')}<span>›</span><em>Speicher</em><span style="margin-left:8px">›</span><b>Dokumente</b></div><div class="body"><div class="g4">${TF('Steuer 2025')}${TF('Versicherungen')}${T('photo','Urlaub_001.jpg',{th:'#9CC6E8,#4C79A8'})}${T('file-type-pdf','Rechnung.pdf')}</div></div>`+`<div class="dlgwrap" style="align-items:flex-end"><div class="sheet" style="position:static;width:100%"><div class="sh2">Ansicht</div><div class="ch"><div>${rd(0)}${ic('menu-2')}</div><div>${rd(1)}${ic('layout-grid')}</div><div>${rd(0)}${ic('list-details')}</div></div><div class="ch"><div>${rd(1)}${ic('photo')}</div><div>${rd(0)}${ic('photo-filled')}</div><div></div></div><div class="sh2">Sortieren</div><div class="sr">Datum ▼</div><div class="sh2">Sonstiges</div><div class="cr"><span>Ordner zuerst</span><div class="bx on">✓</div></div><div class="cr"><span>Dateinamen ausblenden (nur Raster)</span><div class="bx"></div></div><div class="cr"><span>Ausgeblendete Dateien anzeigen</span><div class="bx"></div></div><div class="rs">Auf Standard zurücksetzen</div></div></div>`;}
 if(page==='zweifenster'){html=app+`<div class="body" style="display:flex;flex-direction:column;background:var(--sf)"><div class="pane"><div class="pm"><span class="tag on">Fenster 1</span>${ic('home')}<span>›</span><span>Hauptspeicher</span><span>›</span><b>Download</b>${ic('menu-2').replace('<i ','<i style="margin-left:auto" ')}</div>${row('photo','Urlaub_001.jpg','3,1 MB',{cb:1,on:1,more:false})}${row('photo','Urlaub_002.jpg','2,8 MB',{cb:1,on:1,more:false})}${row('file-type-pdf','Rechnung.pdf','214 KB',{cb:0,more:false})}</div><div class="pane"><div class="pm"><span class="tag">Fenster 2</span>${ic('home')}<span>›</span><span>SD-Karte</span><span>›</span><b>Fotos</b>${ic('menu-2').replace('<i ','<i style="margin-left:auto" ')}</div>${F('2025','48 Elemente',{more:false})}${F('2026','12 Elemente',{more:false})}${row('photo','Titel.jpg','1,2 MB',{more:false})}</div></div>`+nav(2);}
 document.getElementById('root').outerHTML=html;
 </script></body></html>

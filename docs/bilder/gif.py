@@ -6,7 +6,8 @@ from PIL import Image, ImageDraw, ImageFont
 FOLGE = [
     ("start", "Start", "Verbunden mit dem PC, zuletzt gesendet"),
     ("uebersicht", "Übersicht", "Speicher, Schnellzugriff, Kategorien, Suche"),
-    ("liste", "Ordner und Dateien", "Vorschaubilder, Symbole, Ordner zuerst"),
+    ("raster", "Ordner und Dateien", "Raster mit großen Symbolen und Vorschaubildern"),
+    ("liste", "Listenansicht", "Symbole, Namen, Größe und Datum"),
     ("sortieren", "Ansicht und Sortierung", "Liste, Raster, Kompakt, Vorschau, Sortierung"),
     ("dokumente", "Dokumente", "Reiter und Schalter Intern / SD-Karte"),
     ("auswahl", "Mehrfachauswahl", "Senden, Kopieren, Verschieben, Löschen"),
