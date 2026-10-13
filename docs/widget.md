@@ -33,11 +33,12 @@ Geändert: `SyncService.java` (Zustandsmarken, Aktualisierungsaufrufe, Schutz vo
 
 * `./build.sh`: APK gebaut.
 * `./test.sh`: alle Prüfungen bestanden, darunter 38 neue zu den Widget-Regeln (Zustand, veraltete Übertragung, Prozent, Dateizeilen, Doppelstarts).
+* **Am Handy mit verbundenem PC (13.10.2026, Xiaomi, dunkel):** Das erweiterte Widget zeigt „Verbunden“ mit PC-Namen, „Bereit am PC (n)“ mit Größen und „Laden“; „Laden“ löst den echten Download aus (57,2 MB in unter 2 Sekunden fertig; 1,46 GB mit Übertragungskarte, Prozent, Balken und Menge, die live wuchs: 2 %, 17 %, 22 %, 59 %); „Alle anzeigen“ öffnet „Vom PC“; nach einem Neuinstallieren zeigt es ehrlich „Nicht aktiv“ und nach „Verbinden“ wieder „Verbunden“; **Abbrechen** stoppte den Download (Karte verschwindet, es bleibt keine halbe Datei, die Zieldatei wurde nicht vollständig). Die erste Version von „Abbrechen“ war nur Text und traf mein Tippen nicht; sie ist jetzt ein echter Knopf.
 * Am Handy (Xiaomi, dunkel): Widget erscheint in der Widget-Auswahl (4×2), lässt sich hinzufügen, zeigt „Nicht verbunden“ mit „QR-Code scannen“ und „Öffnen“, zeigt in großer Darstellung den letzten Verlaufseintrag, und „QR-Code scannen“ öffnet den Scanner der App.
 
 ## Nicht geprüft
 
-* **Alle Zustände mit PC-Verbindung:** Verbunden, Verbindung gestört, Dateien vom PC mit „Laden“, Fortschritt, Abbrechen, Senden und Trennen am Handy. Dafür braucht es einen verbundenen PC; ohne ihn lassen sie sich nicht ehrlich zeigen.
+* **Nicht am Handy gesehen:** „Verbindung gestört“, Senden mit Fortschritt (Upload), Trennen, „Dateien senden“ bis zum Ende und das kompakte Widget im Zustand „Verbunden“ (es ist nicht auf dem Startbildschirm). Der Abbruch wurde am Handy nur über seine Wirkung gesehen (Karte weg, keine zweite Datei), nicht über den Verlaufseintrag.
 * Verhalten nach hartem Beenden des Prozesses bei laufender Übertragung am Handy; Entfernen des Widgets; hell.
 * Fehlende Berechtigungen und Netzwerkfehler am Handy.
 * Das erweiterte Widget als eigener Eintrag auf dem Startbildschirm (auf der gerade offenen Seite war kein Platz mehr, deshalb habe ich es dort nicht hinzugefügt); gesehen habe ich beide Layouts nur über das vergrößerte erste Widget. Andere Launcher als der von Xiaomi.
