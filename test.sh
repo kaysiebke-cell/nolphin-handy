@@ -29,11 +29,14 @@ CONFIG_DIR="$ROOT/build"
 [ -f "$CONFIG_DIR/config.h" ] || CONFIG_DIR="$ROOT"
 gcc -I"$ROOT/src" -I"$CONFIG_DIR" $(pkg-config --cflags glib-2.0) "$TMP/drv.c" "$ROOT/src/nolphin-qr.c" \
     -o "$TMP/drv" $(pkg-config --libs glib-2.0)
-javac --release 11 -d "$TMP/classes" "$HERE/src/org/nolphin/handy/QrDecoder.java" "$HERE/src/org/nolphin/handy/Link.java" \
+# RemoteFile verweist auf android.net.Uri (nur in einer Methode, die die Tests nicht aufrufen): android.jar nur zum Übersetzen
+SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-$HOME/Android/Sdk}}"
+AJAR="$(ls -d "$SDK"/platforms/android-[0-9][0-9]/android.jar 2>/dev/null | sort -V | tail -1 || true)"
+javac --release 11 ${AJAR:+-cp "$AJAR"} -d "$TMP/classes" "$HERE/src/org/nolphin/handy/QrDecoder.java" "$HERE/src/org/nolphin/handy/Link.java" \
     "$HERE/src/org/nolphin/handy/FileOps.java" "$HERE/test/org/nolphin/handy/QrDecoderTest.java" \
     "$HERE/test/org/nolphin/handy/LinkTest.java" "$HERE/test/org/nolphin/handy/FileOpsTest.java" \
     "$HERE/src/org/nolphin/handy/SortOrder.java" "$HERE/src/org/nolphin/handy/PlaceLists.java" "$HERE/test/org/nolphin/handy/SortTest.java" \
-    "$HERE/src/org/nolphin/handy/UiScale.java" "$HERE/src/org/nolphin/handy/ViewModes.java" "$HERE/src/org/nolphin/handy/FileUris.java" "$HERE/test/org/nolphin/handy/ViewTest.java" \
+    "$HERE/src/org/nolphin/handy/WidgetModel.java" "$HERE/src/org/nolphin/handy/FetchGuard.java" "$HERE/src/org/nolphin/handy/RemoteFile.java" "$HERE/test/org/nolphin/handy/WidgetTest.java" "$HERE/src/org/nolphin/handy/UiScale.java" "$HERE/src/org/nolphin/handy/ViewModes.java" "$HERE/src/org/nolphin/handy/FileUris.java" "$HERE/test/org/nolphin/handy/ViewTest.java" \
     "$HERE/src/org/nolphin/handy/ZipOps.java" "$HERE/src/org/nolphin/handy/BatchRename.java" "$HERE/test/org/nolphin/handy/ZipBatchTest.java" \
     "$HERE/src/org/nolphin/handy/StorageScan.java" "$HERE/test/org/nolphin/handy/StorageScanTest.java" \
     "$HERE/src/org/nolphin/handy/TrashOps.java" "$HERE/test/org/nolphin/handy/TrashTest.java" \
@@ -43,6 +46,7 @@ java -cp "$TMP/classes" org.nolphin.handy.LinkTest
 java -cp "$TMP/classes" org.nolphin.handy.FileOpsTest
 java -cp "$TMP/classes" org.nolphin.handy.SortTest
 java -cp "$TMP/classes" org.nolphin.handy.ViewTest
+java -cp "$TMP/classes" org.nolphin.handy.WidgetTest
 java -cp "$TMP/classes" org.nolphin.handy.ZipBatchTest
 java -cp "$TMP/classes" org.nolphin.handy.StorageScanTest
 java -cp "$TMP/classes" org.nolphin.handy.TrashTest

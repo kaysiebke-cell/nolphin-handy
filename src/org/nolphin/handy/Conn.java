@@ -36,12 +36,14 @@ final class Conn {
 
     static void clear(Context c) {
         prefs(c).edit().remove("host").remove("token").remove("pin").apply();
+        NolphinWidget.refresh(c);
     }
 
     /** Speichert eine geprüfte Verbindung (siehe Connector). Ein neuer Schlüssel gilt ab sofort. */
     static void save(Context c, Link link, String pcName) {
         prefs(c).edit().putString("host", link.authority()).putString("token", link.token).putString("pin", link.fingerprint)
                 .putLong("expires", link.expires).putString("pcname", pcName == null ? "" : pcName).apply();
+        NolphinWidget.refresh(c);
     }
 
     /** Name des PCs (aus /info), leer wenn unbekannt. */

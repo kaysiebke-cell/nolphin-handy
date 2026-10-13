@@ -82,6 +82,16 @@
 
         <receiver android:name=".Updater$Result" android:exported="false" />
 
+        <!-- Startbildschirm-Widget (exportiert, damit das System es aktualisieren kann; es nimmt nur Systemaktualisierungen an) -->
+        <receiver android:name=".NolphinWidget" android:exported="true" android:label="Nolphin Handy">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_info" />
+        </receiver>
+        <!-- Schaltflächen des Widgets, die den Dienst steuern: nicht exportiert -->
+        <receiver android:name=".WidgetActions" android:exported="false" />
+
         <!-- gibt einzelne Dateien an andere Apps heraus (Öffnen mit, Bearbeiten mit); nur mit ausdrücklicher Berechtigung -->
         <provider
             android:name=".FilesProvider"

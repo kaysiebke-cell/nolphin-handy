@@ -444,6 +444,19 @@ public class MainActivity extends Activity implements Host {
     static final String ACTION_SCAN = "org.nolphin.handy.action.SCAN";
 
     private void handleIntent(Intent intent) {
+        String act = intent != null ? intent.getAction() : null;
+        if (NolphinWidget.ACTION_PICK.equals(act) || NolphinWidget.ACTION_FROM_PC.equals(act)) {
+            intent.setAction(Intent.ACTION_MAIN);   // vom Widget: nicht bei jedem Zurückkehren erneut öffnen
+            if (!Conn.connected(this)) {
+                Toast.makeText(this, "Zuerst mit dem PC verbinden", Toast.LENGTH_LONG).show();
+                show(TAB_HOME);
+            } else if (NolphinWidget.ACTION_PICK.equals(act)) {
+                pickFiles();   // Dateiauswahl, danach der vorhandene Versand über den Dienst
+            } else {
+                show(TAB_FROM_PC);
+            }
+            return;
+        }
         if (intent != null && ACTION_SCAN.equals(intent.getAction())) {
             intent.setAction(Intent.ACTION_MAIN);   // nicht bei jedem Zurückkehren erneut scannen
             scan();

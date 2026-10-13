@@ -57,6 +57,11 @@ public class SyncService extends Service {
     static volatile long transferDone, transferTotal;
     /** Dateien im Ordner „Handy“ am PC (zuletzt von /wait gemeldet). */
     static volatile RemoteFile[] files = new RemoteFile[0];
+    /** Läuft der Dienst in diesem Prozess? Das Widget zeigt „verbunden“ nur, solange das stimmt. */
+    static volatile boolean running;
+    /** Wann sich der Zustand zuletzt geändert hat (für das Widget: veraltete Übertragungen nicht anzeigen). */
+    static volatile long stateTime;
+    private static final FetchGuard GUARD = new FetchGuard(3000);
     /** Wird gesetzt, wenn der Nutzer die laufende Übertragung abbricht. */
     private static volatile boolean cancelRequested;
     private static final ArrayDeque<String> events = new ArrayDeque<>();
@@ -97,10 +102,14 @@ public class SyncService extends Service {
         if (ACTION_STOP.equals(action)) {
             stop = true;
             status = "Nicht verbunden";
+            running = false;
+            touch();
             stopForeground(STOP_FOREGROUND_REMOVE);
             stopSelf();
             return START_NOT_STICKY;
         }
+        running = true;
+        touch();
         startForeground(ID_STATE, stateNotification(status), ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC);
         if (action == null && worker != null && worker.isAlive()) {
             // Die App wurde (neu) verbunden: die alte Wartezeit mit dem alten Schlüssel sofort beenden
@@ -118,20 +127,29 @@ public class SyncService extends Service {
             final String name = intent.getStringExtra("name");
             final long size = intent.getLongExtra("size", -1);
             final String dir = intent.getStringExtra("dir");
-            new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    fetchOne(dir == null ? "" : dir, name, size);
-                }
-            }, "nolphin-fetch").start();
+            final String fkey = new RemoteFile(dir == null ? "" : dir, name == null ? "" : name, size).key();
+            if (name != null && GUARD.beginFetch(fkey)) {   // dieselbe Datei wird nicht doppelt geladen
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            fetchOne(dir == null ? "" : dir, name, size);
+                        } finally {
+                            GUARD.endFetch(fkey);
+                        }
+                    }
+                }, "nolphin-fetch").start();
+            }
         } else if (ACTION_UPLOAD.equals(action) && intent != null) {
             final Intent in = intent;
-            new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    upload(jobsOf(in));
-                }
-            }, "nolphin-upload").start();
+            if (GUARD.beginUpload(uploadKey(in), System.currentTimeMillis())) {   // doppelt ausgelöst: ignorieren
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        upload(jobsOf(in));
+                    }
+                }, "nolphin-upload").start();
+            }
         }
         if (worker == null || !worker.isAlive()) {
             stop = false;
@@ -149,7 +167,33 @@ public class SyncService extends Service {
     @Override
     public void onDestroy() {
         stop = true;
+        running = false;
+        touch();
         super.onDestroy();
+    }
+
+    /** Merkt die Änderung und aktualisiert das Widget (ohne Netzwerk, nur aus dem vorhandenen Zustand). */
+    private void touch() {
+        stateTime = System.currentTimeMillis();
+        NolphinWidget.refresh(getApplicationContext());
+    }
+
+    /** Kennung eines Uploads (Adressen und Pfade), um doppelt ausgelöste zu erkennen. */
+    private static String uploadKey(Intent in) {
+        StringBuilder b = new StringBuilder();
+        ClipData clip = in.getClipData();
+        if (clip != null) {
+            for (int i = 0; i < clip.getItemCount(); i++) {
+                b.append(clip.getItemAt(i).getUri()).append('|');
+            }
+        }
+        String[] paths = in.getStringArrayExtra("paths");
+        if (paths != null) {
+            for (String p : paths) {
+                b.append(p).append('|');
+            }
+        }
+        return b.toString();
     }
 
     // ---- Benachrichtigungen -------------------------------------------------------------
@@ -192,7 +236,13 @@ public class SyncService extends Service {
         transferTotal = total;
         transfer = verb + " " + name + (total > 0 ? ": " + (done * 100 / total) + " %" : "");
         getSystemService(NotificationManager.class).notify(ID_STATE, stateNotification(status));
+        if (now - lastWidget >= 1000 || done >= total) {   // das Widget höchstens einmal pro Sekunde
+            lastWidget = now;
+            touch();
+        }
     }
+
+    private long lastWidget;
 
     private void endTransfer() {
         transfer = "";
@@ -201,12 +251,14 @@ public class SyncService extends Service {
         transferTotal = 0;
         cancelRequested = false;
         getSystemService(NotificationManager.class).notify(ID_STATE, stateNotification(status));
+        touch();
     }
 
     private void setStatus(String text) {
         if (!text.equals(status)) {
             status = text;
             getSystemService(NotificationManager.class).notify(ID_STATE, stateNotification(text));
+            touch();
         }
     }
 
@@ -287,6 +339,7 @@ public class SyncService extends Service {
             list[i] = new RemoteFile(f.getString("n"), f.getLong("s"));
         }
         SyncService.files = list;
+        touch();
         for (int i = 0; i < files.length() && !stop; i++) {
             JSONObject f = files.getJSONObject(i);
             String name = f.getString("n");

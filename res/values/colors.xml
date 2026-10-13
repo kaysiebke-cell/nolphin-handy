@@ -8,4 +8,12 @@
     <color name="dialog_text">#1C211A</color>
     <color name="dialog_text2">#566052</color>
     <color name="dialog_accent">#3F8A21</color>
+    <color name="widget_bg">#F4F6F2</color>
+    <color name="widget_card">#FFFFFF</color>
+    <color name="widget_text">#1C211A</color>
+    <color name="widget_dim">#566052</color>
+    <color name="widget_acc">#3F8A21</color>
+    <color name="widget_line">#D9DDD5</color>
+    <color name="widget_onacc">#FFFFFF</color>
+    <color name="widget_err">#C9302C</color>
 </resources>

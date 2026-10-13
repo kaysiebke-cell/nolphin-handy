@@ -48,6 +48,7 @@ final class Store {
             prefs(c).edit().putString("history", out.toString()).apply();
         } catch (Exception ignored) {
         }
+        NolphinWidget.refresh(c);
     }
 
     /** Neueste zuerst. */

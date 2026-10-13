@@ -7,4 +7,12 @@
     <color name="dialog_text">#F2F5EE</color>
     <color name="dialog_text2">#B9C4B2</color>
     <color name="dialog_accent">#7ED648</color>
+    <color name="widget_bg">#1F211D</color>
+    <color name="widget_card">#272A25</color>
+    <color name="widget_text">#F2F5EE</color>
+    <color name="widget_dim">#B9C4B2</color>
+    <color name="widget_acc">#7ED648</color>
+    <color name="widget_line">#33382F</color>
+    <color name="widget_onacc">#10200A</color>
+    <color name="widget_err">#F0716D</color>
 </resources>
