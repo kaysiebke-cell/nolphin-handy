@@ -1160,6 +1160,10 @@ final class ToPcScreen implements Screen {
             });
             row.addView(cell, new LinearLayout.LayoutParams(0, Ui.dp(c, 56), 1));
         }
+        // fehlende Plätze auffüllen, damit die Knöpfe jeder Reihe unter denen der Reihe darüber stehen (immer 3 Spalten)
+        for (int k = icons.length; k < 3; k++) {
+            row.addView(new View(c), new LinearLayout.LayoutParams(0, Ui.dp(c, 56), 1));
+        }
         return row;
     }
 
@@ -1243,7 +1247,7 @@ final class ToPcScreen implements Screen {
                 saveOrder(new SortOrder(o.key, o.ascending, on));
             }
         }));
-        v.addView(checkRow("Dateinamen ausblenden (nur Raster)", hideNames, new android.widget.CompoundButton.OnCheckedChangeListener() {
+        v.addView(checkRow("Namen im Raster ausblenden", hideNames, new android.widget.CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(android.widget.CompoundButton b, boolean on) {
                 hideNames = on;
