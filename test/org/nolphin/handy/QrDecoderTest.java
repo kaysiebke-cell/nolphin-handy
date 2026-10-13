@@ -273,7 +273,7 @@ public class QrDecoderTest {
         }
         // Große Fotos (Kamera-App, 12 Megapixel und mehr): große Module, nur mit Verkleinerung lesbar
         {
-            String text = "https://192.168.1.10:40000/?t=0123456789abcdef0123456789abcdef&v=2&f=QULDtffIw8Ed6DmETVJ7zA";
+            String text = "nolphin://192.168.1.10:40000/?t=0123456789abcdef0123456789abcdef&v=2&f=QULDtffIw8Ed6DmETVJ7zA";
             boolean[][] m = matrix(driver, text);
             int[][] sizes = { { 4000, 3000 }, { 3264, 2448 }, { 2560, 1920 } };
             double[] scalesBig = { 26, 18, 14 };
@@ -297,7 +297,7 @@ public class QrDecoderTest {
         // Starke Schräglage (Handy schräg vor dem Bildschirm), Mauszeiger auf dem Code, Schatten, Rauschen, Unschärfe:
         // genau die Fälle, in denen die Ausrichtungsmarke weit neben der aus den Ecken errechneten Stelle liegt.
         {
-            String text = "https://192.168.1.10:40000/?t=0123456789abcdef0123456789abcdef&v=2&f=QULDtffIw8Ed6DmETVJ7zA";
+            String text = "nolphin://192.168.1.10:40000/?t=0123456789abcdef0123456789abcdef&v=2&f=QULDtffIw8Ed6DmETVJ7zA";
             boolean[][] m = matrix(driver, text);
             double[][][] quads = {
                 { { 120, 60 }, { 430, 80 }, { 420, 400 }, { 100, 420 } },    // leicht
@@ -347,7 +347,7 @@ public class QrDecoderTest {
             }
             runs++;
             String got = QrDecoder.decode(g, W, H);
-            if (got == null || !got.startsWith("https://192.168.1.10:40000/?t=") || !got.contains("&v=2&f=")) {
+            if (got == null || !got.startsWith("nolphin://192.168.1.10:40000/?t=") || !got.contains("&v=2&f=")) {
                 fails++;
                 System.out.println("FAIL: Screenshot -> " + got);
             } else {
@@ -368,7 +368,7 @@ public class QrDecoderTest {
             }
             runs++;
             String got = QrDecoder.decode(g, W, H);
-            if (!"https://192.168.1.10:40000/?t=0123456789abcdef0123456789abcdef&v=2&f=QULDtffIw8Ed6DmETVJ7zA".equals(got)) {
+            if (!"nolphin://192.168.1.10:40000/?t=0123456789abcdef0123456789abcdef&v=2&f=QULDtffIw8Ed6DmETVJ7zA".equals(got)) {
                 fails++;
                 System.out.println("FAIL: verwischtes Testbild -> " + got);
             } else {

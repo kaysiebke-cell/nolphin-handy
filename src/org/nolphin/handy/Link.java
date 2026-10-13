@@ -7,8 +7,8 @@ import java.util.Map;
 import java.util.regex.Pattern;
 
 /**
- * Verbindungslink von Nolphin, Format Version 2 (verschlüsselt). Im QR-Code steht die erste Form, damit die
- * Kamera des Handys die App direkt öffnet; die anderen werden ebenfalls verstanden:
+ * Verbindungslink von Nolphin, Format Version 2 (verschlüsselt). Im QR-Code steht die erste Form (kein Browser soll
+ * den Link öffnen); die App liest sie mit ihrem eigenen Scanner. Die anderen Formen werden ebenfalls verstanden:
  *   nolphin://HOST:PORT/?t=SCHLÜSSEL&v=2&f=FINGERABDRUCK
  *   https://HOST:PORT/?t=SCHLÜSSEL&v=2&f=FINGERABDRUCK
  *   nolphin://connect?host=HOST:PORT&t=SCHLÜSSEL&v=2&f=FINGERABDRUCK
