@@ -27,6 +27,21 @@ final class WidgetModel {
     /** Größtes Alter in Millisekunden, bis eine Übertragung als „nicht mehr aktuell“ gilt. */
     static final long TRANSFER_FRESH_MS = 20_000;
 
+    /** Ein Eintrag aus dem Verlauf, schon für die Anzeige aufbereitet. */
+    static final class Hist {
+        final String name;
+        final boolean down;
+        final boolean ok;
+        final String when;
+
+        Hist(String name, boolean down, boolean ok, String when) {
+            this.name = name;
+            this.down = down;
+            this.ok = ok;
+            this.when = when;
+        }
+    }
+
     static final class Input {
         boolean saved;            // Verbindungsdaten vorhanden (Conn.connected)
         boolean running;          // Synchronisationsdienst läuft in diesem Prozess
@@ -39,7 +54,7 @@ final class WidgetModel {
         long stateTime;           // wann der Dienst den Zustand zuletzt geändert hat
         long now;
         List<RemoteFile> files = new ArrayList<>();
-        String lastLine = "";     // letzter Eintrag aus dem Verlauf, schon formatiert
+        List<Hist> history = new ArrayList<>();   // neueste zuerst
     }
 
     static boolean isErrorStatus(String status) {
@@ -145,6 +160,33 @@ final class WidgetModel {
             out.add(f);
         }
         return out;
+    }
+
+    /**
+     * Wie im Entwurf: Stehen Dateien vom PC bereit, zeigt das erweiterte Widget sie (auch während einer Übertragung);
+     * sonst die letzten Einträge aus dem Verlauf unter „Zuletzt“.
+     */
+    static boolean showFiles(Input in, int rows) {
+        return !shownFiles(in, rows).isEmpty();
+    }
+
+    static List<Hist> shownHistory(Input in, int rows) {
+        List<Hist> out = new ArrayList<>();
+        if (showFiles(in, rows)) {
+            return out;
+        }
+        for (Hist h : in.history) {
+            if (out.size() >= rows) {
+                break;
+            }
+            out.add(h);
+        }
+        return out;
+    }
+
+    /** Überschrift über der Liste: „Bereit am PC (n)“ oder „Zuletzt“. */
+    static String sectionTitle(Input in, int rows) {
+        return showFiles(in, rows) ? "Bereit am PC (" + in.files.size() + ")" : "Zuletzt";
     }
 
     /** Anzahl weiterer Dateien, die nicht im Widget stehen (für „Alle anzeigen (n)“). */

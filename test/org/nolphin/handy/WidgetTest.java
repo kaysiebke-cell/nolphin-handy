@@ -83,6 +83,25 @@ public class WidgetTest {
         WidgetModel.Input none = in(true, true, "ok");
         ok(WidgetModel.shownFiles(none, 3).isEmpty() && WidgetModel.hiddenFiles(none, 3) == 0, "keine Dateien");
 
+        // Verlauf unter "Zuletzt", wenn keine Dateien bereit sind; Dateien haben Vorrang
+        WidgetModel.Input hv = in(true, true, "ok");
+        for (int i = 0; i < 4; i++) {
+            hv.history.add(new WidgetModel.Hist("Eintrag" + i + ".txt", i % 2 == 0, true, "11:1" + i));
+        }
+        ok(WidgetModel.shownHistory(hv, 2).size() == 2 && WidgetModel.shownHistory(hv, 3).size() == 3 && WidgetModel.shownHistory(hv, 0).isEmpty(), "Verlauf: so viele Zeilen wie Platz");
+        ok(WidgetModel.sectionTitle(hv, 2).equals("Zuletzt"), "ohne Dateien heißt der Bereich Zuletzt");
+        hv.files.add(new RemoteFile("a.pdf", 214 * 1024));
+        ok(WidgetModel.shownHistory(hv, 2).isEmpty() && WidgetModel.sectionTitle(hv, 2).equals("Bereit am PC (1)"), "Dateien haben Vorrang vor dem Verlauf");
+        hv.files.clear();
+        hv.running = false;
+        ok(WidgetModel.shownHistory(hv, 2).size() == 2, "Verlauf bleibt auch ohne Verbindung sichtbar");
+        hv.transferName = "Plan.pdf";
+        hv.running = true;
+        hv.stateTime = hv.now;
+        ok(WidgetModel.transferActive(hv) && WidgetModel.shownHistory(hv, 2).size() == 2, "Übertragung und Verlauf gleichzeitig (wie im Entwurf)");
+        hv.files.add(new RemoteFile("a.pdf", 1));
+        ok(WidgetModel.transferActive(hv) && WidgetModel.shownFiles(hv, 2).size() == 1, "Übertragung und Dateien gleichzeitig (wie im Entwurf)");
+
         // Schutz vor Doppelstarts
         FetchGuard g = new FetchGuard(3000);
         ok(g.beginFetch("a.pdf|10"), "erster Download darf starten");

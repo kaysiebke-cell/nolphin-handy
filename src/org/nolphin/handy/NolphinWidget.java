@@ -64,9 +64,9 @@ public class NolphinWidget extends AppWidgetProvider {
             in.files.add(f);
         }
         List<Store.Entry> h = Store.history(c);
-        if (!h.isEmpty()) {
-            Store.Entry e = h.get(0);
-            in.lastLine = (e.down ? "Geladen: " : "Gesendet: ") + e.name + " · " + (e.ok ? Ui.time(e.time) : "fehlgeschlagen");
+        for (int i = 0; i < h.size() && i < 3; i++) {
+            Store.Entry e = h.get(i);
+            in.history.add(new WidgetModel.Hist(e.name, e.down, e.ok, e.ok ? Ui.time(e.time) : "fehlgeschlagen"));
         }
         return in;
     }
@@ -106,6 +106,10 @@ public class NolphinWidget extends AppWidgetProvider {
     private static final int[] ROW_N = { R.id.w_f1_n, R.id.w_f2_n, R.id.w_f3_n };
     private static final int[] ROW_S = { R.id.w_f1_s, R.id.w_f2_s, R.id.w_f3_s };
     private static final int[] ROW_L = { R.id.w_f1_l, R.id.w_f2_l, R.id.w_f3_l };
+    private static final int[] HROW = { R.id.w_h1, R.id.w_h2, R.id.w_h3 };
+    private static final int[] HROW_I = { R.id.w_h1_i, R.id.w_h2_i, R.id.w_h3_i };
+    private static final int[] HROW_N = { R.id.w_h1_n, R.id.w_h2_n, R.id.w_h3_n };
+    private static final int[] HROW_W = { R.id.w_h1_w, R.id.w_h2_w, R.id.w_h3_w };
 
     private static void button(Context c, RemoteViews v, int slot, boolean show, boolean primary, int icon, String text, PendingIntent pi) {
         v.setViewVisibility(BTN[slot], show ? android.view.View.VISIBLE : android.view.View.GONE);
@@ -114,8 +118,11 @@ public class NolphinWidget extends AppWidgetProvider {
         }
         int fg = primary ? c.getColor(R.color.widget_onacc) : c.getColor(R.color.widget_acc);
         v.setInt(BTN[slot], "setBackgroundResource", primary ? R.drawable.widget_btn_fill : R.drawable.widget_btn);
-        v.setImageViewResource(BTN_I[slot], icon);
-        v.setInt(BTN_I[slot], "setColorFilter", fg);
+        v.setViewVisibility(BTN_I[slot], icon == 0 ? android.view.View.GONE : android.view.View.VISIBLE);
+        if (icon != 0) {
+            v.setImageViewResource(BTN_I[slot], icon);
+            v.setInt(BTN_I[slot], "setColorFilter", fg);
+        }
         v.setTextViewText(BTN_T[slot], text);
         v.setTextColor(BTN_T[slot], fg);
         v.setOnClickPendingIntent(BTN[slot], pi);
@@ -132,13 +139,13 @@ public class NolphinWidget extends AppWidgetProvider {
 
         // Kopf: Zustand
         boolean ok = mode == WidgetModel.Mode.CONNECTED;
-        v.setImageViewResource(R.id.w_icon, R.drawable.ic_phone);
+        v.setImageViewResource(R.id.w_icon, ok ? R.drawable.w_phone : R.drawable.w_phone_off);
         v.setInt(R.id.w_icon, "setColorFilter", ok ? acc : dim);
         v.setTextViewText(R.id.w_title, WidgetModel.title(in));
         v.setTextColor(R.id.w_title, mode == WidgetModel.Mode.ERROR ? err : text);
         v.setTextViewText(R.id.w_sub, WidgetModel.subtitle(in));
         v.setTextColor(R.id.w_sub, mode == WidgetModel.Mode.ERROR ? err : dim);
-        v.setInt(R.id.w_dot, "setColorFilter", ok ? acc : mode == WidgetModel.Mode.NOT_CONNECTED || mode == WidgetModel.Mode.STOPPED ? dim : err);
+        v.setInt(R.id.w_dot, "setColorFilter", ok ? acc : mode == WidgetModel.Mode.STOPPED ? dim : err);
         v.setOnClickPendingIntent(R.id.w_root, activity(c, 1, Intent.ACTION_MAIN));
 
         // Übertragung
@@ -157,15 +164,15 @@ public class NolphinWidget extends AppWidgetProvider {
             v.setOnClickPendingIntent(R.id.w_tr_cancel, broadcast(c, 4, WidgetActions.ACTION_CANCEL, null));
         }
 
-        // Dateien vom PC (nur erweitertes Layout)
+        // Dateien vom PC oder Verlauf (nur erweitertes Layout), wie im Entwurf auch während einer Übertragung
         if (large) {
-            int rows = WidgetModel.fileRows(Math.max(heightDp, 180));   // das erweiterte Widget zeigt mindestens zwei Dateien
-            List<RemoteFile> shown = active ? new ArrayList<RemoteFile>() : WidgetModel.shownFiles(in, rows);
-            int hidden = active ? 0 : WidgetModel.hiddenFiles(in, rows);
-            boolean any = !shown.isEmpty();
+            int rows = WidgetModel.fileRows(Math.max(heightDp, 180));
+            List<RemoteFile> shown = WidgetModel.shownFiles(in, rows);
+            List<WidgetModel.Hist> hist = WidgetModel.shownHistory(in, rows);
+            boolean any = !shown.isEmpty() || !hist.isEmpty();
             v.setViewVisibility(R.id.w_sec, any ? android.view.View.VISIBLE : android.view.View.GONE);
             if (any) {
-                v.setTextViewText(R.id.w_sec, "Bereit am PC (" + in.files.size() + ")" + (hidden > 0 ? ", " + hidden + " weitere in der App" : ""));
+                v.setTextViewText(R.id.w_sec, WidgetModel.sectionTitle(in, rows));
                 v.setTextColor(R.id.w_sec, dim);
             }
             for (int i = 0; i < ROW.length; i++) {
@@ -184,12 +191,19 @@ public class NolphinWidget extends AppWidgetProvider {
                 v.setTextColor(ROW_L[i], acc);
                 v.setOnClickPendingIntent(ROW_L[i], broadcast(c, 10 + i, WidgetActions.ACTION_FETCH, f));
             }
-            // Letzter Verlaufseintrag, wenn nichts läuft und keine Dateien warten
-            boolean last = !active && !any && !in.lastLine.isEmpty();
-            v.setViewVisibility(R.id.w_last, last ? android.view.View.VISIBLE : android.view.View.GONE);
-            if (last) {
-                v.setTextViewText(R.id.w_last, in.lastLine);
-                v.setTextColor(R.id.w_last, dim);
+            for (int i = 0; i < HROW.length; i++) {
+                boolean on = i < hist.size();
+                v.setViewVisibility(HROW[i], on ? android.view.View.VISIBLE : android.view.View.GONE);
+                if (!on) {
+                    continue;
+                }
+                WidgetModel.Hist e = hist.get(i);
+                v.setImageViewResource(HROW_I[i], e.down ? R.drawable.w_download : R.drawable.w_upload);
+                v.setInt(HROW_I[i], "setColorFilter", e.ok ? acc : err);
+                v.setTextViewText(HROW_N[i], e.name);
+                v.setTextColor(HROW_N[i], text);
+                v.setTextViewText(HROW_W[i], e.when);
+                v.setTextColor(HROW_W[i], e.ok ? dim : err);
             }
         }
 
@@ -201,30 +215,29 @@ public class NolphinWidget extends AppWidgetProvider {
         PendingIntent off = broadcast(c, 3, WidgetActions.ACTION_DISCONNECT, null);
         switch (mode) {
             case CONNECTED:
-                if (large) {
-                    boolean more = !in.files.isEmpty();
-                    button(c, v, 0, true, true, R.drawable.ic_download, more ? "Alle anzeigen" : "Öffnen", more ? all : open);
-                    button(c, v, 1, true, false, R.drawable.ic_upload, "Senden", send);
-                    button(c, v, 2, true, false, R.drawable.ic_close, "Trennen", off);
+                if (large) {   // wie im Entwurf: zwei Schaltflächen ohne Symbole
+                    button(c, v, 0, true, true, 0, "Alle anzeigen", all);
+                    button(c, v, 1, true, false, 0, "Dateien senden", send);
+                    button(c, v, 2, false, false, 0, "", open);
                 } else {
-                    button(c, v, 0, true, true, R.drawable.ic_folder, "Öffnen", open);
-                    button(c, v, 1, true, false, R.drawable.ic_upload, "Senden", send);
-                    button(c, v, 2, true, false, R.drawable.ic_close, "Trennen", off);
+                    button(c, v, 0, true, true, R.drawable.w_folder_open, "Öffnen", open);
+                    button(c, v, 1, true, false, R.drawable.w_upload, "Senden", send);
+                    button(c, v, 2, true, false, R.drawable.w_plug_off, "Trennen", off);
                 }
                 break;
             case ERROR:
-                button(c, v, 0, true, true, R.drawable.ic_refresh, "Verbinden", open);
-                button(c, v, 1, true, false, R.drawable.ic_scan, "QR-Code", scan);
-                button(c, v, 2, true, false, R.drawable.ic_close, "Trennen", off);
+                button(c, v, 0, true, true, large ? 0 : R.drawable.ic_refresh, "Verbinden", open);
+                button(c, v, 1, true, false, large ? 0 : R.drawable.ic_scan, "QR-Code scannen", scan);
+                button(c, v, 2, !large, false, R.drawable.w_plug_off, "Trennen", off);
                 break;
             case STOPPED:
-                button(c, v, 0, true, true, R.drawable.ic_refresh, "Verbinden", open);
-                button(c, v, 1, true, false, R.drawable.ic_scan, "QR-Code", scan);
+                button(c, v, 0, true, true, large ? 0 : R.drawable.ic_refresh, "Verbinden", open);
+                button(c, v, 1, true, false, large ? 0 : R.drawable.ic_scan, "QR-Code scannen", scan);
                 button(c, v, 2, false, false, 0, "", open);
                 break;
             default:
-                button(c, v, 0, true, true, R.drawable.ic_scan, "QR-Code scannen", scan);
-                button(c, v, 1, true, false, R.drawable.ic_folder, "Öffnen", open);
+                button(c, v, 0, true, true, large ? 0 : R.drawable.ic_scan, "QR-Code scannen", scan);
+                button(c, v, 1, true, false, large ? 0 : R.drawable.w_folder_open, "Öffnen", open);
                 button(c, v, 2, false, false, 0, "", open);
                 break;
         }
