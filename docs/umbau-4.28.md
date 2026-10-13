@@ -9,7 +9,7 @@ Stand: Version 4.28 (versionCode 46). Dieser Bericht nennt, was geändert wurde 
 
 ## Umgesetzt
 
-* **Logo:** nur das Handy mit dem grünen Logo, ohne den umgebenden Rahmen (transparenter Hintergrund).
+* **Logo:** In der schmalen Leiste der App steht das Handy mit dem grünen Logo ohne Rahmen (`res/drawable-nodpi/logo_phone.png`). Das **Launcher-Symbol** auf dem Handy bleibt das bekannte grüne Quadrat mit Handy (nach Wunsch zurückgestellt; das rahmenlose Symbol hatte es zuerst weiß gemacht).
 * **Menü:** eigenes Menü im Stil der App (Karte mit Rand, große Zeilen) statt des Standard-Menüfensters des Systems.
 * **Obere Leiste:** 48 dp hoch, App-Symbol, Name, Status und ein Menü (☰). Im Menü: Suchen, Neuer Ordner, Ansicht und Sortierung, Zwei Fenster, Einstellungen. Die Zeile „Sortiert nach …“ unter der Pfadleiste entfällt (mehr Platz für Dateien).
 * **Ansicht:** Liste / Details, Raster, Kompakt; Standard- oder große Vorschau (unabhängig); Dateinamen ausblenden (nur Raster); ausgeblendete Dateien anzeigen.

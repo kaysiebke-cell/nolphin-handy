@@ -106,7 +106,7 @@ const h=(location.hash||'#start-hell').slice(1).split('-');const page=h[0],theme
 document.body.className=theme;
 const ic=n=>`<i class="ti ti-${n}"></i>`;
 const nav=a=>`<div class="nav">${[['home','Start'],['download','Vom PC'],['upload','Zum PC'],['history','Verlauf']].map((x,i)=>`<div class="${i==a?'on':''}">${ic(x[0])}${x[1]}</div>`).join('')}</div>`;
-const app=`<div class="app"><img src="../../res/mipmap-xxxhdpi/ic_launcher.png" alt=""><div><b>Nolphin Handy</b><small>Verbunden mit Mein-Laptop</small></div><div class="set">${ic('menu-2')}</div></div>`;
+const app=`<div class="app"><img src="../../res/drawable-nodpi/logo_phone.png" alt=""><div><b>Nolphin Handy</b><small>Verbunden mit Mein-Laptop</small></div><div class="set">${ic('menu-2')}</div></div>`;
 const row=(i,t,s,o={})=>`<div class="r ${o.on?'on':''}">${o.cb!==undefined?`<div class="cb ${o.cb?'on':''}">${o.cb?'✓':''}</div>`:''}<div class="ico ${o.fo?'fo':''} ${o.th?'th':''}">${o.th?`<div style="width:36px;height:36px;background:linear-gradient(135deg,${o.th})"></div>`:ic(i)}</div><div class="x"><div class="t">${t}</div><div class="s">${s}</div></div>${o.more===false?'':`<div class="mo">${ic('dots-vertical')}</div>`}</div>`;
 const F=(t,s,o={})=>row('folder-filled',t,s,{fo:1,...o});
 const T=(i,n,o={})=>`<div class="tl"><div class="ib">${o.th?`<div style="background:linear-gradient(135deg,${o.th})"></div>`:`<i class="ti ti-${i}${o.fo?' fo':''}"></i>`}</div><div class="nm">${n}</div></div>`;

@@ -116,7 +116,7 @@ public class MainActivity extends Activity implements Host {
         top.setPadding(Ui.dp(this, 14), 0, Ui.dp(this, 6), 0);
 
         ImageView logo = new ImageView(this);
-        logo.setImageResource(R.mipmap.ic_launcher);
+        logo.setImageResource(R.drawable.logo_phone);   // rahmenloses Handy für die schmale Leiste; das Launcher-Symbol bleibt das grüne Quadrat
         top.addView(logo, new LinearLayout.LayoutParams(Ui.dp(this, 32), Ui.dp(this, 36)));
 
         LinearLayout titles = new LinearLayout(this);
