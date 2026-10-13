@@ -402,4 +402,41 @@ final class Ui {
         d.setTint(color);
         return d;
     }
+
+    // ---- Menü ---------------------------------------------------------------------------------
+
+    interface MenuPick {
+        void on(int index);
+    }
+
+    /** Menü im Stil der App (statt des Standard-Menüfensters des Systems): Karte mit Rand, große Zeilen, am Knopf ausgerichtet. */
+    static void popupMenu(final Context c, View anchor, String[] items, final MenuPick pick) {
+        LinearLayout box = new LinearLayout(c);
+        box.setOrientation(LinearLayout.VERTICAL);
+        box.setBackground(outlined(c, surface(c)));
+        box.setPadding(0, dp(c, 6), 0, dp(c, 6));
+        final android.widget.PopupWindow pw = new android.widget.PopupWindow(box, android.view.ViewGroup.LayoutParams.WRAP_CONTENT,
+                android.view.ViewGroup.LayoutParams.WRAP_CONTENT, true);
+        pw.setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(0));
+        pw.setOutsideTouchable(true);
+        pw.setElevation(dp(c, 8));
+        for (int i = 0; i < items.length; i++) {
+            final int idx = i;
+            TextView t = label(c, items[i], 16, text(c), false);
+            t.setGravity(Gravity.CENTER_VERTICAL);
+            t.setMinHeight(dp(c, 48));
+            t.setMinWidth(dp(c, 200));
+            t.setPadding(dp(c, 20), 0, dp(c, 24), 0);
+            t.setBackground(pressable(c));
+            t.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    pw.dismiss();
+                    pick.on(idx);
+                }
+            });
+            box.addView(t);
+        }
+        pw.showAsDropDown(anchor, 0, -dp(c, 4), Gravity.END);
+    }
 }

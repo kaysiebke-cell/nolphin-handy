@@ -37,18 +37,17 @@ final class ViewModes {
         return mode == COMPACT ? (large ? 60 : 48) : (large ? 80 : 56);
     }
 
-    // Sortiermenü: eine Auswahl aus neun Möglichkeiten (Keine, vier Schlüssel je auf- und absteigend)
-    static final int SORT_NONE_ID = 90;
+    // Sortierauswahl: neun Einträge (0 = Keine, danach je Schlüssel auf- und absteigend)
+    static final int SORT_CHOICES = 9;
 
-    static int sortId(SortOrder o) {
-        return o.key == SortOrder.NONE ? SORT_NONE_ID : 100 + o.key * 2 + (o.ascending ? 0 : 1);
+    static int sortIndex(SortOrder o) {
+        return o.key == SortOrder.NONE ? 0 : 1 + o.key * 2 + (o.ascending ? 0 : 1);
     }
 
-    static int sortKey(int id) {
-        return id == SORT_NONE_ID ? SortOrder.NONE : (id - 100) / 2;
-    }
-
-    static boolean sortAscending(int id) {
-        return id == SORT_NONE_ID || (id - 100) % 2 == 0;
+    static SortOrder sortFromIndex(int index, boolean foldersFirst) {
+        if (index <= 0 || index >= SORT_CHOICES) {
+            return new SortOrder(SortOrder.NONE, true, foldersFirst);
+        }
+        return new SortOrder((index - 1) / 2, (index - 1) % 2 == 0, foldersFirst);
     }
 }

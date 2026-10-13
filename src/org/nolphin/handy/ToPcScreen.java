@@ -114,6 +114,7 @@ final class ToPcScreen implements Screen {
     private final TextView title;
     private final ImageView searchBtn;
     private final ImageView menuBtn;
+    private final ImageView dualBtn;
     private boolean searchOpen;
     private final EditText search;
     private final LinearLayout crumbBar;
@@ -303,6 +304,14 @@ final class ToPcScreen implements Screen {
                 showMenu(v);
             }
         });
+        dualBtn = headButton(R.drawable.ic_panes, "Zwei Fenster", new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                openDual();
+            }
+        });
+        dualBtn.setVisibility(View.GONE);
+        head.addView(dualBtn);
         head.addView(searchBtn);
         if (compact) {
             head.addView(menuBtn);   // im Zwei-Fenster-Modus hat jedes Fenster sein eigenes Menü
@@ -609,10 +618,15 @@ final class ToPcScreen implements Screen {
         return g;
     }
 
+    /** Große Vorschau gilt nur im ganzen Fenster; die kleinen Fenster des Zwei-Fenster-Modus bleiben bei den Standardgrößen. */
+    private boolean bigPreview() {
+        return largePreview && !compact;
+    }
+
     private void applyMode() {
         boolean tiles = viewMode == Conn.VIEW_GRID;
         if (tiles) {
-            grid.setColumnWidth(Ui.dp(c, ViewModes.tileWidthDp(largePreview)));
+            grid.setColumnWidth(Ui.dp(c, ViewModes.tileWidthDp(bigPreview())));
             grid.setNumColumns(GridView.AUTO_FIT);
         } else {
             grid.setNumColumns(1);
@@ -1091,106 +1105,209 @@ final class ToPcScreen implements Screen {
         return cb;
     }
 
+    /** Zeile mit Text links und Kästchen rechts; die ganze Zeile ist antippbar. */
+    private View checkRow(String text, boolean on, android.widget.CompoundButton.OnCheckedChangeListener l) {
+        LinearLayout row = new LinearLayout(c);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        row.setPadding(Ui.dp(c, 20), Ui.dp(c, 4), Ui.dp(c, 14), Ui.dp(c, 4));
+        row.setBackground(Ui.pressable(c));
+        TextView t = Ui.label(c, text, 16, Ui.text(c), false);
+        row.addView(t, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
+        final android.widget.CheckBox cb = new android.widget.CheckBox(c);
+        cb.setButtonTintList(android.content.res.ColorStateList.valueOf(Ui.primary(c)));
+        cb.setChecked(on);
+        cb.setOnCheckedChangeListener(l);
+        row.addView(cb);
+        row.setMinimumHeight(Ui.dp(c, 52));
+        row.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View x) {
+                cb.toggle();
+            }
+        });
+        return row;
+    }
+
+    private static String sortLabel(SortOrder o) {
+        return o.key == SortOrder.NONE ? SortOrder.LABELS[SortOrder.NONE] : SortOrder.LABELS[o.key] + (o.ascending ? " ▲" : " ▼");
+    }
+
+    private interface Pick {
+        void on(int index);
+    }
+
+    private TextView sheetHeading(String text) {
+        TextView t = Ui.label(c, text, 14, Ui.primary(c), true);
+        t.setPadding(Ui.dp(c, 20), Ui.dp(c, 16), Ui.dp(c, 20), Ui.dp(c, 4));
+        return t;
+    }
+
+    /** Eine Reihe aus Auswahlknöpfen mit Symbol (genau einer ist gewählt). */
+    private LinearLayout iconChoices(int[] icons, final String[] descriptions, int selected, final Pick pick) {
+        LinearLayout row = new LinearLayout(c);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        final android.widget.RadioButton[] rbs = new android.widget.RadioButton[icons.length];
+        for (int i = 0; i < icons.length; i++) {
+            final int idx = i;
+            LinearLayout cell = new LinearLayout(c);
+            cell.setGravity(Gravity.CENTER_VERTICAL);
+            cell.setPadding(Ui.dp(c, 16), 0, 0, 0);
+            cell.setBackground(Ui.pressable(c));
+            cell.setContentDescription(descriptions[i]);
+            android.widget.RadioButton rb = new android.widget.RadioButton(c);
+            rb.setClickable(false);
+            rb.setChecked(i == selected);
+            rb.setButtonTintList(android.content.res.ColorStateList.valueOf(Ui.primary(c)));
+            rbs[i] = rb;
+            cell.addView(rb);
+            ImageView icon = Ui.icon(c, icons[i], Ui.text(c), 26);
+            cell.addView(icon);
+            cell.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    for (int j = 0; j < rbs.length; j++) {
+                        rbs[j].setChecked(j == idx);
+                    }
+                    pick.on(idx);
+                }
+            });
+            row.addView(cell, new LinearLayout.LayoutParams(0, Ui.dp(c, 56), 1));
+        }
+        return row;
+    }
+
+    private void saveOrder(SortOrder o) {
+        order = o;
+        orderChosen = true;
+        Conn.setSortOrder(c, order);
+        sortEntries(entries);
+        render();
+    }
+
+    /** Auswahl der Sortierung (neun Möglichkeiten) in einer Liste; die Wahl gilt sofort. */
+    private void showSortChoice(final TextView label) {
+        final SortOrder now = effectiveOrder();
+        String[] names = new String[ViewModes.SORT_CHOICES];
+        names[0] = SortOrder.LABELS[SortOrder.NONE];
+        for (int k = 0; k < SortOrder.NONE; k++) {
+            names[1 + k * 2] = SortOrder.LABELS[k] + " ▲";
+            names[2 + k * 2] = SortOrder.LABELS[k] + " ▼";
+        }
+        int checked = ViewModes.sortIndex(now);
+        new AlertDialog.Builder(host.activity(), R.style.NolphinDialog)
+                .setTitle("Sortieren nach")
+                .setSingleChoiceItems(names, checked, new android.content.DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(android.content.DialogInterface d, int which) {
+                        saveOrder(ViewModes.sortFromIndex(which, now.foldersFirst));
+                        label.setText(sortLabel(effectiveOrder()));
+                        d.dismiss();
+                    }
+                })
+                .setNegativeButton("Abbrechen", null)
+                .show();
+    }
+
     /**
-     * Ansicht (Liste, Raster, Kompakt), Vorschaugröße, Namen, versteckte Dateien und Sortierung. Jede Änderung gilt sofort
+     * Blatt von unten: Ansicht (Liste, Raster, Kompakt), Vorschaugröße, Sortierung und Sonstiges. Jede Änderung gilt sofort
      * und bleibt gespeichert; Darstellung und Vorschaugröße sind voneinander unabhängig.
      */
     private void showViewDialog() {
-        final SortOrder start = effectiveOrder();
-        final android.widget.RadioGroup views = new android.widget.RadioGroup(c);
-        views.addView(radio("Liste / Details", 1 + Conn.VIEW_LIST));
-        views.addView(radio("Raster", 1 + Conn.VIEW_GRID));
-        views.addView(radio("Kompakt", 1 + Conn.VIEW_COMPACT));
-        views.check(1 + viewMode);
-        final android.widget.RadioGroup sizes = new android.widget.RadioGroup(c);
-        sizes.addView(radio("Standard-Vorschau", 1));
-        sizes.addView(radio("Große Vorschau", 2));
-        sizes.check(largePreview ? 2 : 1);
-        final android.widget.CheckBox names = check("Dateinamen ausblenden (nur Raster)", hideNames);
-        final android.widget.CheckBox hidden = check("Ausgeblendete Dateien anzeigen", showHidden);
-        final android.widget.RadioGroup sorts = new android.widget.RadioGroup(c);
-        sorts.addView(radio(SortOrder.LABELS[SortOrder.NONE], ViewModes.SORT_NONE_ID));
-        String[] up = { "Aufsteigend", "Absteigend" };
-        for (int k = 0; k < SortOrder.NONE; k++) {
-            for (int d = 0; d < 2; d++) {
-                sorts.addView(radio(SortOrder.LABELS[k] + (d == 0 ? " ▲ – " : " ▼ – ") + up[d], 100 + k * 2 + d));
-            }
-        }
-        sorts.check(ViewModes.sortId(start));
-        final android.widget.CheckBox first = check("Ordner zuerst", start.foldersFirst);
-        final Runnable apply = new Runnable() {
-            @Override
-            public void run() {
-                viewMode = views.getCheckedRadioButtonId() - 1;
-                largePreview = sizes.getCheckedRadioButtonId() == 2;
-                hideNames = names.isChecked();
-                Conn.setViewMode(c, viewMode);
-                Conn.setLargePreview(c, largePreview);
-                Conn.setHideNames(c, hideNames);
-                int id = sorts.getCheckedRadioButtonId();
-                order = new SortOrder(ViewModes.sortKey(id), ViewModes.sortAscending(id), first.isChecked());
-                orderChosen = true;
-                Conn.setSortOrder(c, order);
-                boolean hiddenNow = hidden.isChecked();
-                boolean reload = hiddenNow != showHidden;
-                showHidden = hiddenNow;
-                Conn.setShowHidden(c, showHidden);
-                if (reload) {
-                    loadList();
-                    return;
-                }
-                sortEntries(entries);
-                applyMode();
-                render();
-            }
-        };
-        android.widget.RadioGroup.OnCheckedChangeListener l = new android.widget.RadioGroup.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(android.widget.RadioGroup g, int id) {
-                apply.run();
-            }
-        };
-        android.widget.CompoundButton.OnCheckedChangeListener cl = new android.widget.CompoundButton.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(android.widget.CompoundButton b, boolean checked) {
-                apply.run();
-            }
-        };
-        views.setOnCheckedChangeListener(l);
-        sizes.setOnCheckedChangeListener(l);
-        sorts.setOnCheckedChangeListener(l);
-        names.setOnCheckedChangeListener(cl);
-        hidden.setOnCheckedChangeListener(cl);
-        first.setOnCheckedChangeListener(cl);
         LinearLayout v = new LinearLayout(c);
         v.setOrientation(LinearLayout.VERTICAL);
-        v.setPadding(Ui.dp(c, 24), 0, Ui.dp(c, 24), 0);
-        v.addView(smallHeading("ANSICHT"));
-        v.addView(views);
-        v.addView(smallHeading("VORSCHAU"));
-        v.addView(sizes);
-        v.addView(names);
-        v.addView(hidden);
-        v.addView(smallHeading("SORTIEREN NACH"));
-        v.addView(sorts);
-        v.addView(first);
-        android.widget.ScrollView sv = new android.widget.ScrollView(c);
-        sv.addView(v);
-        new AlertDialog.Builder(host.activity(), R.style.NolphinDialog)
-                .setTitle("Ansicht und Sortierung")
-                .setView(sv)
-                .setPositiveButton("Fertig", null)
-                .setNeutralButton("Standard", new android.content.DialogInterface.OnClickListener() {
+        v.setPadding(0, 0, 0, Ui.dp(c, 12));
+        v.addView(sheetHeading("Ansicht"));
+        v.addView(iconChoices(new int[] { R.drawable.ic_list, R.drawable.ic_grid, R.drawable.ic_compact },
+                new String[] { "Liste", "Raster", "Kompakt" }, viewMode, new Pick() {
                     @Override
-                    public void onClick(android.content.DialogInterface d, int which) {
-                        Conn.clearSortOrder(c);
-                        orderChosen = false;
-                        order = SortOrder.standard();
-                        sortEntries(entries);
+                    public void on(int i) {
+                        viewMode = i;
+                        Conn.setViewMode(c, viewMode);
+                        applyMode();
                         render();
                     }
-                })
-                .show();
+                }));
+        v.addView(iconChoices(new int[] { R.drawable.ic_photo_small, R.drawable.ic_photo_large },
+                new String[] { "Standard-Vorschau", "Große Vorschau" }, largePreview ? 1 : 0, new Pick() {
+                    @Override
+                    public void on(int i) {
+                        largePreview = i == 1;
+                        Conn.setLargePreview(c, largePreview);
+                        applyMode();
+                        render();
+                    }
+                }));
+        v.addView(sheetHeading("Sortieren"));
+        final TextView sort = Ui.label(c, sortLabel(effectiveOrder()), 17, Ui.text(c), false);
+        sort.setPadding(Ui.dp(c, 20), Ui.dp(c, 12), Ui.dp(c, 20), Ui.dp(c, 12));
+        sort.setBackground(Ui.pressable(c));
+        sort.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View x) {
+                showSortChoice(sort);
+            }
+        });
+        v.addView(sort);
+        v.addView(sheetHeading("Sonstiges"));
+        v.addView(checkRow("Ordner zuerst", effectiveOrder().foldersFirst, new android.widget.CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(android.widget.CompoundButton b, boolean on) {
+                SortOrder o = effectiveOrder();
+                saveOrder(new SortOrder(o.key, o.ascending, on));
+            }
+        }));
+        v.addView(checkRow("Dateinamen ausblenden (nur Raster)", hideNames, new android.widget.CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(android.widget.CompoundButton b, boolean on) {
+                hideNames = on;
+                Conn.setHideNames(c, on);
+                adapter.notifyDataSetChanged();
+            }
+        }));
+        v.addView(checkRow("Ausgeblendete Dateien anzeigen", showHidden, new android.widget.CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(android.widget.CompoundButton b, boolean on) {
+                showHidden = on;
+                Conn.setShowHidden(c, on);
+                loadList();
+            }
+        }));
+        TextView reset = Ui.label(c, "Auf Standard zurücksetzen", 14, Ui.primary(c), true);
+        reset.setPadding(Ui.dp(c, 20), Ui.dp(c, 12), Ui.dp(c, 20), Ui.dp(c, 8));
+        final android.widget.ScrollView sv = new android.widget.ScrollView(c);
+        sv.addView(v);
+        final AlertDialog dlg = new AlertDialog.Builder(host.activity(), R.style.NolphinDialog).setView(sv).create();
+        reset.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View x) {
+                Conn.clearSortOrder(c);
+                orderChosen = false;
+                order = SortOrder.standard();
+                viewMode = Conn.VIEW_LIST;
+                largePreview = false;
+                hideNames = false;
+                showHidden = false;
+                Conn.setViewMode(c, viewMode);
+                Conn.setLargePreview(c, false);
+                Conn.setHideNames(c, false);
+                Conn.setShowHidden(c, false);
+                dlg.dismiss();
+                applyMode();
+                loadList();
+            }
+        });
+        v.addView(reset);
+        dlg.show();
+        android.view.Window w = dlg.getWindow();
+        if (w != null) {
+            w.setGravity(Gravity.BOTTOM);
+            w.setLayout(android.view.ViewGroup.LayoutParams.MATCH_PARENT, android.view.ViewGroup.LayoutParams.WRAP_CONTENT);
+            android.graphics.drawable.GradientDrawable bg = new android.graphics.drawable.GradientDrawable();
+            bg.setColor(Ui.surface(c));
+            float r = Ui.dp(c, 16);
+            bg.setCornerRadii(new float[] { r, r, r, r, 0, 0, 0, 0 });
+            w.setBackgroundDrawable(bg);
+        }
     }
 
     // ---- Menü und Suche -----------------------------------------------------------------------
@@ -1243,11 +1360,11 @@ final class ToPcScreen implements Screen {
                     }
                 });
             }
-            if (!compact && dualSwitch != null && Conn.dualAvailable(c)) {
+            if (!compact && dualSwitch != null) {
                 menuItem("Zwei Fenster", new Runnable() {
                     @Override
                     public void run() {
-                        dualSwitch.setDual(true);
+                        openDual();
                     }
                 });
             }
@@ -1263,19 +1380,23 @@ final class ToPcScreen implements Screen {
     }
 
     private void showMenu(View anchor) {
-        android.widget.PopupMenu pm = new android.widget.PopupMenu(host.activity(), anchor);
-        String[] names = menuLabels();
-        for (int i = 0; i < names.length; i++) {
-            pm.getMenu().add(0, i, i, names[i]);
-        }
-        pm.setOnMenuItemClickListener(new android.widget.PopupMenu.OnMenuItemClickListener() {
+        Ui.popupMenu(c, anchor, menuLabels(), new Ui.MenuPick() {
             @Override
-            public boolean onMenuItemClick(android.view.MenuItem item) {
-                menuPicked(item.getItemId());
-                return true;
+            public void on(int index) {
+                menuPicked(index);
             }
         });
-        pm.show();
+    }
+
+    /** Zwei Fenster öffnen; ist der Modus noch nicht angeboten, wird er dabei eingeschaltet (Einstellungen: „Zwei-Fenster-Modus anbieten“). */
+    private void openDual() {
+        if (dualSwitch == null) {
+            return;
+        }
+        if (!Conn.dualAvailable(c)) {
+            Conn.setDualAvailable(c, true);
+        }
+        dualSwitch.setDual(true);
     }
 
     private void toggleSearch() {
@@ -2907,6 +3028,7 @@ final class ToPcScreen implements Screen {
         searchRow.setVisibility(showSearch ? View.VISIBLE : View.GONE);
         searchLine.setVisibility(showSearch ? View.VISIBLE : View.GONE);
         searchBtn.setVisibility(compact ? View.GONE : View.VISIBLE);
+        dualBtn.setVisibility(!compact && dualSwitch != null && Conn.dualAvailable(c) ? View.VISIBLE : View.GONE);
         searchBtn.setColorFilter(showSearch ? Ui.primary(c) : Ui.iconTint(c));
         if (compact) {
             crumbBar.setVisibility(View.GONE);
@@ -3151,7 +3273,7 @@ final class ToPcScreen implements Screen {
 
     /** Symbol- oder Vorschaubildgröße in dp für die Liste (Standard / groß) und die Kompaktansicht. */
     private int rowIcon() {
-        return ViewModes.rowIconDp(viewMode, largePreview);
+        return ViewModes.rowIconDp(viewMode, bigPreview());
     }
 
     /**
@@ -3160,7 +3282,7 @@ final class ToPcScreen implements Screen {
      */
     private ImageView iconOf(Entry e) {
         final boolean tile = viewMode == Conn.VIEW_GRID;
-        final int pad = tile ? Ui.dp(c, 10) : Ui.dp(c, 2);
+        final int pad = tile ? Ui.dp(c, bigPreview() ? 34 : 10) : Ui.dp(c, 2);
         final ImageView v = tile ? new SquareImage(c) : new ImageView(c);
         v.setScaleType(ImageView.ScaleType.FIT_CENTER);
         v.setPadding(pad, pad, pad, pad);
@@ -3184,7 +3306,7 @@ final class ToPcScreen implements Screen {
             v.setBackground(Ui.round(c, 0x00000000, tile ? 8 : 4));
             v.setClipToOutline(true);
             v.setOutlineProvider(ViewOutlineProvider.BACKGROUND);
-            int px = Ui.dp(c, tile ? (largePreview ? 170 : 112) : rowIcon());
+            int px = Ui.dp(c, tile ? (bigPreview() ? 170 : 112) : rowIcon());
             Thumbs.loadFile(c, e.file, kind, Math.max(96, px), v, new Runnable() {
                 @Override
                 public void run() {
@@ -3224,7 +3346,7 @@ final class ToPcScreen implements Screen {
                 AbsListView.LayoutParams.WRAP_CONTENT));
         t.addView(top, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT));
-        if (!hideNames) {
+        if (!hideNames || compact) {   // in den kleinen Fenstern bleiben die Namen immer sichtbar
             TextView n = Ui.label(c, name, 12, Ui.text(c), false);
             n.setLines(2);   // feste Höhe: das Raster nimmt die Zeilenhöhe von der ersten Kachel jeder Reihe
             n.setGravity(Gravity.CENTER_HORIZONTAL);
@@ -3269,7 +3391,7 @@ final class ToPcScreen implements Screen {
         int icon = rowIcon();
         row.setPadding(Ui.dp(c, 12), Ui.dp(c, 2), Ui.dp(c, 2), Ui.dp(c, 2));
         row.setLayoutParams(new AbsListView.LayoutParams(AbsListView.LayoutParams.MATCH_PARENT,
-                Ui.dp(c, ViewModes.rowHeightDp(viewMode, largePreview))));
+                Ui.dp(c, ViewModes.rowHeightDp(viewMode, bigPreview()))));
         if (selecting) {
             LinearLayout.LayoutParams cp = new LinearLayout.LayoutParams(Ui.dp(c, 22), Ui.dp(c, 22));
             cp.rightMargin = Ui.dp(c, 14);

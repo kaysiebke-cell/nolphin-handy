@@ -45,29 +45,27 @@ public class ViewTest {
         ok(ViewModes.rowIconDp(ViewModes.COMPACT, false) <= 28, "kompakte Symbole klein");
         ok(ViewModes.rowHeightDp(ViewModes.COMPACT, false) >= 48 && ViewModes.rowHeightDp(ViewModes.LIST, false) >= 56, "zwei Textzeilen passen in jede Zeile, Touch-Ziele nicht zu klein");
 
-        // Sortiermenü: neun Einträge, jeder rechnet hin und zurück
-        int[] seen = new int[9];
-        int count = 0;
-        SortOrder none = new SortOrder(SortOrder.NONE, true, true);
-        ok(ViewModes.sortKey(ViewModes.sortId(none)) == SortOrder.NONE && ViewModes.sortAscending(ViewModes.sortId(none)), "Keine Sortierung hin und zurück");
-        seen[count++] = ViewModes.sortId(none);
+        // Sortierauswahl: neun Einträge, jeder rechnet hin und zurück
+        boolean[] seen = new boolean[ViewModes.SORT_CHOICES];
+        for (int i = 0; i < ViewModes.SORT_CHOICES; i++) {
+            SortOrder o = ViewModes.sortFromIndex(i, true);
+            ok(ViewModes.sortIndex(o) == i, "Eintrag " + i + " hin und zurück");
+            ok(o.foldersFirst, "Ordner zuerst bleibt erhalten, Eintrag " + i);
+            seen[ViewModes.sortIndex(o)] = true;
+        }
+        boolean all = true;
+        for (boolean b : seen) {
+            all &= b;
+        }
+        ok(all && ViewModes.SORT_CHOICES == 9, "neun verschiedene Einträge");
+        ok(ViewModes.sortFromIndex(0, false).key == SortOrder.NONE && !ViewModes.sortFromIndex(0, false).foldersFirst, "Eintrag 0 ist Keine Sortierung");
+        ok(ViewModes.sortFromIndex(99, true).key == SortOrder.NONE && ViewModes.sortFromIndex(-3, true).key == SortOrder.NONE, "ungültiger Eintrag gilt als Keine");
         for (int k = SortOrder.NAME; k <= SortOrder.TYPE; k++) {
-            for (int d = 0; d < 2; d++) {
-                SortOrder o = new SortOrder(k, d == 0, true);
-                int id = ViewModes.sortId(o);
-                ok(ViewModes.sortKey(id) == k && ViewModes.sortAscending(id) == (d == 0), "Sortierung " + k + "/" + d + " hin und zurück");
-                seen[count++] = id;
-            }
+            ok(ViewModes.sortIndex(new SortOrder(k, true, true)) == 1 + k * 2 && ViewModes.sortIndex(new SortOrder(k, false, true)) == 2 + k * 2,
+                    "Schlüssel " + k + ": aufsteigend vor absteigend");
         }
-        boolean distinct = true;
-        for (int i = 0; i < seen.length; i++) {
-            for (int j = i + 1; j < seen.length; j++) {
-                distinct &= seen[i] != seen[j];
-            }
-        }
-        ok(count == 9 && distinct, "neun verschiedene Einträge im Sortiermenü");
         SortOrder std = SortOrder.standard();
-        ok(ViewModes.sortKey(ViewModes.sortId(std)) == SortOrder.DATE && !ViewModes.sortAscending(ViewModes.sortId(std)), "Standard im Menü: Datum absteigend");
+        ok(ViewModes.sortIndex(std) == 2 + SortOrder.DATE * 2, "Standard im Menü: Datum absteigend");
 
         // Externe Apps: nur Dateien unterhalb der Speicher, nie private App-Ordner
         List<String> roots = Collections.singletonList("/storage");

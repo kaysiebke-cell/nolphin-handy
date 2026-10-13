@@ -10,6 +10,7 @@ Stand: Version 4.28 (versionCode 46). Dieser Bericht nennt, was geändert wurde 
 ## Umgesetzt
 
 * **Logo:** nur das Handy mit dem grünen Logo, ohne den umgebenden Rahmen (transparenter Hintergrund).
+* **Menü:** eigenes Menü im Stil der App (Karte mit Rand, große Zeilen) statt des Standard-Menüfensters des Systems.
 * **Obere Leiste:** 48 dp hoch, App-Symbol, Name, Status und ein Menü (☰). Im Menü: Suchen, Neuer Ordner, Ansicht und Sortierung, Zwei Fenster, Einstellungen. Die Zeile „Sortiert nach …“ unter der Pfadleiste entfällt (mehr Platz für Dateien).
 * **Ansicht:** Liste / Details, Raster, Kompakt; Standard- oder große Vorschau (unabhängig); Dateinamen ausblenden (nur Raster); ausgeblendete Dateien anzeigen.
 * **Sortierung:** Keine, Name, Größe, Datum, Typ, je auf- und absteigend; Standard Datum absteigend, Ordner zuerst.
@@ -17,6 +18,7 @@ Stand: Version 4.28 (versionCode 46). Dieser Bericht nennt, was geändert wurde 
 * **Fotos und Cover:** Vorschaubilder füllen die Kachel, Größe richtet sich nach der Vorschaueinstellung, Zwischenspeicher wie bisher. Ohne Vorschau erscheint das Dateisymbol. Musik zeigt Titel, Interpret und Album, wenn vorhanden.
 * **Suche:** eingeklappt, Lupe öffnet und schließt, Kreuz leert, „Nichts gefunden für …“ bei null Treffern.
 * **Neuer Ordner:** im Menü; leere Namen, Namen mit „/“, „.“, „..“ und vorhandene Namen werden mit Meldung abgelehnt (bestand schon, `FileOps.newFolder`).
+* **Zwei Fenster:** schnelles Symbol in der Leiste von „Zum PC“ (wenn der Modus angeboten wird) und Menüeintrag „Zwei Fenster“, der den Modus bei Bedarf einschaltet. Kleine Fenster: eigenes ☰-Menü, immer Standardgrößen und sichtbare Namen. Ansicht, Vorschau und Sortierung sind für beide Fenster gemeinsam (nur der Ordner ist je Fenster).
 * **Externe Apps:** „Öffnen mit …“ und „Bearbeiten mit …“ über einen eigenen `FilesProvider` (`content://`, nur mit Berechtigung für die eine Datei, nur unter `/storage`, nie `Android/data` oder `Android/obb`). Danach lädt die Liste neu; die App meldet, ob die Datei geändert wurde.
 
 ## Speicherung
@@ -26,7 +28,7 @@ Alle Wahlen liegen in den App-Einstellungen (`Conn`): `viewmode`, `largepreview`
 ## Geprüft (auf dem PC)
 
 * `./build.sh`: Bau erfolgreich.
-* `./test.sh`: alle Prüfungen bestanden (Link 55, Dateioperationen 60, Sortierung 25, Ansicht und Öffnen mit 169, ZIP 52, Speicheranalyse 39, Papierkorb 39, verschlüsselte Verbindung 16, Nolphin-Server 7, QR-Leser 181).
+* `./test.sh`: alle Prüfungen bestanden (Link 55, Dateioperationen 60, Sortierung 25, Ansicht und Öffnen mit 184, ZIP 52, Speicheranalyse 39, Papierkorb 39, verschlüsselte Verbindung 16, Nolphin-Server 7, QR-Leser 181).
 
 ## Am Handy angesehen (Xiaomi, dunkles Design, 13.10.2026)
 
@@ -34,6 +36,10 @@ Alle Wahlen liegen in den App-Einstellungen (`Conn`): `viewmode`, `largepreview`
 * Dialog „Ansicht und Sortierung“ mit allen Einträgen; Liste, Raster und Kompakt umgeschaltet, die Wahl gilt sofort.
 * Raster mit 4 Spalten: Albumbilder füllen die Kachel, Titel darunter (zwei Zeilen fest, damit nichts überlappt). Ordner: Symbol mit kleinem Rand. Kompakt: Zeilen mit zwei Textzeilen, Titel, Interpret und Album.
 * Suche: eingeklappt, Lupe öffnet, „Nichts gefunden für …“, Kreuz leert und schließt.
+* Zwei Fenster: im ☰-Menü einschaltbar, zwei Fenster mit eigenem ☰ und 4 Spalten; das Symbol in der Leiste führt hinein und zurück.
+* Neuer Ordner: „Ordner „NolphinTest“ angelegt“ (der Testordner liegt noch in Music/Tash Sultana auf der SD-Karte und wird noch entfernt).
+* Einstellungen bleiben nach hartem Beenden der App erhalten (Raster, große Vorschau, Namen aus).
+* Große Vorschau und Namen ausblenden im Raster: Galerie mit 2 Spalten, Cover füllen die Kachel.
 * Öffnen mit …: Auswahl der Apps erscheint; VLC hat die Datei über die Freigabe abgespielt (kein Zugriffsfehler).
 
 ## Nicht geprüft / Grenzen

@@ -165,24 +165,20 @@ public class MainActivity extends Activity implements Host {
     }
 
     private void showMainMenu(View anchor) {
-        android.widget.PopupMenu pm = new android.widget.PopupMenu(this, anchor);
         final String[] own = screens[current].menuLabels();
-        for (int i = 0; i < own.length; i++) {
-            pm.getMenu().add(0, 100 + i, i, own[i]);
-        }
-        pm.getMenu().add(0, 1, own.length, "Einstellungen");
-        pm.setOnMenuItemClickListener(new android.widget.PopupMenu.OnMenuItemClickListener() {
+        String[] all = new String[own.length + 1];
+        System.arraycopy(own, 0, all, 0, own.length);
+        all[own.length] = "Einstellungen";
+        Ui.popupMenu(this, anchor, all, new Ui.MenuPick() {
             @Override
-            public boolean onMenuItemClick(android.view.MenuItem item) {
-                if (item.getItemId() == 1) {
+            public void on(int index) {
+                if (index == own.length) {
                     show(TAB_SETTINGS);
                 } else {
-                    screens[current].menuPicked(item.getItemId() - 100);
+                    screens[current].menuPicked(index);
                 }
-                return true;
             }
         });
-        pm.show();
     }
 
     // ---- Host --------------------------------------------------------------------------------
