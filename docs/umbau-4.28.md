@@ -28,9 +28,17 @@ Alle Wahlen liegen in den App-Einstellungen (`Conn`): `viewmode`, `largepreview`
 * `./build.sh`: Bau erfolgreich.
 * `./test.sh`: alle Prüfungen bestanden (Link 55, Dateioperationen 60, Sortierung 25, Ansicht und Öffnen mit 169, ZIP 52, Speicheranalyse 39, Papierkorb 39, verschlüsselte Verbindung 16, Nolphin-Server 7, QR-Leser 181).
 
+## Am Handy angesehen (Xiaomi, dunkles Design, 13.10.2026)
+
+* Schmale Leiste mit Logo ohne Rahmen und Menü ☰ (Suchen, Neuer Ordner, Ansicht und Sortierung, Einstellungen).
+* Dialog „Ansicht und Sortierung“ mit allen Einträgen; Liste, Raster und Kompakt umgeschaltet, die Wahl gilt sofort.
+* Raster mit 4 Spalten: Albumbilder füllen die Kachel, Titel darunter (zwei Zeilen fest, damit nichts überlappt). Ordner: Symbol mit kleinem Rand. Kompakt: Zeilen mit zwei Textzeilen, Titel, Interpret und Album.
+* Suche: eingeklappt, Lupe öffnet, „Nichts gefunden für …“, Kreuz leert und schließt.
+* Öffnen mit …: Auswahl der Apps erscheint; VLC hat die Datei über die Freigabe abgespielt (kein Zugriffsfehler).
+
 ## Nicht geprüft / Grenzen
 
-* **Die neue Oberfläche wurde noch nicht auf einem Handy angesehen.** Aussehen, Spaltenzahl, große Systemschrift, Touch-Ziele, hell und dunkel sind nur aus dem Code abgeleitet, nicht gemessen.
+* **Nicht am Handy gesehen:** helles Design, große Systemschrift, andere Bildschirmgrößen, große Vorschau, „Dateinamen ausblenden“, „Ausgeblendete Dateien anzeigen“, Fotos im Raster (angesehen wurden Albumbilder), Neuer Ordner, „Bearbeiten mit …“, Neustart-Test der Einstellungen.
 * Das Speichern der Einstellungen (SharedPreferences) und der Datei-Anbieter sind nicht in den PC-Tests (benötigen Android); getestet sind die Regeln dahinter.
 * „Öffnen mit …“ und „Bearbeiten mit …“ wurden mit keiner echten App ausprobiert. Ob eine App die Originaldatei ändert oder eine Kopie speichert, entscheidet die App.
 * Das Launcher-Symbol kann je nach Hersteller-Oberfläche trotzdem in eine eigene Form oder auf einen Hintergrund gesetzt werden.
