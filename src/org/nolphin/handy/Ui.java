@@ -411,6 +411,11 @@ final class Ui {
 
     /** Menü im Stil der App (statt des Standard-Menüfensters des Systems): Karte mit Rand, große Zeilen, am Knopf ausgerichtet. */
     static void popupMenu(final Context c, View anchor, String[] items, final MenuPick pick) {
+        popupMenu(c, anchor, items, pick, false);
+    }
+
+    /** @param above true: das Menü öffnet über dem Knopf (für Leisten am unteren Rand, in Daumenhöhe) */
+    static void popupMenu(final Context c, View anchor, String[] items, final MenuPick pick, boolean above) {
         LinearLayout box = new LinearLayout(c);
         box.setOrientation(LinearLayout.VERTICAL);
         box.setBackground(outlined(c, surface(c)));
@@ -437,6 +442,12 @@ final class Ui {
             });
             box.addView(t);
         }
-        pw.showAsDropDown(anchor, 0, -dp(c, 4), Gravity.END);
+        if (above) {
+            box.measure(View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED),
+                    View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
+            pw.showAsDropDown(anchor, 0, -(anchor.getHeight() + box.getMeasuredHeight()), Gravity.END);
+        } else {
+            pw.showAsDropDown(anchor, 0, -dp(c, 4), Gravity.END);
+        }
     }
 }

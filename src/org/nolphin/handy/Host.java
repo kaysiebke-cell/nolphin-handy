@@ -13,6 +13,9 @@ interface Host {
 
     void show(int tab);
 
+    /** Blendet die Reiterleiste unten aus oder ein (während einer Auswahl steht dort die Aktionsleiste). */
+    void setNavVisible(boolean visible);
+
     void scan();
 
     /** Verbindet mit dem Link aus der Zwischenablage (Ersatz für den QR-Scanner). */

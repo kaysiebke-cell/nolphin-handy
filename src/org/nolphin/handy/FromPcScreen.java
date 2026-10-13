@@ -58,7 +58,8 @@ final class FromPcScreen implements Screen {
     private final LinearLayout normalBar;
     private final LinearLayout selectBar;
     private final TextView selCount;
-    private final ImageView selSave;
+    private final View selSave;
+    private final LinearLayout actionBar;
     private final EditText search;
     private final Handler main = new Handler(Looper.getMainLooper());
 
@@ -269,27 +270,39 @@ final class FromPcScreen implements Screen {
                 selectAll();
             }
         }));
-        selectBar.addView(barIcon(R.drawable.ic_download, "Auf das Handy laden", new View.OnClickListener() {
+        selectBar.addView(barIcon(R.drawable.ic_invert, "Auswahl umkehren", new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                invertSelection();
+            }
+        }));
+        // die Funktionen stehen unten in Daumenreichweite und ersetzen während der Auswahl die Reiter
+        actionBar = new LinearLayout(c);
+        actionBar.setOrientation(LinearLayout.HORIZONTAL);
+        actionBar.setBackgroundColor(Ui.surface(c));
+        actionBar.setElevation(Ui.dp(c, 8));
+        actionBar.setVisibility(View.GONE);
+        actionBar.addView(actionItem(R.drawable.ic_download, "Laden", new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 loadSelected();
             }
         }));
-        selectBar.addView(barIcon(R.drawable.ic_share, "Teilen", new View.OnClickListener() {
+        actionBar.addView(actionItem(R.drawable.ic_share, "Teilen", new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 shareSelected();
             }
         }));
-        selSave = barIcon(R.drawable.ic_save, "Speichern unter", new View.OnClickListener() {
+        selSave = actionItem(R.drawable.ic_save, "Speichern", new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 saveSelected();
             }
         });
-        selectBar.addView(selSave);
+        actionBar.addView(selSave);
         root.addView(selectBar, root.indexOfChild(head) + 1, new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT, Ui.dp(c, 52)));
+                LinearLayout.LayoutParams.MATCH_PARENT, Ui.dp(c, 44)));
 
         homeScroll = new android.widget.ScrollView(c);
         homeScroll.setVerticalScrollBarEnabled(false);
@@ -337,6 +350,8 @@ final class FromPcScreen implements Screen {
         empty.setGravity(Gravity.CENTER);
         empty.setPadding(p * 2, p * 3, p * 2, p);
         root.addView(empty);
+        root.addView(actionBar, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT));
         applyMode();
         buildCrumbs();
     }
@@ -874,6 +889,38 @@ final class FromPcScreen implements Screen {
         selCount.setText(selected.size() + " gewählt");
         head.setVisibility(sel ? View.GONE : View.VISIBLE);
         selSave.setVisibility(selected.size() == 1 ? View.VISIBLE : View.GONE);
+        actionBar.setVisibility(sel ? View.VISIBLE : View.GONE);
+        if (root.isShown()) {
+            host.setNavVisible(!sel);
+        }
+    }
+
+    private void invertSelection() {
+        for (RemoteFile f : shownFiles) {
+            if (!selected.remove(f.key())) {
+                selected.add(f.key());
+            }
+        }
+        signature = "";
+        refresh();
+    }
+
+    /** Knopf der unteren Aktionsleiste: Symbol mit Beschriftung darunter. */
+    private View actionItem(int icon, String label, View.OnClickListener l) {
+        LinearLayout item = new LinearLayout(c);
+        item.setOrientation(LinearLayout.VERTICAL);
+        item.setGravity(Gravity.CENTER);
+        item.setPadding(0, Ui.dp(c, 8), 0, Ui.dp(c, 8));
+        item.setBackground(Ui.pressable(c));
+        item.setContentDescription(label);
+        item.addView(Ui.icon(c, icon, Ui.primary(c), 24));
+        TextView t = Ui.label(c, label, 11, Ui.primary(c), false);
+        t.setGravity(Gravity.CENTER);
+        t.setSingleLine(true);
+        item.addView(t);
+        item.setOnClickListener(l);
+        item.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
+        return item;
     }
 
     private void toggle(RemoteFile f) {

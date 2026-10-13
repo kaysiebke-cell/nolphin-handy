@@ -130,6 +130,7 @@ final class ToPcScreen implements Screen {
     private final TextView empty;
     private final LinearLayout permCard;
     private final LinearLayout pasteBar;
+    private final LinearLayout actionBar;
     private final TextView pasteText;
     /** Endungen, die unter „Dokumente“ erscheinen (keine Programm- und Systemdateien anderer Apps). */
     private static final String[] DOC_EXT = { "pdf", "doc", "docx", "odt", "rtf", "txt", "md", "xls", "xlsx", "ods", "csv",
@@ -449,38 +450,55 @@ final class ToPcScreen implements Screen {
         selCount.setSingleLine(true);
         selCount.setPadding(Ui.dp(c, 4), 0, 0, 0);
         selectBar.addView(selCount, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
-        selectBar.addView(barIcon(R.drawable.ic_upload, "An den PC senden", new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                sendSelected();
-            }
-        }));
-        selectBar.addView(barIcon(R.drawable.ic_copy, "Kopieren", new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                markClip(false);
-            }
-        }));
-        selectBar.addView(barIcon(R.drawable.ic_move, "Verschieben", new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                markClip(true);
-            }
-        }));
-        selectBar.addView(barIcon(R.drawable.ic_trash, "Löschen", new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                askDelete();
-            }
-        }));
-        selectBar.addView(barIcon(R.drawable.ic_more, "Mehr: Umbenennen, Eigenschaften", new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                more();
-            }
-        }));
+        if (compact) {
+            // kleine Fenster (Zwei-Fenster-Modus): alle Funktionen in der Leiste oben, wie bisher
+            selectBar.addView(barIcon(R.drawable.ic_upload, "An den PC senden", new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    sendSelected();
+                }
+            }));
+            selectBar.addView(barIcon(R.drawable.ic_copy, "Kopieren", new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    markClip(false);
+                }
+            }));
+            selectBar.addView(barIcon(R.drawable.ic_move, "Verschieben", new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    markClip(true);
+                }
+            }));
+            selectBar.addView(barIcon(R.drawable.ic_trash, "Löschen", new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    askDelete();
+                }
+            }));
+            selectBar.addView(barIcon(R.drawable.ic_more, "Mehr: Umbenennen, Eigenschaften", new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    more(v, false);
+                }
+            }));
+        } else {
+            // einzelnes Fenster: oben nur Zählung und Auswahlhilfen, die Funktionen stehen unten in Daumenreichweite
+            selectBar.addView(barIcon(R.drawable.ic_checks, "Alles auswählen", new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    selectAll();
+                }
+            }));
+            selectBar.addView(barIcon(R.drawable.ic_invert, "Auswahl umkehren", new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    invertSelection();
+                }
+            }));
+        }
         root.addView(selectBar, root.indexOfChild(head) + 1, new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT, Ui.dp(c, compact ? 44 : 52)));
+                LinearLayout.LayoutParams.MATCH_PARENT, Ui.dp(c, 44)));
         for (int i = 0; i < selectBar.getChildCount(); i++) {
             CharSequence d = selectBar.getChildAt(i).getContentDescription();
             if ("Kopieren".contentEquals(d == null ? "" : d)) {
@@ -585,6 +603,47 @@ final class ToPcScreen implements Screen {
         }), pb);
         pasteBar.setVisibility(View.GONE);
         root.addView(pasteBar);
+
+        // Aktionsleiste unten (nur einzelnes Fenster): ersetzt während einer Auswahl die Reiter
+        actionBar = new LinearLayout(c);
+        actionBar.setOrientation(LinearLayout.HORIZONTAL);
+        actionBar.setBackgroundColor(Ui.surface(c));
+        actionBar.setElevation(Ui.dp(c, 8));
+        actionBar.setVisibility(View.GONE);
+        if (!compact) {
+            actionBar.addView(actionItem(R.drawable.ic_upload, "Senden", new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    sendSelected();
+                }
+            }));
+            actionBar.addView(actionItem(R.drawable.ic_copy, "Kopieren", new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    markClip(false);
+                }
+            }));
+            actionBar.addView(actionItem(R.drawable.ic_move, "Verschieben", new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    markClip(true);
+                }
+            }));
+            actionBar.addView(actionItem(R.drawable.ic_trash, "Löschen", new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    askDelete();
+                }
+            }));
+            actionBar.addView(actionItem(R.drawable.ic_more, "Mehr", new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    more(v, true);
+                }
+            }));
+        }
+        root.addView(actionBar, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT));
 
         if (compact && paneId != null) {
             String saved = Conn.paneDir(c, paneId);
@@ -1826,6 +1885,36 @@ final class ToPcScreen implements Screen {
 
     // ---- Dateiverwaltung: Kopieren, Verschieben, Löschen, Umbenennen, Neuer Ordner ------------
 
+    /** Knopf der unteren Aktionsleiste: Symbol mit Beschriftung darunter. */
+    private View actionItem(int icon, String label, View.OnClickListener l) {
+        LinearLayout item = new LinearLayout(c);
+        item.setOrientation(LinearLayout.VERTICAL);
+        item.setGravity(Gravity.CENTER);
+        item.setPadding(0, Ui.dp(c, 8), 0, Ui.dp(c, 8));
+        item.setBackground(Ui.pressable(c));
+        item.setContentDescription(label);
+        item.addView(Ui.icon(c, icon, Ui.primary(c), 24));
+        TextView t = Ui.label(c, label, 11, Ui.primary(c), false);
+        t.setGravity(Gravity.CENTER);
+        t.setSingleLine(true);
+        item.addView(t);
+        item.setOnClickListener(l);
+        item.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
+        return item;
+    }
+
+    private void invertSelection() {
+        Map<String, Long> next = new LinkedHashMap<>();
+        for (Entry e : entries) {
+            if (!selected.containsKey(e.path())) {
+                next.put(e.path(), e.size);
+            }
+        }
+        selected.clear();
+        selected.putAll(next);
+        render();
+    }
+
     private View barIcon(int icon, String description, View.OnClickListener l) {
         ImageView v = Ui.icon(c, icon, Color.WHITE, 24);
         v.setPadding(Ui.dp(c, 10), Ui.dp(c, 10), Ui.dp(c, 10), Ui.dp(c, 10));
@@ -2106,14 +2195,13 @@ final class ToPcScreen implements Screen {
         });
     }
 
-    private void more() {
+    private void more(View anchor, boolean above) {
         if (selected.isEmpty()) {
             return;
         }
         final List<File> items = selectedFiles();
         final File one = items.size() == 1 ? items.get(0) : null;
         final List<String> labels = new ArrayList<>();
-        labels.add("Alle auswählen");
         labels.add(one != null ? "Umbenennen" : "Umbenennen …");
         if (one != null) {
             labels.add("Eigenschaften");
@@ -2123,31 +2211,27 @@ final class ToPcScreen implements Screen {
             }
         }
         labels.add("Als ZIP packen");
-        new AlertDialog.Builder(host.activity(), R.style.NolphinDialog)
-                .setTitle(one != null ? one.getName() : items.size() + " Elemente gewählt")
-                .setItems(labels.toArray(new String[0]), new android.content.DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(android.content.DialogInterface d, int which) {
-                        String what = labels.get(which);
-                        if (what.equals("Alle auswählen")) {
-                            selectAll();
-                        } else if (what.equals("Umbenennen")) {
-                            askRename(one);
-                        } else if (what.equals("Umbenennen …")) {
-                            askBatchRename(items);
-                        } else if (what.equals("Eigenschaften")) {
-                            showProperties(one);
-                        } else if (what.equals("Öffnen mit …") || what.equals("Bearbeiten mit …")) {
-                            selected.clear();
-                            render();
-                            openWith(one, what.startsWith("Bearbeiten"));
-                        } else {
-                            selected.clear();
-                            render();
-                            startZip(items);
-                        }
-                    }
-                }).show();
+        Ui.popupMenu(c, anchor, labels.toArray(new String[0]), new Ui.MenuPick() {
+            @Override
+            public void on(int index) {
+                String what = labels.get(index);
+                if (what.equals("Umbenennen")) {
+                    askRename(one);
+                } else if (what.equals("Umbenennen …")) {
+                    askBatchRename(items);
+                } else if (what.equals("Eigenschaften")) {
+                    showProperties(one);
+                } else if (what.equals("Öffnen mit …") || what.equals("Bearbeiten mit …")) {
+                    selected.clear();
+                    render();
+                    openWith(one, what.startsWith("Bearbeiten"));
+                } else {
+                    selected.clear();
+                    render();
+                    startZip(items);
+                }
+            }
+        }, above);
     }
 
     // ---- ZIP und Stapelumbenennung ---------------------------------------------------------------
@@ -3024,6 +3108,10 @@ final class ToPcScreen implements Screen {
         back.setVisibility(home ? View.GONE : View.VISIBLE);
         showCrumbs(sel);
         selectBar.setVisibility(sel ? View.VISIBLE : View.GONE);
+        actionBar.setVisibility(sel && !compact ? View.VISIBLE : View.GONE);
+        if (root.isShown()) {
+            host.setNavVisible(!(sel && !compact));   // statt der Reiter steht unten die Aktionsleiste (nur wenn dieser Bildschirm sichtbar ist)
+        }
 
         boolean showHome = home && !searching;
         homeScroll.setVisibility(showHome ? View.VISIBLE : View.GONE);

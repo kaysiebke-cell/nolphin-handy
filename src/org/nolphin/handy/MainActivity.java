@@ -39,6 +39,7 @@ public class MainActivity extends Activity implements Host {
     private FrameLayout content;
     private TextView subtitle;
     private final View[] navItems = new View[4];
+    private View navBar;
     private final Screen[] screens = new Screen[5];
     private int current = -1;
     private String error;
@@ -170,6 +171,7 @@ public class MainActivity extends Activity implements Host {
             navItems[i] = item;
             nav.addView(item, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
         }
+        navBar = nav;
         root.addView(nav);
         setContentView(root);
         int flags = 0;
@@ -204,7 +206,15 @@ public class MainActivity extends Activity implements Host {
     }
 
     @Override
+    public void setNavVisible(boolean visible) {
+        if (navBar != null) {
+            navBar.setVisibility(visible ? View.VISIBLE : View.GONE);
+        }
+    }
+
+    @Override
     public void show(int tab) {
+        setNavVisible(true);   // der gewählte Bildschirm blendet sie bei Bedarf wieder aus
         current = tab;
         content.removeAllViews();
         content.addView(screens[tab].view());
