@@ -55,6 +55,64 @@ final class Thumbs {
         });
     }
 
+    /** Titel, Interpret und Album einer Musikdatei (Felder sind leer, wenn die Datei sie nicht enthält). */
+    static final class Meta {
+        final String title;
+        final String artist;
+        final String album;
+
+        Meta(String title, String artist, String album) {
+            this.title = title == null ? "" : title.trim();
+            this.artist = artist == null ? "" : artist.trim();
+            this.album = album == null ? "" : album.trim();
+        }
+
+        boolean empty() {
+            return title.isEmpty() && artist.isEmpty() && album.isEmpty();
+        }
+    }
+
+    private static final LruCache<String, Meta> META = new LruCache<>(800);
+    private static final java.util.Set<String> META_PENDING = java.util.Collections.synchronizedSet(new java.util.HashSet<String>());
+
+    /**
+     * Gibt die Musikdaten zurück, wenn sie schon gelesen wurden; sonst null und die Daten werden im Hintergrund gelesen
+     * (danach läuft @p done auf dem Hauptthread, einmal pro Datei).
+     */
+    static Meta meta(final File file, final Runnable done) {
+        final String key = file.getPath() + "#" + file.lastModified();
+        Meta hit = META.get(key);
+        if (hit != null) {
+            return hit;
+        }
+        if (!META_PENDING.add(key)) {
+            return null;
+        }
+        POOL.execute(new Runnable() {
+            @Override
+            public void run() {
+                Meta m = new Meta(null, null, null);
+                MediaMetadataRetriever r = new MediaMetadataRetriever();
+                try {
+                    r.setDataSource(file.getPath());
+                    m = new Meta(r.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE),
+                            r.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST),
+                            r.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ALBUM));
+                } catch (RuntimeException ignored) {
+                } finally {
+                    try {
+                        r.release();
+                    } catch (java.io.IOException ignored) {
+                    }
+                }
+                META.put(key, m);
+                META_PENDING.remove(key);
+                MAIN.post(done);
+            }
+        });
+        return null;
+    }
+
     private interface Source {
         Bitmap get() throws Exception;
     }

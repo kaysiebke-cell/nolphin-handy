@@ -3,8 +3,8 @@
      Nur das Android-Framework, keine Bibliotheken. -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="org.nolphin.handy"
-    android:versionCode="45"
-    android:versionName="4.27">
+    android:versionCode="46"
+    android:versionName="4.28">
 
     <uses-sdk android:minSdkVersion="29" android:targetSdkVersion="34" />
 
@@ -81,6 +81,13 @@
         </activity>
 
         <receiver android:name=".Updater$Result" android:exported="false" />
+
+        <!-- gibt einzelne Dateien an andere Apps heraus (Öffnen mit, Bearbeiten mit); nur mit ausdrücklicher Berechtigung -->
+        <provider
+            android:name=".FilesProvider"
+            android:authorities="org.nolphin.handy.files"
+            android:exported="false"
+            android:grantUriPermissions="true" />
 
         <service
             android:name=".SyncService"

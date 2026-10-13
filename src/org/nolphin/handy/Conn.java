@@ -91,16 +91,12 @@ final class Conn {
         prefs(c).edit().putBoolean("tiles", value).apply();
     }
 
-    static final int VIEW_LIST = 0, VIEW_GRID = 1, VIEW_COMPACT = 2;
+    static final int VIEW_LIST = ViewModes.LIST, VIEW_GRID = ViewModes.GRID, VIEW_COMPACT = ViewModes.COMPACT;
 
     /** Darstellung der Dateilisten: Liste, Raster oder Kompakt. Frühere Versionen kannten nur Raster oder Liste. */
     static int viewMode(Context c) {
         SharedPreferences p = prefs(c);
-        int m = p.getInt("viewmode", -1);
-        if (m < VIEW_LIST || m > VIEW_COMPACT) {
-            m = p.getBoolean("tiles", true) ? VIEW_GRID : VIEW_LIST;
-        }
-        return m;
+        return ViewModes.fromPrefs(p.getInt("viewmode", -1), p.getBoolean("tiles", true));
     }
 
     static void setViewMode(Context c, int mode) {

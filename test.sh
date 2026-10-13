@@ -33,6 +33,7 @@ javac --release 11 -d "$TMP/classes" "$HERE/src/org/nolphin/handy/QrDecoder.java
     "$HERE/src/org/nolphin/handy/FileOps.java" "$HERE/test/org/nolphin/handy/QrDecoderTest.java" \
     "$HERE/test/org/nolphin/handy/LinkTest.java" "$HERE/test/org/nolphin/handy/FileOpsTest.java" \
     "$HERE/src/org/nolphin/handy/SortOrder.java" "$HERE/src/org/nolphin/handy/PlaceLists.java" "$HERE/test/org/nolphin/handy/SortTest.java" \
+    "$HERE/src/org/nolphin/handy/ViewModes.java" "$HERE/src/org/nolphin/handy/FileUris.java" "$HERE/test/org/nolphin/handy/ViewTest.java" \
     "$HERE/src/org/nolphin/handy/ZipOps.java" "$HERE/src/org/nolphin/handy/BatchRename.java" "$HERE/test/org/nolphin/handy/ZipBatchTest.java" \
     "$HERE/src/org/nolphin/handy/StorageScan.java" "$HERE/test/org/nolphin/handy/StorageScanTest.java" \
     "$HERE/src/org/nolphin/handy/TrashOps.java" "$HERE/test/org/nolphin/handy/TrashTest.java" \
@@ -41,6 +42,7 @@ javac --release 11 -d "$TMP/classes" "$HERE/src/org/nolphin/handy/QrDecoder.java
 java -cp "$TMP/classes" org.nolphin.handy.LinkTest
 java -cp "$TMP/classes" org.nolphin.handy.FileOpsTest
 java -cp "$TMP/classes" org.nolphin.handy.SortTest
+java -cp "$TMP/classes" org.nolphin.handy.ViewTest
 java -cp "$TMP/classes" org.nolphin.handy.ZipBatchTest
 java -cp "$TMP/classes" org.nolphin.handy.StorageScanTest
 java -cp "$TMP/classes" org.nolphin.handy.TrashTest

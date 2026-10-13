@@ -5,6 +5,7 @@ import android.content.Context;
 import android.graphics.Color;
 import android.database.Cursor;
 import android.graphics.drawable.Drawable;
+import android.content.Intent;
 import android.net.Uri;
 import android.os.Environment;
 import android.os.StatFs;
@@ -611,7 +612,7 @@ final class ToPcScreen implements Screen {
     private void applyMode() {
         boolean tiles = viewMode == Conn.VIEW_GRID;
         if (tiles) {
-            grid.setColumnWidth(Ui.dp(c, largePreview ? 160 : 104));
+            grid.setColumnWidth(Ui.dp(c, ViewModes.tileWidthDp(largePreview)));
             grid.setNumColumns(GridView.AUTO_FIT);
         } else {
             grid.setNumColumns(1);
@@ -1090,12 +1091,6 @@ final class ToPcScreen implements Screen {
         return cb;
     }
 
-    private static final int SORT_NONE_ID = 90;
-
-    private static int sortId(SortOrder o) {
-        return o.key == SortOrder.NONE ? SORT_NONE_ID : 100 + o.key * 2 + (o.ascending ? 0 : 1);
-    }
-
     /**
      * Ansicht (Liste, Raster, Kompakt), Vorschaugröße, Namen, versteckte Dateien und Sortierung. Jede Änderung gilt sofort
      * und bleibt gespeichert; Darstellung und Vorschaugröße sind voneinander unabhängig.
@@ -1114,14 +1109,14 @@ final class ToPcScreen implements Screen {
         final android.widget.CheckBox names = check("Dateinamen ausblenden (nur Raster)", hideNames);
         final android.widget.CheckBox hidden = check("Ausgeblendete Dateien anzeigen", showHidden);
         final android.widget.RadioGroup sorts = new android.widget.RadioGroup(c);
-        sorts.addView(radio(SortOrder.LABELS[SortOrder.NONE], SORT_NONE_ID));
+        sorts.addView(radio(SortOrder.LABELS[SortOrder.NONE], ViewModes.SORT_NONE_ID));
         String[] up = { "Aufsteigend", "Absteigend" };
         for (int k = 0; k < SortOrder.NONE; k++) {
             for (int d = 0; d < 2; d++) {
                 sorts.addView(radio(SortOrder.LABELS[k] + (d == 0 ? " ▲ – " : " ▼ – ") + up[d], 100 + k * 2 + d));
             }
         }
-        sorts.check(sortId(start));
+        sorts.check(ViewModes.sortId(start));
         final android.widget.CheckBox first = check("Ordner zuerst", start.foldersFirst);
         final Runnable apply = new Runnable() {
             @Override
@@ -1133,9 +1128,7 @@ final class ToPcScreen implements Screen {
                 Conn.setLargePreview(c, largePreview);
                 Conn.setHideNames(c, hideNames);
                 int id = sorts.getCheckedRadioButtonId();
-                int key = id == SORT_NONE_ID ? SortOrder.NONE : (id - 100) / 2;
-                boolean asc = id == SORT_NONE_ID || (id - 100) % 2 == 0;
-                order = new SortOrder(key, asc, first.isChecked());
+                order = new SortOrder(ViewModes.sortKey(id), ViewModes.sortAscending(id), first.isChecked());
                 orderChosen = true;
                 Conn.setSortOrder(c, order);
                 boolean hiddenNow = hidden.isChecked();
@@ -1958,6 +1951,10 @@ final class ToPcScreen implements Screen {
         labels.add(one != null ? "Umbenennen" : "Umbenennen …");
         if (one != null) {
             labels.add("Eigenschaften");
+            if (one.isFile()) {
+                labels.add("Öffnen mit …");
+                labels.add("Bearbeiten mit …");
+            }
         }
         labels.add("Als ZIP packen");
         new AlertDialog.Builder(host.activity(), R.style.NolphinDialog)
@@ -1974,6 +1971,10 @@ final class ToPcScreen implements Screen {
                             askBatchRename(items);
                         } else if (what.equals("Eigenschaften")) {
                             showProperties(one);
+                        } else if (what.equals("Öffnen mit …") || what.equals("Bearbeiten mit …")) {
+                            selected.clear();
+                            render();
+                            openWith(one, what.startsWith("Bearbeiten"));
                         } else {
                             selected.clear();
                             render();
@@ -2365,6 +2366,12 @@ final class ToPcScreen implements Screen {
             labels.add("Inhalt ansehen");
             codes.add(ZIPLIST);
         }
+        if (!e.dir) {
+            labels.add("Öffnen mit …");
+            codes.add(OPEN);
+            labels.add("Bearbeiten mit …");
+            codes.add(EDIT);
+        }
         String[] base = { "An den PC senden", "Kopieren", "Verschieben", "Umbenennen", "Eigenschaften", "Löschen" };
         int[] baseCodes = { SEND, COPY, MOVE, RENAME, PROPS, DELETE };
         for (int i = 0; i < base.length; i++) {
@@ -2379,6 +2386,10 @@ final class ToPcScreen implements Screen {
                         int code = codes.get(which);
                         if (code == FAVORITE) {
                             toggleFavorite(f);
+                            return;
+                        }
+                        if (code == OPEN || code == EDIT) {
+                            openWith(f, code == EDIT);
                             return;
                         }
                         if (code == UNZIP) {
@@ -2403,7 +2414,56 @@ final class ToPcScreen implements Screen {
                 }).show();
     }
 
-    private static final int FAVORITE = 0, SEND = 1, COPY = 2, MOVE = 3, RENAME = 4, PROPS = 5, DELETE = 6, UNZIP = 7, ZIPLIST = 8;
+    private static final int FAVORITE = 0, SEND = 1, COPY = 2, MOVE = 3, RENAME = 4, PROPS = 5, DELETE = 6, UNZIP = 7, ZIPLIST = 8, OPEN = 9, EDIT = 10;
+
+    private File pendingFile;
+    private boolean pendingEdit;
+    private long pendingSize;
+    private long pendingModified;
+
+    /**
+     * Öffnet eine Datei in einer anderen App (über {@link FilesProvider}, content://) und merkt sich ihren Stand, um nach
+     * der Rückkehr zu prüfen, ob sich die Originaldatei wirklich geändert hat.
+     */
+    private void openWith(File f, boolean edit) {
+        if (!f.isFile()) {
+            Toast.makeText(c, "Die Datei gibt es nicht mehr.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        Uri u = FilesProvider.uriFor(f);
+        Intent i = new Intent(edit ? Intent.ACTION_EDIT : Intent.ACTION_VIEW);
+        i.setDataAndType(u, FilesProvider.mimeOf(f.getName()));
+        i.setClipData(android.content.ClipData.newRawUri(f.getName(), u));
+        i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | (edit ? Intent.FLAG_GRANT_WRITE_URI_PERMISSION : 0));
+        if (i.resolveActivity(c.getPackageManager()) == null) {
+            Toast.makeText(c, edit ? "Keine App zum Bearbeiten dieser Datei gefunden."
+                    : "Keine App zum Öffnen dieser Datei gefunden.", Toast.LENGTH_LONG).show();
+            return;
+        }
+        pendingFile = f;
+        pendingEdit = edit;
+        pendingSize = f.length();
+        pendingModified = f.lastModified();
+        try {
+            host.activity().startActivity(Intent.createChooser(i, f.getName()));
+        } catch (RuntimeException ex) {
+            pendingFile = null;
+            Toast.makeText(c, "Die Datei lässt sich nicht öffnen.", Toast.LENGTH_LONG).show();
+        }
+    }
+
+    /** Nach der Rückkehr aus einer anderen App: Stand der Datei prüfen und ehrlich melden. */
+    private void checkAfterOpen() {
+        File f = pendingFile;
+        if (f == null) {
+            return;
+        }
+        pendingFile = null;
+        String msg = FileUris.afterReturn(pendingEdit, f.isFile(), pendingSize, pendingModified, f.length(), f.lastModified());
+        if (msg != null) {
+            Toast.makeText(c, "„" + f.getName() + "“: " + msg, Toast.LENGTH_LONG).show();
+        }
+    }
 
     private void toggleFavorite(File f) {
         List<String> favs = Conn.favorites(c);
@@ -2751,6 +2811,7 @@ final class ToPcScreen implements Screen {
     public void onShow() {
         access = host.hasFilesAccess();
         accessKnown = true;
+        checkAfterOpen();
         if (access) {
             if (mode == HOME) {
                 findVolumes();
@@ -3059,9 +3120,38 @@ final class ToPcScreen implements Screen {
     }
 
     /** Symbol des Eintrags: Ordner und Dateien einfarbig; Fotos und Videos zeigen ihr Vorschaubild, Apps ihr Symbol. */
+    private final Runnable metaLoaded = new Runnable() {
+        @Override
+        public void run() {
+            root.removeCallbacks(metaRefresh);
+            root.postDelayed(metaRefresh, 150);   // viele Dateien auf einmal: nur einmal neu zeichnen
+        }
+    };
+    private final Runnable metaRefresh = new Runnable() {
+        @Override
+        public void run() {
+            adapter.notifyDataSetChanged();
+        }
+    };
+
+    /** Musikdaten einer Audiodatei (aus dem Speicher gelesen) oder null; ohne Titel zeigt die Liste den Dateinamen. */
+    private Thumbs.Meta metaOf(Entry e) {
+        if (e.dir || e.pkg != null || e.file == null || !isAudio(Ui.ext(e.file.getName()))) {
+            return null;
+        }
+        Thumbs.Meta m = Thumbs.meta(e.file, metaLoaded);
+        return m == null || m.empty() ? null : m;
+    }
+
+    /** Anzeigename: bei Musik der Titel, wenn die Datei einen enthält. */
+    private String shownName(Entry e) {
+        Thumbs.Meta m = metaOf(e);
+        return m != null && !m.title.isEmpty() ? m.title : nameOf(e);
+    }
+
     /** Symbol- oder Vorschaubildgröße in dp für die Liste (Standard / groß) und die Kompaktansicht. */
     private int rowIcon() {
-        return viewMode == Conn.VIEW_COMPACT ? (largePreview ? 40 : 28) : (largePreview ? 64 : 40);
+        return ViewModes.rowIconDp(viewMode, largePreview);
     }
 
     /**
@@ -3165,7 +3255,7 @@ final class ToPcScreen implements Screen {
 
     private View entryTile(Entry e) {
         boolean picked = selected.containsKey(e.path());
-        return tile(iconOf(e), nameOf(e), picked);
+        return tile(iconOf(e), shownName(e), picked);
     }
 
     private View entryRow(Entry e) {
@@ -3179,7 +3269,7 @@ final class ToPcScreen implements Screen {
         int icon = rowIcon();
         row.setPadding(Ui.dp(c, 12), Ui.dp(c, 2), Ui.dp(c, 2), Ui.dp(c, 2));
         row.setLayoutParams(new AbsListView.LayoutParams(AbsListView.LayoutParams.MATCH_PARENT,
-                Ui.dp(c, slim ? (largePreview ? 52 : 40) : (largePreview ? 80 : 52))));
+                Ui.dp(c, ViewModes.rowHeightDp(viewMode, largePreview))));
         if (selecting) {
             LinearLayout.LayoutParams cp = new LinearLayout.LayoutParams(Ui.dp(c, 22), Ui.dp(c, 22));
             cp.rightMargin = Ui.dp(c, 14);
@@ -3189,11 +3279,14 @@ final class ToPcScreen implements Screen {
         LinearLayout text = new LinearLayout(c);
         text.setOrientation(LinearLayout.VERTICAL);
         text.setPadding(Ui.dp(c, 14), 0, Ui.dp(c, 4), 0);
-        TextView n = Ui.label(c, nameOf(e), slim ? 14 : 15, Ui.text(c), false);
+        TextView n = Ui.label(c, shownName(e), slim ? 14 : 15, Ui.text(c), false);
         n.setMaxLines(1);
         n.setEllipsize(android.text.TextUtils.TruncateAt.MIDDLE);
         text.addView(n);
-        String sub = slim ? (e.dir ? subOf(e) : Ui.size(e.size)) : e.dir ? subOf(e)
+        Thumbs.Meta mm = metaOf(e);
+        String who = mm == null ? "" : mm.artist.isEmpty() ? mm.album : mm.album.isEmpty() ? mm.artist : mm.artist + " · " + mm.album;
+        String sub = !who.isEmpty() ? who + (slim ? "" : " · " + Ui.size(e.size))
+                : slim ? (e.dir ? subOf(e) : Ui.size(e.size)) : e.dir ? subOf(e)
                 : subOf(e) + " · " + new SimpleDateFormat("dd.MM.yyyy", Locale.GERMANY).format(new Date(e.modified));
         TextView s = Ui.label(c, sub, 12, Ui.dim(c), false);
         s.setSingleLine(true);
