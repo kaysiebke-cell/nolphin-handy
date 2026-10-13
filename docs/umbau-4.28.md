@@ -47,7 +47,7 @@ Alle Wahlen liegen in den App-Einstellungen (`Conn`): `viewmode`, `largepreview`
 
 ## Nicht geprüft / Grenzen
 
-* **Die Bilder und GIFs der README zeigen noch die Oberfläche der Version 4.27** (alte Leiste, alte Kacheln). Sie wurden nicht neu erzeugt.
+* **Die Bilder und GIFs der README sind aus erfundenen Beispieldaten gezeichnet** (`docs/bilder/quelle.html`), nicht von echten Bildschirmfotos. Sie zeigen die neue Leiste, das Ansichtsblatt und die geteilte Ansicht, wurden aber nicht mit Aufnahmen vom Handy verglichen; Einzelheiten (Abstände, Schrift) können vom echten Aussehen abweichen.
 * **Eigene Ansicht je Fenster** (Zwei-Fenster-Modus) ist programmiert, aber am Handy nicht ausprobiert.
 * **Nicht am Handy gesehen:** helles Design, große Systemschrift, andere Bildschirmgrößen, große Vorschau, „Dateinamen ausblenden“, „Ausgeblendete Dateien anzeigen“, Fotos im Raster (angesehen wurden Albumbilder), Neuer Ordner, „Bearbeiten mit …“, Neustart-Test der Einstellungen.
 * Das Speichern der Einstellungen (SharedPreferences) und der Datei-Anbieter sind nicht in den PC-Tests (benötigen Android); getestet sind die Regeln dahinter.
