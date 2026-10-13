@@ -13,7 +13,7 @@ Stand: Version 4.28 (versionCode 46). Dieser Bericht nennt, was geändert wurde 
 * **Obere Leiste:** 48 dp hoch, App-Symbol, Name, Status und ein Menü (☰). Im Menü: Suchen, Neuer Ordner, Ansicht und Sortierung, Zwei Fenster, Einstellungen. Die Zeile „Sortiert nach …“ unter der Pfadleiste entfällt (mehr Platz für Dateien).
 * **Ansicht:** Liste / Details, Raster, Kompakt; Standard- oder große Vorschau (unabhängig); Dateinamen ausblenden (nur Raster); ausgeblendete Dateien anzeigen.
 * **Sortierung:** Keine, Name, Größe, Datum, Typ, je auf- und absteigend; Standard Datum absteigend, Ordner zuerst.
-* **Symbolgröße im Raster:** Der Rahmen der Kacheln ist weg, Innenabstände sind klein (2 dp außen, 6 dp um Symbole, 0 um Fotos). Die Symbolfläche ist quadratisch und so breit wie die Kachel (vorher fest 64 dp hoch in einer 148 dp hohen, gerahmten Kachel). Spalten richten sich nach der Breite (mindestens 104 dp, groß 160 dp).
+* **Symbolgröße im Raster:** Der Rahmen der Kacheln ist weg, Innenabstände sind klein (2 dp außen, 6 dp um Symbole, 0 um Fotos). Die Symbolfläche ist quadratisch und so breit wie die Kachel (vorher fest 64 dp hoch in einer 148 dp hohen, gerahmten Kachel). Spalten richten sich nach der Breite (mindestens 84 dp, groß 128 dp).
 * **Fotos und Cover:** Vorschaubilder füllen die Kachel, Größe richtet sich nach der Vorschaueinstellung, Zwischenspeicher wie bisher. Ohne Vorschau erscheint das Dateisymbol. Musik zeigt Titel, Interpret und Album, wenn vorhanden.
 * **Suche:** eingeklappt, Lupe öffnet und schließt, Kreuz leert, „Nichts gefunden für …“ bei null Treffern.
 * **Neuer Ordner:** im Menü; leere Namen, Namen mit „/“, „.“, „..“ und vorhandene Namen werden mit Meldung abgelehnt (bestand schon, `FileOps.newFolder`).

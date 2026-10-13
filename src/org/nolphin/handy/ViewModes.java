@@ -16,7 +16,7 @@ final class ViewModes {
 
     /** Breite einer Kachel in dp (Mindestbreite; die Kacheln dehnen sich auf die verfügbare Breite). */
     static int tileWidthDp(boolean large) {
-        return large ? 160 : 104;
+        return large ? 128 : 84;
     }
 
     /** Anzahl Spalten im Raster bei gegebener Breite (dp), Rand und Abstand eingerechnet; mindestens 1. */
@@ -34,7 +34,7 @@ final class ViewModes {
 
     /** Zeilenhöhe in dp. */
     static int rowHeightDp(int mode, boolean large) {
-        return mode == COMPACT ? (large ? 52 : 40) : (large ? 80 : 52);
+        return mode == COMPACT ? (large ? 60 : 48) : (large ? 80 : 56);
     }
 
     // Sortiermenü: eine Auswahl aus neun Möglichkeiten (Keine, vier Schlüssel je auf- und absteigend)

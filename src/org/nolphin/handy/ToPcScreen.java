@@ -3160,7 +3160,7 @@ final class ToPcScreen implements Screen {
      */
     private ImageView iconOf(Entry e) {
         final boolean tile = viewMode == Conn.VIEW_GRID;
-        final int pad = tile ? Ui.dp(c, 6) : Ui.dp(c, 2);
+        final int pad = tile ? Ui.dp(c, 10) : Ui.dp(c, 2);
         final ImageView v = tile ? new SquareImage(c) : new ImageView(c);
         v.setScaleType(ImageView.ScaleType.FIT_CENTER);
         v.setPadding(pad, pad, pad, pad);
@@ -3226,9 +3226,9 @@ final class ToPcScreen implements Screen {
                 LinearLayout.LayoutParams.WRAP_CONTENT));
         if (!hideNames) {
             TextView n = Ui.label(c, name, 12, Ui.text(c), false);
-            n.setMaxLines(2);
-            n.setGravity(Gravity.CENTER);
-            n.setEllipsize(android.text.TextUtils.TruncateAt.MIDDLE);
+            n.setLines(2);   // feste Höhe: das Raster nimmt die Zeilenhöhe von der ersten Kachel jeder Reihe
+            n.setGravity(Gravity.CENTER_HORIZONTAL);
+            n.setEllipsize(android.text.TextUtils.TruncateAt.END);
             n.setPadding(Ui.dp(c, 2), Ui.dp(c, 1), Ui.dp(c, 2), Ui.dp(c, 2));
             t.addView(n);
         }
@@ -3298,7 +3298,7 @@ final class ToPcScreen implements Screen {
             ImageView more = Ui.icon(c, R.drawable.ic_more, Ui.dim(c), 24);
             int mp = slim ? 8 : 12;
             more.setPadding(Ui.dp(c, mp), Ui.dp(c, mp), Ui.dp(c, mp), Ui.dp(c, mp));
-            more.setLayoutParams(new LinearLayout.LayoutParams(Ui.dp(c, slim ? 40 : 48), Ui.dp(c, slim ? 40 : 48)));
+            more.setLayoutParams(new LinearLayout.LayoutParams(Ui.dp(c, 48), Ui.dp(c, 48)));
             more.setContentDescription("Funktionen für " + e.file.getName());
             more.setBackground(Ui.pressable(c));
             final Entry en = e;

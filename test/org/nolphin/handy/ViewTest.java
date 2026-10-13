@@ -25,9 +25,9 @@ public class ViewTest {
         ok(ViewModes.fromPrefs(7, true) == ViewModes.GRID, "ungültiger Wert fällt auf die alte Einstellung zurück");
 
         // Raster passt sich der Breite an und bleibt dicht
-        ok(ViewModes.columns(360, false) == 3, "360 dp breit: 3 Spalten: " + ViewModes.columns(360, false));
-        ok(ViewModes.columns(412, false) == 3 && ViewModes.columns(480, false) == 4, "breiter: mehr Spalten");
-        ok(ViewModes.columns(360, true) == 2 && ViewModes.columns(600, true) == 3, "große Vorschau: größere Kacheln, weniger Spalten");
+        ok(ViewModes.columns(360, false) == 4, "360 dp breit: 4 Spalten: " + ViewModes.columns(360, false));
+        ok(ViewModes.columns(412, false) == 4 && ViewModes.columns(480, false) == 5, "breiter: mehr Spalten");
+        ok(ViewModes.columns(360, true) == 2 && ViewModes.columns(600, true) == 4, "große Vorschau: größere Kacheln, weniger Spalten");
         ok(ViewModes.columns(100, true) == 1 && ViewModes.columns(0, false) == 1, "nie weniger als eine Spalte");
         for (int w = 280; w <= 900; w += 10) {
             ok(ViewModes.columns(w, true) <= ViewModes.columns(w, false), "große Vorschau hat nie mehr Spalten als die Standard-Vorschau bei " + w);
@@ -43,7 +43,7 @@ public class ViewTest {
         }
         ok(ViewModes.rowHeightDp(ViewModes.COMPACT, false) < ViewModes.rowHeightDp(ViewModes.LIST, false), "Kompakt ist niedriger als Liste");
         ok(ViewModes.rowIconDp(ViewModes.COMPACT, false) <= 28, "kompakte Symbole klein");
-        ok(ViewModes.rowHeightDp(ViewModes.COMPACT, false) >= 40 && ViewModes.rowHeightDp(ViewModes.LIST, false) >= 48, "Touch-Ziele nicht zu klein");
+        ok(ViewModes.rowHeightDp(ViewModes.COMPACT, false) >= 48 && ViewModes.rowHeightDp(ViewModes.LIST, false) >= 56, "zwei Textzeilen passen in jede Zeile, Touch-Ziele nicht zu klein");
 
         // Sortiermenü: neun Einträge, jeder rechnet hin und zurück
         int[] seen = new int[9];
