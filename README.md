@@ -8,7 +8,7 @@ Android-App für den Dateiaustausch mit **Nolphin** am PC, in beide Richtungen, 
 * **Zum PC:** Fotos, Dateien und Ordner vom Handy gehen an den PC.
 * **Dateiverwaltung:** Kopieren, Verschieben, Löschen, Umbenennen, neuer Ordner, Eigenschaften, mit internem Speicher und SD-Karte.
 
-Nur das Android-Framework. **Keine Bibliotheken, kein Gradle.** Mindestens Android 10.
+Die Verbindung zum PC ist **verschlüsselt** (TLS mit einem Zertifikat, dessen Fingerabdruck im QR-Code steht). Nur das Android-Framework. **Keine Bibliotheken, kein Gradle.** Mindestens Android 10.
 
 Das Aussehen folgt Linux Mint (Mint-Grün), sachlich und ruhig: flache Listen, einfarbige Symbole, große klare Schrift mit etwas mehr Abstand. Es gibt einen hellen und einen dunklen Modus. Beide folgen der Einstellung des Handys.
 
@@ -129,16 +129,19 @@ Das Ergebnis bleibt bis zum Neuzählen oder Beenden der App erhalten. Die Analys
 
 ## Einrichten
 
-1. Klicken Sie in Nolphin am PC in der Seitenleiste auf **Handy**. Es erscheint ein QR-Code.
-2. **Erster Scan:** Scannen Sie den Code mit der Kamera des Handys. Die Seite im Browser bietet die App zum Installieren an. Laden Sie sie und erlauben Sie die Installation. Warnungen von Chrome, Play Protect oder Mi Protect sind bei Apps außerhalb des Play Store normal.
-3. **Verbinden:** Öffnen Sie die App, tippen Sie auf **QR-Code scannen und verbinden** und richten Sie die Kamera auf den Code am PC. Zum Scharfstellen tippen Sie aufs Bild. Die App liest den Code mit einem **eigenen QR-Leser** ([`QrDecoder.java`](src/org/nolphin/handy/QrDecoder.java)), ohne Bibliothek und ohne Google-Dienste. Statt zu scannen können Sie am PC den Link kopieren und in der App **Link aus der Zwischenablage einfügen** wählen.
-4. **Wichtig:** Handy und PC müssen im **selben WLAN** sein. In einem anderen Netz, zum Beispiel einem Hotspot, erreicht die App den PC nicht.
+1. **Am PC:** Klicken Sie in Nolphin in der Seitenleiste auf **Handy**. Es erscheint ein QR-Code. (Nolphin braucht dafür `openssl` und `glib-networking`; fehlt eines, startet der Austausch nicht und sagt es.)
+2. **App installieren (einmalig, von Hand):** Der Austausch ist verschlüsselt und hat deshalb keine Webseite mehr, über die sich die App laden ließe. Kopieren Sie die Datei `nolphin-handy.apk` aufs Handy (zum Beispiel per USB-Kabel; nach der Installation von Nolphin liegt sie unter `/usr/local/share/nolphin/phone/`, sonst im Ordner `build/` dieses Projekts) und öffnen Sie sie dort. Erlauben Sie die Installation. Warnungen von Chrome, Play Protect oder Mi Protect sind bei Apps außerhalb des Play Store normal.
+3. **Verbinden:** Öffnen Sie die App und tippen Sie auf **QR-Code scannen und verbinden** (oder drücken Sie lange auf das App-Symbol und wählen Sie **QR-Code scannen**). Halten Sie die Kamera der App **ruhig und gerade** auf den Code am PC, etwa 15 bis 30 cm entfernt; zum Scharfstellen tippen Sie aufs Bild. Die App liest den Code mit einem **eigenen QR-Leser** ([`QrDecoder.java`](src/org/nolphin/handy/QrDecoder.java)), ohne Bibliothek und ohne Google-Dienste, auch bei schräg gehaltenem Handy, Spiegelungen und teilweise verdecktem Code. Sie verbindet sich sofort. Ein Scanner des Herstellers (zum Beispiel der von Xiaomi) gibt das Ergebnis nicht an die App zurück und wird nicht benutzt.
+4. **Wenn das Scannen nicht klappt:** Kopieren Sie am PC den Link (Knopf neben dem Link im Panel) und tippen Sie in der App auf **Link aus der Zwischenablage einfügen**. Ein frisch kopierter Link wird beim Öffnen der App auch von selbst angeboten.
+5. **Wichtig:** Handy und PC müssen im **selben WLAN** sein. In einem anderen Netz, zum Beispiel einem Hotspot, erreicht die App den PC nicht.
 
-Der Schlüssel im Link gilt, solange der Austausch am PC läuft, höchstens eine begrenzte Zeit. Nach einem Neustart von Nolphin oder bei einem neuen Code scannen Sie einfach erneut. Beim ersten Verbinden lädt die App vorhandene Dateien nicht. Neue Dateien landen in `Download/Nolphin`.
+**Woran die App den richtigen PC erkennt:** Der QR-Code enthält den Schlüssel und den **Fingerabdruck** des Zertifikats, das Nolphin für diesen Austausch erzeugt. Die App verbindet sich nur mit genau diesem Zertifikat. Passt es nicht (neuer Code am PC, oder jemand gibt sich als Ihr PC aus), meldet sie „Das Zertifikat des PCs passt nicht zum QR-Code“ und sendet nichts. Ein Link, der **von außen** kommt (Kamera-App, Browser, andere App), verbindet erst nach einer Rückfrage mit der Anzeige der PC-Adresse; bestätigen Sie nur, wenn Sie den Code gerade selbst an Ihrem PC angezeigt haben. Links der alten, unverschlüsselten Version lehnt die App ab. Zeigen Sie den QR-Code nur Ihrem eigenen Handy: Er enthält den Schlüssel.
+
+Der Schlüssel im Link gilt, solange der Austausch am PC läuft, höchstens eine begrenzte Zeit. Nach einem Neustart von Nolphin oder bei einem neuen Code (der auch ein neues Zertifikat bringt) scannen Sie einfach erneut. Beim ersten Verbinden lädt die App vorhandene Dateien nicht. Neue Dateien landen in `Download/Nolphin`.
 
 ## Aktualisieren
 
-Hat Nolphin am PC eine neuere App (höhere `versionCode`), zeigt die Startseite **Neue Version**. Ein Tipp auf **Aktualisieren** installiert sie über die alte, ohne Deinstallieren. Die Verbindung bleibt. Beim ersten Mal erlauben Sie der App einmal „Apps installieren“.
+Hat Nolphin am PC eine neuere App (höhere `versionCode`), zeigt die Startseite **Neue Version**. Die neue App kommt über die verschlüsselte Verbindung. Ein Tipp auf **Aktualisieren** installiert sie über die alte, ohne Deinstallieren. Die Verbindung bleibt. Beim ersten Mal erlauben Sie der App einmal „Apps installieren“.
 
 Eine neue Version bereitstellen:
 
@@ -166,8 +169,10 @@ Beim ersten Lauf entsteht ein Signaturschlüssel in `~/.config/nolphin/`. Er lie
 
 Der Test läuft ohne Handy und prüft:
 
-* den **QR-Leser**: 163 Prüfungen (Codes des C-Encoders von Nolphin, gedreht, verzerrt, unscharf, verrauscht, ein Bildschirmfoto und ein echtes dunkles, unscharfes Handyfoto),
-* die **Link-Prüfung**: 34 Prüfungen,
+* den **QR-Leser**: 181 Prüfungen (Codes des C-Encoders von Nolphin, gedreht, verzerrt, unscharf, verrauscht, **stark schräg gehalten mit Mauszeiger auf dem Code, Schatten und Rauschen**, ein Bildschirmfoto und ein künstlich verwischtes, dunkles Testbild mit erfundenem Link),
+* die **Link-Prüfung**: 55 Prüfungen (Version 2 mit Fingerabdruck, alte Links, öffentliche Adressen, Hostnamen, Ports, Schlüsselform, Ablauf, fremde Schemata),
+* die **verschlüsselte Verbindung** (`Secure`): 16 Prüfungen (richtiger Fingerabdruck wird angenommen; falscher, fremdes Zertifikat, Dritter mit eigenem Zertifikat, `http://`, Klartext-Server hinter einer `https`-Adresse und Umleitungen werden abgelehnt),
+* die **App-Seite gegen den echten Nolphin-Server** (C, GnuTLS): 7 Prüfungen (beide Seiten berechnen denselben Fingerabdruck, die App verbindet, falscher Fingerabdruck und falscher Schlüssel werden abgelehnt, keine Browser-Seite, Klartext ohne Antwort),
 * die **Sortierung und die Listen für Favoriten und zuletzt geöffnete Orte** (`SortOrder`, `PlaceLists`): 22 Prüfungen (alle vier Schlüssel, beide Richtungen, „Ordner zuerst“, Gleichstand nach Namen, Endungen, Begrenzung und Reihenfolge der Listen, Pfade mit Leerzeichen und Umlauten),
 * der **Papierkorb** (`TrashOps`): 39 Prüfungen (nur Umbenennen, jeder Speicher sein eigener Papierkorb, Zurückholen an den alten Ort, Namensgleichheit „(2)“ ohne Überschreiben, fehlender alter Ordner, Verknüpfungen, Original bleibt bei Fehler und Abbruch, 30 Tage, Absturz ohne Infodatei, kaputte Infodatei, nie aus dem Papierkorb erneut hinein),
 * die **Speicheranalyse** (`StorageScan`): 39 Prüfungen (Gruppen, Summen, größte Ordner und Dateien, Verknüpfungen ohne Endlosschleife, leerer und fehlender Ordner, nicht lesbarer Ordner, Abbruch auch mitten in einem großen Ordner, Fortschritt),
@@ -201,7 +206,8 @@ Das Skript zeichnet das Titelbild (`docs/bilder/titelbild-quelle.html`, mit dem 
 | `Ui` | Farben (hell und dunkel), Symbole, Listenzeilen |
 | `Thumbs` | Vorschaubilder (Foto, Video, Albumbild, PDF, App-Symbol) |
 | `SyncService` | Laden und Senden im Hintergrund |
-| `Link`, `Connector`, `PcCheck`, `Conn` | Verbindung und gespeicherter Schlüssel |
+| `Link`, `Connector`, `PcCheck`, `Conn` | Link lesen (Version 2), Verbindung prüfen, gespeicherter Schlüssel und Fingerabdruck |
+| `Secure` | der einzige Weg zum PC: nur `https`, nur mit dem Zertifikat des Fingerabdrucks (ohne Android, getestet) |
 | `QrDecoder`, `ScanActivity` | Eigener QR-Leser und Scanner |
 | `Updater`, `Store`, `ShareActivity` | Aktualisieren, Verlauf, Teilen-Menü |
 
@@ -209,7 +215,9 @@ Der PC-Teil (der kleine Server in Nolphin) liegt im Projekt [nolphin-file-manage
 
 ## Sicherheit und Grenzen
 
-* Die Verbindung läuft **unverschlüsselt im eigenen WLAN**. Der Schlüssel steckt im Link. Verwenden Sie das nur in einem Netz, dem Sie vertrauen.
+* Die Verbindung ist **verschlüsselt** (TLS 1.2/1.3) und an das Zertifikat aus dem QR-Code gebunden. Ein Mitlesen im WLAN nützt nichts. Der QR-Code enthält aber den **Schlüssel und den Fingerabdruck**: Wer ihn sieht oder fotografiert, kann sich bis zum Widerruf verbinden. Zeigen Sie ihn nur Ihrem eigenen Handy und beenden Sie den Austausch in Nolphin, wenn Sie fertig sind. **Neuen QR-Code erzeugen** widerruft sofort.
+* Klartext ist ausgeschlossen: Die App spricht nur `https` und verbietet unverschlüsselten Verkehr auch auf Systemebene. Es gibt keinen Weg über den Browser des Handys. Wer am **PC selbst** Zugriff hat, wird dadurch nicht aufgehalten.
+* Nolphin braucht am PC `openssl` und `glib-networking`. Die Erstinstallation der App erfolgt von Hand; Aktualisierungen kommen über die verschlüsselte Verbindung.
 * Löschen geht in den Papierkorb (30 Tage), nur in dieser App. Aus dem Papierkorb heraus ist Löschen endgültig.
 * Bei einem älteren Nolphin am PC geht ein Ordner nur als ZIP.
 * Der Zugriff auf alle Dateien ist mächtig. Die App nutzt ihn nur für den Dateimanager, und nur nach Ihrer Aktion.
