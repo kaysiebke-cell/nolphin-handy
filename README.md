@@ -76,7 +76,7 @@ Nolphin Handy entstand als optionale Erweiterung zu Nolphin, einem Dateimanager 
 
 ## Lizenz
 
-Für Nolphin Handy ist **noch keine Lizenz festgelegt** (es gibt keine `LICENSE`-Datei). Nolphin, der PC-Teil, steht unter **GPL-2.0-or-later**.
+**GPL-2.0-or-later**, wie Nolphin, der PC-Teil. Der Lizenztext steht in der Datei [LICENSE](LICENSE). Sie dürfen die App benutzen, ändern und weitergeben; Änderungen, die Sie weitergeben, müssen unter derselben Lizenz offen liegen.
 
 ---
 
