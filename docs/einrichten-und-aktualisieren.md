@@ -18,10 +18,14 @@ Der Schlüssel im Link gilt, solange der Austausch am PC läuft, höchstens eine
 
 ## Aktualisieren
 
-Hat Nolphin am PC eine neuere App (höhere `versionCode`), zeigt die Startseite **Neue Version**. Die neue App kommt über die verschlüsselte Verbindung. Ein Tipp auf **Aktualisieren** installiert sie über die alte, ohne Deinstallieren. Die Verbindung bleibt. Beim ersten Mal erlauben Sie der App einmal „Apps installieren“.
+Hat Nolphin am PC eine neuere App (höhere `versionCode`), zeigt die Startseite **Neue Version**. Die neue App kommt über die verschlüsselte Verbindung. Ein Tipp auf **Aktualisieren** installiert sie über die alte, ohne Deinstallieren. Die Verbindung bleibt. Beim ersten Mal erlauben Sie der App einmal „Apps installieren“. Je nach Hersteller kommen dabei zusätzliche Warnungen: Bei Xiaomi zum Beispiel erscheint eine rote „Gefahr“-Seite, auf der Sie ein Kästchen abhaken und einige Sekunden warten müssen, bevor **OK** geht. Danach fragt Android noch einmal „Möchtest du diese App aktualisieren?“.
+
+**Geprüft** (13.10.2026, Xiaomi): Die Startseite zeigte „Neue Version 4.31“, die Berechtigung und die Rückfrage erschienen wie beschrieben, und die App wurde über die alte installiert (Datum der Erstinstallation blieb, der Synchronisationsdienst lief danach weiter). Nicht angesehen wurde, ob die Anzeige „Verbunden“ nach dem Update sofort wieder erschien.
 
 Eine neue Version bereitstellen:
 
 1. `versionCode` in [`AndroidManifest.xml`](../AndroidManifest.xml) erhöhen.
 2. `build.sh` ausführen.
 3. Die APK nach `~/.local/share/nolphin/phone/nolphin-handy.apk` kopieren, oder Nolphin installieren (`sudo ninja -C build install` im Nolphin-Ordner).
+
+**Wichtig:** Nolphin nimmt **zuerst** die Datei aus `~/.local/share/nolphin/phone/` und erst danach die installierte aus `/usr/local/share/nolphin/phone/`. Liegt im Nutzerordner eine ältere APK, liefert der PC diese aus, und die App zeigt nie „Neue Version“, selbst wenn Sie Nolphin neu installiert haben. Räumen Sie die alte Datei dort weg oder ersetzen Sie sie durch die neue.
