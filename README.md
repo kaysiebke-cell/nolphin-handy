@@ -63,11 +63,22 @@ Der Eintrag **Apps** zeigt dagegen nur Apps, die ihre Dateien in einem eigenen M
 
 **Dokumente.** Reiter: **Alle, DOC, XLS, PDF, PPT, Sonstige.** „Sonstige“ enthält zum Beispiel ZIP, EPUB und Konstruktionsdateien (STEP, STL, DXF …). Die Liste zeigt Dokumente aus dem internen Speicher **und** von der SD-Karte zusammen (einstellbar mit dem Schalter unten). Dateien auf der SD-Karte tragen in der Zeile den Zusatz „SD-Karte“. Programm- und Systemdateien anderer Apps erscheinen nicht.
 
-**Sortieren.** Der Knopf mit den zwei Pfeilen in der Kopfleiste öffnet die Sortierung: nach **Name, Größe, Änderungsdatum oder Dateityp**, **aufsteigend oder absteigend**, mit oder ohne **Ordner zuerst**. Unter der Pfadleiste steht, wonach gerade sortiert ist („Sortiert nach Größe ↓“). Die Wahl bleibt gespeichert, auch nach dem Schließen der App. Der Knopf **Standard** im Menü setzt sie zurück. Gleiche Werte werden immer nach Namen geordnet. Solange Sie nichts gewählt haben, stehen in den Kategorien (Bilder, Audio, Dokumente …) die neuesten Dateien zuerst und in Ordnern die Namen von A bis Z.
+**Menü, Ansicht und Sortierung.** Die Kopfleiste ist schmal: links das App-Symbol, rechts das **Menü (☰)** mit *Suchen*, *Neuer Ordner*, *Ansicht und Sortierung*, *Zwei Fenster* (wenn eingeschaltet) und *Einstellungen*. In „Zum PC“ gibt es zusätzlich die **Lupe**: Sie klappt das Suchfeld auf und wieder zu (Tippen auf das Kreuz leert erst, dann schließt es). Das Suchfeld ist beim Start eingeklappt.
+
+*Ansicht und Sortierung* ist ein Dialog, jede Änderung gilt sofort und bleibt nach einem Neustart erhalten:
+
+* **Ansicht:** Liste / Details, Raster oder Kompakt.
+* **Vorschau:** Standard oder groß. Das ist unabhängig von der Ansicht (Raster: größere Kacheln, Liste und Kompakt: größere Symbole und Zeilen).
+* **Dateinamen ausblenden** (wirkt nur im Raster) und **Ausgeblendete Dateien anzeigen** (Dateien mit Punkt am Anfang; der Papierkorb der App bleibt immer verborgen).
+* **Sortieren nach:** Keine Sortierung, Name, Größe, Datum oder Typ, jeweils ▲ aufsteigend oder ▼ absteigend, dazu *Ordner zuerst*. **Standard: Datum absteigend**, die neuesten Dateien stehen oben. Gleiche Werte werden nach Namen geordnet. *Standard* im Dialog setzt die Sortierung zurück.
+
+Das **Raster** passt Spalten und Kachelbreite an die Bildschirmbreite an. Die Kacheln haben keinen Rahmen: das Symbol (Ordner, Dateityp) oder das Vorschaubild füllt die ganze Kachelbreite, der Name steht darunter. Fotos füllen die Fläche, Musik zeigt das eingebettete Albumbild. Bei Musik stehen Titel, Interpret und Album in der Liste, wenn die Datei sie enthält.
+
+**Mit anderen Apps öffnen.** Im Menü einer Datei (⋮ oder Datei gedrückt halten, „Mehr“) stehen **Öffnen mit …** und **Bearbeiten mit …**. Die App gibt die Datei über einen eigenen Datei-Anbieter (`content://`) nur an die gewählte App heraus, nur für diese eine Datei, nur unterhalb des Speichers und nie aus privaten App-Ordnern. Nach der Rückkehr lädt die Liste neu und die App meldet, ob sich die Datei geändert hat. Manche Apps speichern eine Kopie an anderer Stelle statt der Originaldatei; dann meldet die App, dass die Originaldatei unverändert ist.
 
 **Favoriten und zuletzt geöffnete Orte.** Im Menü **⋮** eines Ordners steht **Zu Favoriten hinzufügen**. In der Übersicht erscheinen die Favoriten oben mit einem Stern, darunter die **zuletzt geöffneten Ordner** (die letzten fünf). Ein Favorit hat ein eigenes Menü mit „Öffnen“ und „Aus Favoriten entfernen“. Ist ein Ordner nicht mehr da (zum Beispiel SD-Karte entfernt), steht dort „Nicht verfügbar“. Die Liste der zuletzt geöffneten Ordner löschen Sie in den Einstellungen.
 
-**Zwei Fenster.** In den Einstellungen unter „Dateimanager“ schalten Sie **Zwei-Fenster-Modus anbieten** ein (Standard: aus). Dann erscheint in „Zum PC“ oben ein Knopf für zwei Fenster. Im Hochformat stehen die Fenster untereinander, im Querformat nebeneinander. Jedes Fenster hat seinen eigenen Ordner, Speicher (intern oder SD-Karte), Sortierung und Auswahl. Ein Fenster merkt sich seinen Ordner auch nach dem Drehen oder Neustart.
+**Zwei Fenster.** In den Einstellungen unter „Dateimanager“ schalten Sie **Zwei-Fenster-Modus anbieten** ein (Standard: aus). Dann erscheint in „Zum PC“ im Menü der Eintrag „Zwei Fenster“. Im Hochformat stehen die Fenster untereinander, im Querformat nebeneinander. Jedes Fenster hat seinen eigenen Ordner, Speicher (intern oder SD-Karte), Sortierung und Auswahl. Ein Fenster merkt sich seinen Ordner auch nach dem Drehen oder Neustart.
 
 * Das Fenster, das Sie zuletzt angetippt haben, ist **aktiv** (grüne Linie oben). Das Fenster mit der Auswahl ist die **Quelle**, das andere das **Ziel**.
 * Unten steht „Von … nach …“ mit **Kopieren** und **Verschieben**. Vor dem Vorgang fragt die App noch einmal mit dem vollen Zielpfad und bietet **Ziel wechseln** an. Danach läuft alles wie sonst: Fortschritt, Abbrechen, Konfliktfrage, Ergebnisliste.
@@ -173,7 +184,8 @@ Der Test läuft ohne Handy und prüft:
 * die **Link-Prüfung**: 55 Prüfungen (Version 2 mit Fingerabdruck, alte Links, öffentliche Adressen, Hostnamen, Ports, Schlüsselform, Ablauf, fremde Schemata),
 * die **verschlüsselte Verbindung** (`Secure`): 16 Prüfungen (richtiger Fingerabdruck wird angenommen; falscher, fremdes Zertifikat, Dritter mit eigenem Zertifikat, `http://`, Klartext-Server hinter einer `https`-Adresse und Umleitungen werden abgelehnt),
 * die **App-Seite gegen den echten Nolphin-Server** (C, GnuTLS): 7 Prüfungen (beide Seiten berechnen denselben Fingerabdruck, die App verbindet, falscher Fingerabdruck und falscher Schlüssel werden abgelehnt, keine Browser-Seite, Klartext ohne Antwort),
-* die **Sortierung und die Listen für Favoriten und zuletzt geöffnete Orte** (`SortOrder`, `PlaceLists`): 22 Prüfungen (alle vier Schlüssel, beide Richtungen, „Ordner zuerst“, Gleichstand nach Namen, Endungen, Begrenzung und Reihenfolge der Listen, Pfade mit Leerzeichen und Umlauten),
+* die **Ansicht** (`ViewModes`, `FileUris`): 169 Prüfungen (gespeicherte Darstellung und Übernahme der alten Einstellung, Spalten bei vielen Bildschirmbreiten, Vorschaugröße unabhängig von der Darstellung, Mindestgrößen der Touch-Ziele, neun Einträge im Sortiermenü, Dateien für andere Apps nur im Speicher und nie aus fremden App-Ordnern, Meldung nach der Rückkehr),
+* die **Sortierung und die Listen für Favoriten und zuletzt geöffnete Orte** (`SortOrder`, `PlaceLists`): 25 Prüfungen (dazu „Keine Sortierung“ und der neue Standard) (alle vier Schlüssel, beide Richtungen, „Ordner zuerst“, Gleichstand nach Namen, Endungen, Begrenzung und Reihenfolge der Listen, Pfade mit Leerzeichen und Umlauten),
 * der **Papierkorb** (`TrashOps`): 39 Prüfungen (nur Umbenennen, jeder Speicher sein eigener Papierkorb, Zurückholen an den alten Ort, Namensgleichheit „(2)“ ohne Überschreiben, fehlender alter Ordner, Verknüpfungen, Original bleibt bei Fehler und Abbruch, 30 Tage, Absturz ohne Infodatei, kaputte Infodatei, nie aus dem Papierkorb erneut hinein),
 * die **Speicheranalyse** (`StorageScan`): 39 Prüfungen (Gruppen, Summen, größte Ordner und Dateien, Verknüpfungen ohne Endlosschleife, leerer und fehlender Ordner, nicht lesbarer Ordner, Abbruch auch mitten in einem großen Ordner, Fortschritt),
 * **ZIP und Stapelumbenennen** (`ZipOps`, `BatchRename`): 52 Prüfungen (Inhalt lesen, Entpacken mit Umlauten und leeren Ordnern, gemeinsamer Oberordner, unsichere Pfade, Verknüpfungen, Größe über der Angabe, Konflikte, Packen, Vorschau, Tauschfälle, Groß-/Kleinschreibung, Zurücknehmen bei Fehler),
@@ -197,6 +209,7 @@ Das Skript zeichnet das Titelbild (`docs/bilder/titelbild-quelle.html`, mit dem 
 |---|---|
 | `MainActivity` | Kopfleiste, Reiter, Verbindung, Versand |
 | `HomeScreen`, `FromPcScreen`, `ToPcScreen`, `HistoryScreen`, `SettingsScreen` | Die Bildschirme |
+| `ViewModes`, `FileUris`, `FilesProvider`, `SquareImage` | Regeln für Ansicht und Öffnen mit (ohne Android, getestet), Datei-Anbieter für andere Apps, quadratische Bildfläche der Kacheln |
 | `SortOrder`, `PlaceLists` | Sortierreihenfolge, Favoriten und zuletzt geöffnete Orte (ohne Android, getestet) |
 | `ToPcTabs`, `DualScreen` | Reiter „Zum PC“ mit einem oder zwei Fenstern |
 | `TrashOps`, `TrashScreen` | Papierkorb: Logik (ohne Android, getestet) und Fenster |
