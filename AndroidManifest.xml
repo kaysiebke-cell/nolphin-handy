@@ -43,6 +43,8 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <!-- Verknüpfung „QR-Code scannen“ (lange auf das App-Symbol drücken) -->
+            <meta-data android:name="android.app.shortcuts" android:resource="@xml/shortcuts" />
             <!-- nolphin://connect?…: Verbindungslink (Version 2, mit Fingerabdruck) zum Öffnen der App. -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />

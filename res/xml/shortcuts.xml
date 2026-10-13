@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lange auf das App-Symbol drücken: "QR-Code scannen" öffnet gleich den Scanner. -->
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="scan"
+        android:enabled="true"
+        android:icon="@drawable/ic_scan"
+        android:shortcutShortLabel="@string/shortcut_scan_short"
+        android:shortcutLongLabel="@string/shortcut_scan_long">
+        <intent
+            android:action="org.nolphin.handy.action.SCAN"
+            android:targetPackage="org.nolphin.handy"
+            android:targetClass="org.nolphin.handy.MainActivity" />
+    </shortcut>
+</shortcuts>

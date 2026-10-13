@@ -425,7 +425,15 @@ public class MainActivity extends Activity implements Host {
      * Seite die App mit einem untergeschobenen Rechner im Netz verbinden. Der eigene QR-Scanner der App fragt nicht,
      * dort hat der Nutzer den Code gerade selbst gewählt.
      */
+    /** Aktion der Verknüpfung am App-Symbol: gleich den Scanner öffnen. */
+    static final String ACTION_SCAN = "org.nolphin.handy.action.SCAN";
+
     private void handleIntent(Intent intent) {
+        if (intent != null && ACTION_SCAN.equals(intent.getAction())) {
+            intent.setAction(Intent.ACTION_MAIN);   // nicht bei jedem Zurückkehren erneut scannen
+            scan();
+            return;
+        }
         Uri data = intent != null ? intent.getData() : null;
         if (data == null || !"nolphin".equals(data.getScheme())) {
             return;

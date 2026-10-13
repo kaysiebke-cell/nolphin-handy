@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="shortcut_scan_short">QR-Code scannen</string>
+    <string name="shortcut_scan_long">QR-Code scannen und verbinden</string>
+</resources>

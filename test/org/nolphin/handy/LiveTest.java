@@ -31,18 +31,18 @@ public class LiveTest {
             String token = f[1], fp = f[2];
 
             // Link genau so, wie Nolphin ihn im QR-Code zeigt (src/nolphin-phone.c, phone_refresh_url)
-            String link = "nolphin://127.0.0.1:" + port + "/?t=" + token + "&v=2&f=" + fp;
+            String link = "https://127.0.0.1:" + port + "/?t=" + token + "&v=2&f=" + fp;
             Link l = Link.parse(link, System.currentTimeMillis() / 1000);
             check(l.fingerprint.equals(fp) && l.token.equals(token), "Link des Servers wird von der App gelesen");
 
             PcCheck.Result ok = PcCheck.check(l);
             check(ok.ok, "App prüft den echten Server und verbindet (" + ok.message + ")");
 
-            String wrong = "nolphin://127.0.0.1:" + port + "/?t=" + token + "&v=2&f=AAAAAAAAAAAAAAAAAAAAAA";
+            String wrong = "https://127.0.0.1:" + port + "/?t=" + token + "&v=2&f=AAAAAAAAAAAAAAAAAAAAAA";
             PcCheck.Result bad = PcCheck.check(Link.parse(wrong, System.currentTimeMillis() / 1000));
             check(!bad.ok && bad.message.contains("passt nicht zum QR-Code"), "falscher Fingerabdruck: App lehnt ab (" + bad.message + ")");
 
-            String wrongToken = "nolphin://127.0.0.1:" + port + "/?t=" + "0".repeat(32) + "&v=2&f=" + fp;
+            String wrongToken = "https://127.0.0.1:" + port + "/?t=" + "0".repeat(32) + "&v=2&f=" + fp;
             PcCheck.Result badToken = PcCheck.check(Link.parse(wrongToken, System.currentTimeMillis() / 1000));
             check(!badToken.ok && badToken.message.contains("Schlüssel"), "falscher Schlüssel: App meldet ihn (" + badToken.message + ")");
 
