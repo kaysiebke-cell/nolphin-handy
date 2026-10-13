@@ -4,7 +4,7 @@ Stand: 13.10.2026. Dieses Dokument beschreibt das Widget und nennt ehrlich, was 
 
 ## Was das Widget kann
 
-* **Zwei Einträge in der Widget-Auswahl:** **Nolphin Handy kompakt** (Startgröße 4×2: Zustand, Übertragung, bis zu drei Schaltflächen) und **Nolphin Handy erweitert** (Startgröße 4×4: zusätzlich Dateien vom PC mit „Laden“ und letzter Verlaufseintrag). Beide laufen über denselben Code (`NolphinWidget`, `NolphinWidgetLarge`). Hell und dunkel folgen dem System.
+* **Drei Einträge in der Widget-Auswahl:** **Nolphin Handy klein** (4×1: eine Zeile mit Zustand und einer Schaltfläche – Senden, Scannen, Verbinden oder Abbrechen), **Nolphin Handy kompakt** (4×2: Zustand, Übertragung, bis zu drei Schaltflächen) und **Nolphin Handy erweitert** (4×4: zusätzlich Dateien vom PC mit „Laden“ und Verlauf „Zuletzt“). Alle laufen über denselben Code (`NolphinWidget`, `NolphinWidgetSmall`, `NolphinWidgetLarge`). Hell und dunkel folgen dem System.
 * **Zustand:** *Verbunden*, *Verbindung gestört* (PC nicht erreichbar oder Schlüssel ungültig), *Nicht aktiv* (Verbindungsdaten gespeichert, aber der Dienst läuft nicht) und *Nicht verbunden*. Das Widget zeigt „Verbunden“ nur, wenn Verbindungsdaten **und** der laufende Synchronisationsdienst vorhanden sind. Gespeicherte Daten allein reichen nicht.
 * **Übertragung:** Name, Laden oder Senden, Prozent (wenn die Gesamtgröße bekannt ist), bisherige und gesamte Menge, **Abbrechen**. Eine Übertragung wird nur gezeigt, solange der Dienst läuft und sein Zustand höchstens 20 Sekunden alt ist.
 * **Erweitert, wie im abgesegneten Entwurf:** Übertragungskarte (Name, Prozent, Balken, Menge, Abbrechen); darunter **„Bereit am PC (n)“** mit Dateien, Größe und **Laden** (`SyncService.ACTION_FETCH`), oder, wenn nichts bereit ist, **„Zuletzt“** mit den letzten Verlaufseinträgen (Symbol Laden oder Senden, Name, Uhrzeit). Beides erscheint auch während einer Übertragung. Unten zwei Schaltflächen: **Alle anzeigen** (öffnet „Vom PC“) und **Dateien senden**. Im kompakten Widget: Symbole über den Schaltflächen, rote oder grüne Statuspunkte, Handy-Symbol je nach Zustand.
@@ -36,7 +36,13 @@ Geändert: `SyncService.java` (Zustandsmarken, Aktualisierungsaufrufe, Schutz vo
 * **Am Handy mit verbundenem PC (13.10.2026, Xiaomi, dunkel):** Das erweiterte Widget zeigt „Verbunden“ mit PC-Namen, „Bereit am PC (n)“ mit Größen und „Laden“; „Laden“ löst den echten Download aus (57,2 MB in unter 2 Sekunden fertig; 1,46 GB mit Übertragungskarte, Prozent, Balken und Menge, die live wuchs: 2 %, 17 %, 22 %, 59 %); „Alle anzeigen“ öffnet „Vom PC“; nach einem Neuinstallieren zeigt es ehrlich „Nicht aktiv“ und nach „Verbinden“ wieder „Verbunden“; **Abbrechen** stoppte den Download (Karte verschwindet, es bleibt keine halbe Datei, die Zieldatei wurde nicht vollständig). Die erste Version von „Abbrechen“ war nur Text und traf mein Tippen nicht; sie ist jetzt ein echter Knopf.
 * Am Handy (Xiaomi, dunkel): Widget erscheint in der Widget-Auswahl (4×2), lässt sich hinzufügen, zeigt „Nicht verbunden“ mit „QR-Code scannen“ und „Öffnen“, zeigt in großer Darstellung den letzten Verlaufseintrag, und „QR-Code scannen“ öffnet den Scanner der App.
 
+## Verlauf zeigt den echten Grund
+
+Im Verlaufsbereich steht rechts die Uhrzeit, bei Fehlern der gespeicherte Grund („abgebrochen“ oder „fehlgeschlagen“) statt immer „fehlgeschlagen“.
+
 ## Nicht geprüft
+
+* **Das kleine Widget ist am Handy nicht hinzugefügt und nicht angesehen.** Es ist gebaut, das System kennt es als Anbieter, und seine Anzeigeregeln sind getestet (Zustände, Schaltfläche, Übertragung). Das Aussehen ist nicht mit dem Entwurf abgeglichen.
 
 * **Nicht am Handy gesehen:** „Verbindung gestört“, Senden mit Fortschritt (Upload), Trennen, „Dateien senden“ bis zum Ende und das kompakte Widget im Zustand „Verbunden“ (es ist nicht auf dem Startbildschirm). Der Abbruch wurde am Handy nur über seine Wirkung gesehen (Karte weg, keine zweite Datei), nicht über den Verlaufseintrag.
 * Verhalten nach hartem Beenden des Prozesses bei laufender Übertragung am Handy; Entfernen des Widgets; hell.

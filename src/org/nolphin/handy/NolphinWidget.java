@@ -37,7 +37,7 @@ public class NolphinWidget extends AppWidgetProvider {
     static void refresh(Context c) {
         try {
             AppWidgetManager m = AppWidgetManager.getInstance(c);
-            for (Class<?> k : new Class<?>[] { NolphinWidget.class, NolphinWidgetLarge.class }) {
+            for (Class<?> k : new Class<?>[] { NolphinWidget.class, NolphinWidgetLarge.class, NolphinWidgetSmall.class }) {
                 for (int id : m.getAppWidgetIds(new ComponentName(c, k))) {
                     update(c, m, id);
                 }
@@ -66,7 +66,7 @@ public class NolphinWidget extends AppWidgetProvider {
         List<Store.Entry> h = Store.history(c);
         for (int i = 0; i < h.size() && i < 3; i++) {
             Store.Entry e = h.get(i);
-            in.history.add(new WidgetModel.Hist(e.name, e.down, e.ok, e.ok ? Ui.time(e.time) : "fehlgeschlagen"));
+            in.history.add(new WidgetModel.Hist(e.name, e.down, e.ok, WidgetModel.when(e.ok, e.note, Ui.time(e.time))));
         }
         return in;
     }
@@ -79,7 +79,9 @@ public class NolphinWidget extends AppWidgetProvider {
             android.appwidget.AppWidgetProviderInfo info = m.getAppWidgetInfo(id);
             boolean large = info != null && info.provider != null
                     && info.provider.getClassName().endsWith("NolphinWidgetLarge");
-            m.updateAppWidget(id, build(c, input(c), w, h, large));
+            boolean small = info != null && info.provider != null
+                    && info.provider.getClassName().endsWith("NolphinWidgetSmall");
+            m.updateAppWidget(id, small ? buildSmall(c, input(c)) : build(c, input(c), w, h, large));
         } catch (RuntimeException ignored) {
         }
     }
@@ -126,6 +128,66 @@ public class NolphinWidget extends AppWidgetProvider {
         v.setTextViewText(BTN_T[slot], text);
         v.setTextColor(BTN_T[slot], fg);
         v.setOnClickPendingIntent(BTN[slot], pi);
+    }
+
+    /** Das kleine Widget (4×1): eine Zeile, eine Schaltfläche; ein Tipp auf die Fläche öffnet die App. */
+    static RemoteViews buildSmall(Context c, WidgetModel.Input in) {
+        RemoteViews v = new RemoteViews(c.getPackageName(), R.layout.widget_small);
+        WidgetModel.Mode mode = WidgetModel.mode(in);
+        boolean ok = mode == WidgetModel.Mode.CONNECTED;
+        boolean active = WidgetModel.transferActive(in);
+        int text = c.getColor(R.color.widget_text);
+        int dim = c.getColor(R.color.widget_dim);
+        int acc = c.getColor(R.color.widget_acc);
+        int err = c.getColor(R.color.widget_err);
+        int icon = active ? (in.transferDown ? R.drawable.w_download : R.drawable.w_upload) : ok ? R.drawable.w_phone : R.drawable.w_phone_off;
+        v.setImageViewResource(R.id.w_icon, icon);
+        v.setInt(R.id.w_icon, "setColorFilter", ok || active ? acc : dim);
+        v.setTextViewText(R.id.w_title, WidgetModel.smallTitle(in));
+        v.setTextColor(R.id.w_title, mode == WidgetModel.Mode.ERROR && !active ? err : text);
+        v.setTextViewText(R.id.w_sub, WidgetModel.smallSubtitle(in));
+        v.setTextColor(R.id.w_sub, mode == WidgetModel.Mode.ERROR && !active ? err : dim);
+        v.setViewVisibility(R.id.w_dot, active ? android.view.View.GONE : android.view.View.VISIBLE);
+        v.setInt(R.id.w_dot, "setColorFilter", ok ? acc : mode == WidgetModel.Mode.STOPPED ? dim : err);
+        v.setOnClickPendingIntent(R.id.w_root, activity(c, 1, Intent.ACTION_MAIN));
+        PendingIntent pi;
+        int ic;
+        String label;
+        boolean fill;
+        switch (WidgetModel.smallAction(in)) {
+            case CANCEL:
+                pi = broadcast(c, 4, WidgetActions.ACTION_CANCEL, null);
+                ic = R.drawable.ic_close;
+                label = "Abbrechen";
+                fill = false;
+                break;
+            case SEND:
+                pi = activity(c, 5, ACTION_PICK);
+                ic = R.drawable.w_upload;
+                label = "Senden";
+                fill = true;
+                break;
+            case SCAN:
+                pi = activity(c, 2, MainActivity.ACTION_SCAN);
+                ic = R.drawable.ic_scan;
+                label = "Scannen";
+                fill = true;
+                break;
+            default:
+                pi = activity(c, 1, Intent.ACTION_MAIN);
+                ic = R.drawable.ic_refresh;
+                label = "Verbinden";
+                fill = true;
+                break;
+        }
+        int fg = fill ? c.getColor(R.color.widget_onacc) : acc;
+        v.setInt(R.id.w_b1, "setBackgroundResource", fill ? R.drawable.widget_btn_fill : R.drawable.widget_btn);
+        v.setImageViewResource(R.id.w_b1_i, ic);
+        v.setInt(R.id.w_b1_i, "setColorFilter", fg);
+        v.setTextViewText(R.id.w_b1_t, label);
+        v.setTextColor(R.id.w_b1_t, fg);
+        v.setOnClickPendingIntent(R.id.w_b1, pi);
+        return v;
     }
 
     /** @param large true für das erweiterte Widget (Übertragung, Dateien vom PC), false für das kompakte */

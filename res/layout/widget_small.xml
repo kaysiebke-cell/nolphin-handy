@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/w_root" android:layout_width="match_parent" android:layout_height="match_parent"
+    android:orientation="horizontal" android:gravity="center_vertical" android:padding="12dp"
+    android:background="@drawable/widget_bg">
+    <ImageView android:id="@+id/w_icon" android:layout_width="26dp" android:layout_height="26dp" />
+    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+        android:orientation="vertical" android:paddingLeft="10dp" android:paddingRight="6dp">
+        <TextView android:id="@+id/w_title" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:textSize="14sp" android:textStyle="bold" android:singleLine="true" android:ellipsize="end" />
+        <TextView android:id="@+id/w_sub" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:textSize="11sp" android:singleLine="true" android:ellipsize="end" />
+    </LinearLayout>
+    <ImageView android:id="@+id/w_dot" android:layout_width="10dp" android:layout_height="10dp"
+        android:src="@drawable/widget_dot" android:layout_marginRight="8dp" />
+    <LinearLayout android:id="@+id/w_b1" android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:orientation="horizontal" android:gravity="center" android:paddingLeft="12dp" android:paddingRight="12dp"
+        android:paddingTop="8dp" android:paddingBottom="8dp">
+        <ImageView android:id="@+id/w_b1_i" android:layout_width="16dp" android:layout_height="16dp" />
+        <TextView android:id="@+id/w_b1_t" android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:paddingLeft="4dp" android:textSize="12sp" android:textStyle="bold" android:singleLine="true" />
+    </LinearLayout>
+</LinearLayout>

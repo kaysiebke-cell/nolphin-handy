@@ -95,6 +95,12 @@
             </intent-filter>
             <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_info_large" />
         </receiver>
+        <receiver android:name=".NolphinWidgetSmall" android:exported="true" android:label="Nolphin Handy klein">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_info_small" />
+        </receiver>
         <!-- Schaltflächen des Widgets, die den Dienst steuern: nicht exportiert -->
         <receiver android:name=".WidgetActions" android:exported="false" />
 

@@ -3,5 +3,6 @@
     <string name="shortcut_scan_short">QR-Code scannen</string>
     <string name="shortcut_scan_long">QR-Code scannen und verbinden</string>
     <string name="widget_description">Kompakt: Verbindung und Schnellaktionen</string>
+    <string name="widget_description_small">Klein: eine Zeile mit Zustand und einer Schaltfläche</string>
     <string name="widget_description_large">Erweitert: Übertragung, Dateien vom PC, Senden und Verlauf</string>
 </resources>

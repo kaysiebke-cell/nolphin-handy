@@ -189,6 +189,45 @@ final class WidgetModel {
         return showFiles(in, rows) ? "Bereit am PC (" + in.files.size() + ")" : "Zuletzt";
     }
 
+    /** Rechte Spalte eines Verlaufseintrags: die Uhrzeit, sonst der gespeicherte Grund („abgebrochen“, „fehlgeschlagen“). */
+    static String when(boolean ok, String note, String time) {
+        if (ok) {
+            return time;
+        }
+        return note == null || note.trim().isEmpty() ? "fehlgeschlagen" : note.trim();
+    }
+
+    /** Welche Schaltfläche das kleine Widget zeigt. */
+    enum SmallAction { SEND, SCAN, CANCEL, CONNECT }
+
+    static SmallAction smallAction(Input in) {
+        if (transferActive(in)) {
+            return SmallAction.CANCEL;
+        }
+        switch (mode(in)) {
+            case CONNECTED:
+                return SmallAction.SEND;
+            case NOT_CONNECTED:
+                return SmallAction.SCAN;
+            default:
+                return SmallAction.CONNECT;   // gestoppt oder gestört: die App öffnen, sie verbindet neu
+        }
+    }
+
+    /** Erste Zeile des kleinen Widgets: bei einer Übertragung Name und Prozent, sonst der Zustand. */
+    static String smallTitle(Input in) {
+        if (!transferActive(in)) {
+            return title(in);
+        }
+        int pct = percent(in.transferDone, in.transferTotal);
+        return (in.transferDown ? "Lade " : "Sende ") + in.transferName + (pct >= 0 ? " · " + pct + " %" : "");
+    }
+
+    /** Zweite Zeile: bei einer Übertragung die Menge, sonst PC-Name oder Hinweis. */
+    static String smallSubtitle(Input in) {
+        return transferActive(in) ? amount(in.transferDone, in.transferTotal) : subtitle(in);
+    }
+
     /** Anzahl weiterer Dateien, die nicht im Widget stehen (für „Alle anzeigen (n)“). */
     static int hiddenFiles(Input in, int rows) {
         return mode(in) == Mode.CONNECTED ? Math.max(0, in.files.size() - rows) : 0;

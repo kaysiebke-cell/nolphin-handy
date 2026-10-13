@@ -102,6 +102,28 @@ public class WidgetTest {
         hv.files.add(new RemoteFile("a.pdf", 1));
         ok(WidgetModel.transferActive(hv) && WidgetModel.shownFiles(hv, 2).size() == 1, "Übertragung und Dateien gleichzeitig (wie im Entwurf)");
 
+        ok(WidgetModel.when(true, "", "11:14").equals("11:14") && WidgetModel.when(false, "abgebrochen", "11:14").equals("abgebrochen")
+                && WidgetModel.when(false, "", "11:14").equals("fehlgeschlagen") && WidgetModel.when(false, null, "x").equals("fehlgeschlagen"), "Verlauf: echter Grund statt immer fehlgeschlagen");
+
+        // Kleines Widget: eine Schaltfläche je Zustand, bei Übertragung Name, Prozent und Abbrechen
+        ok(WidgetModel.smallAction(in(false, false, "")) == WidgetModel.SmallAction.SCAN, "klein: nicht verbunden: Scannen");
+        ok(WidgetModel.smallAction(in(true, true, "ok")) == WidgetModel.SmallAction.SEND, "klein: verbunden: Senden");
+        ok(WidgetModel.smallAction(in(true, false, "ok")) == WidgetModel.SmallAction.CONNECT, "klein: gestoppt: Verbinden");
+        ok(WidgetModel.smallAction(in(true, true, "PC nicht erreichbar: x")) == WidgetModel.SmallAction.CONNECT, "klein: gestört: Verbinden");
+        WidgetModel.Input st = in(true, true, "ok");
+        st.transferName = "Plan.pdf";
+        st.transferDown = true;
+        st.transferDone = 512 * 1024;
+        st.transferTotal = 1024 * 1024;
+        ok(WidgetModel.smallAction(st) == WidgetModel.SmallAction.CANCEL, "klein: Übertragung: Abbrechen");
+        ok(WidgetModel.smallTitle(st).equals("Lade Plan.pdf · 50 %") && WidgetModel.smallSubtitle(st).equals("512 KB von 1,0 MB"), "klein: Titel und Menge bei Übertragung: " + WidgetModel.smallTitle(st));
+        st.transferDown = false;
+        st.transferTotal = 0;
+        ok(WidgetModel.smallTitle(st).equals("Sende Plan.pdf") && WidgetModel.smallSubtitle(st).equals("512 KB"), "klein: ohne Gesamtgröße kein Prozentwert");
+        st.stateTime = st.now - WidgetModel.TRANSFER_FRESH_MS - 1;
+        ok(WidgetModel.smallAction(st) == WidgetModel.SmallAction.SEND && WidgetModel.smallTitle(st).equals("Verbunden"), "klein: veraltete Übertragung wird nicht gezeigt");
+        ok(WidgetModel.smallSubtitle(in(true, true, "ok")).equals("PC: Mein-Laptop"), "klein: PC-Name");
+
         // Schutz vor Doppelstarts
         FetchGuard g = new FetchGuard(3000);
         ok(g.beginFetch("a.pdf|10"), "erster Download darf starten");
