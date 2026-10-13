@@ -41,7 +41,7 @@ public class WidgetTest {
         WidgetModel.Input noName = in(true, true, "ok");
         noName.pcName = "";
         ok(WidgetModel.subtitle(noName).equals("PC: PC"), "ohne PC-Namen kein Absturz");
-        ok(WidgetModel.subtitle(in(true, false, "")).contains("Dienst gestoppt"), "gestoppt erklärt");
+        ok(WidgetModel.subtitle(in(true, false, "")).equals("Verbindung gespeichert, Dienst aus") && WidgetModel.subtitle(in(true, false, "")).length() <= 36, "gestoppt erklärt, kurz genug für das kleine Widget");
         ok(WidgetModel.title(in(false, false, "")).equals("Nicht verbunden"), "Titel ohne Verbindung");
 
         // Übertragung: nur wenn Dienst läuft und Zustand frisch
@@ -123,6 +123,7 @@ public class WidgetTest {
         st.stateTime = st.now - WidgetModel.TRANSFER_FRESH_MS - 1;
         ok(WidgetModel.smallAction(st) == WidgetModel.SmallAction.SEND && WidgetModel.smallTitle(st).equals("Verbunden"), "klein: veraltete Übertragung wird nicht gezeigt");
         ok(WidgetModel.smallSubtitle(in(true, true, "ok")).equals("PC: Mein-Laptop"), "klein: PC-Name");
+        ok(WidgetModel.smallSubtitle(in(true, false, "")).equals("Dienst aus"), "klein: gestoppt: kurzer Text");
 
         // Schutz vor Doppelstarts
         FetchGuard g = new FetchGuard(3000);

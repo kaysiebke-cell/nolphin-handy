@@ -128,7 +128,7 @@ final class WidgetModel {
             case ERROR:
                 return in.status;
             case STOPPED:
-                return "Verbindung zu " + pc + " gespeichert, Dienst gestoppt";
+                return "Verbindung gespeichert, Dienst aus";
             default:
                 return "Mit dem PC verbinden";
         }
@@ -225,7 +225,10 @@ final class WidgetModel {
 
     /** Zweite Zeile: bei einer Übertragung die Menge, sonst PC-Name oder Hinweis. */
     static String smallSubtitle(Input in) {
-        return transferActive(in) ? amount(in.transferDone, in.transferTotal) : subtitle(in);
+        if (transferActive(in)) {
+            return amount(in.transferDone, in.transferTotal);
+        }
+        return mode(in) == Mode.STOPPED ? "Dienst aus" : subtitle(in);   // die kleine Zeile teilt sich den Platz mit der Schaltfläche
     }
 
     /** Anzahl weiterer Dateien, die nicht im Widget stehen (für „Alle anzeigen (n)“). */
