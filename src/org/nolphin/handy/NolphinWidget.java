@@ -17,7 +17,7 @@ import java.util.List;
  * (App öffnen, QR-Scanner, Trennen, Laden, Abbrechen, Senden). Es öffnet selbst keine Netzwerkverbindung: Es liest
  * nur den Zustand des {@link SyncService} und die gespeicherten Daten. Die Aktionen laufen über {@link WidgetActions}.
  */
-public final class NolphinWidget extends AppWidgetProvider {
+public class NolphinWidget extends AppWidgetProvider {
     static final String ACTION_PICK = "org.nolphin.handy.action.PICK";
     static final String ACTION_FROM_PC = "org.nolphin.handy.action.FROM_PC";
 
@@ -33,13 +33,14 @@ public final class NolphinWidget extends AppWidgetProvider {
         update(c, m, id);   // Größe geändert: Layout neu wählen
     }
 
-    /** Aktualisiert alle Widgets aus dem vorhandenen Zustand (schnell, ohne Netzwerk). */
+    /** Aktualisiert alle Widgets (kompakt und erweitert) aus dem vorhandenen Zustand (schnell, ohne Netzwerk). */
     static void refresh(Context c) {
         try {
             AppWidgetManager m = AppWidgetManager.getInstance(c);
-            int[] ids = m.getAppWidgetIds(new ComponentName(c, NolphinWidget.class));
-            for (int id : ids) {
-                update(c, m, id);
+            for (Class<?> k : new Class<?>[] { NolphinWidget.class, NolphinWidgetLarge.class }) {
+                for (int id : m.getAppWidgetIds(new ComponentName(c, k))) {
+                    update(c, m, id);
+                }
             }
         } catch (RuntimeException ignored) {
             // das Widget darf nie die App oder den Dienst zum Absturz bringen
@@ -75,7 +76,10 @@ public final class NolphinWidget extends AppWidgetProvider {
             Bundle o = m.getAppWidgetOptions(id);
             int w = o.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 250);
             int h = o.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 110);
-            m.updateAppWidget(id, build(c, input(c), w, h));
+            android.appwidget.AppWidgetProviderInfo info = m.getAppWidgetInfo(id);
+            boolean large = info != null && info.provider != null
+                    && info.provider.getClassName().endsWith("NolphinWidgetLarge");
+            m.updateAppWidget(id, build(c, input(c), w, h, large));
         } catch (RuntimeException ignored) {
         }
     }
@@ -117,8 +121,8 @@ public final class NolphinWidget extends AppWidgetProvider {
         v.setOnClickPendingIntent(BTN[slot], pi);
     }
 
-    static RemoteViews build(Context c, WidgetModel.Input in, int widthDp, int heightDp) {
-        boolean large = WidgetModel.large(heightDp, widthDp);
+    /** @param large true für das erweiterte Widget (Übertragung, Dateien vom PC), false für das kompakte */
+    static RemoteViews build(Context c, WidgetModel.Input in, int widthDp, int heightDp, boolean large) {
         RemoteViews v = new RemoteViews(c.getPackageName(), large ? R.layout.widget_large : R.layout.widget_compact);
         WidgetModel.Mode mode = WidgetModel.mode(in);
         int text = c.getColor(R.color.widget_text);
@@ -155,7 +159,7 @@ public final class NolphinWidget extends AppWidgetProvider {
 
         // Dateien vom PC (nur erweitertes Layout)
         if (large) {
-            int rows = WidgetModel.fileRows(heightDp);
+            int rows = WidgetModel.fileRows(Math.max(heightDp, 180));   // das erweiterte Widget zeigt mindestens zwei Dateien
             List<RemoteFile> shown = active ? new ArrayList<RemoteFile>() : WidgetModel.shownFiles(in, rows);
             int hidden = active ? 0 : WidgetModel.hiddenFiles(in, rows);
             boolean any = !shown.isEmpty();

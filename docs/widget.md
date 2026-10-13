@@ -4,7 +4,7 @@ Stand: 13.10.2026. Dieses Dokument beschreibt das Widget und nennt ehrlich, was 
 
 ## Was das Widget kann
 
-* **Zwei Größen:** kompakt (ab 4×2 Zellen: Zustand, Übertragung, bis zu drei Schaltflächen) und erweitert (ab etwa 180 dp Höhe und Breite: zusätzlich Dateien vom PC mit „Laden“, letzter Verlaufseintrag). Hell und dunkel folgen dem System.
+* **Zwei Einträge in der Widget-Auswahl:** **Nolphin Handy kompakt** (Startgröße 4×2: Zustand, Übertragung, bis zu drei Schaltflächen) und **Nolphin Handy erweitert** (Startgröße 4×4: zusätzlich Dateien vom PC mit „Laden“ und letzter Verlaufseintrag). Beide laufen über denselben Code (`NolphinWidget`, `NolphinWidgetLarge`). Hell und dunkel folgen dem System.
 * **Zustand:** *Verbunden*, *Verbindung gestört* (PC nicht erreichbar oder Schlüssel ungültig), *Nicht aktiv* (Verbindungsdaten gespeichert, aber der Dienst läuft nicht) und *Nicht verbunden*. Das Widget zeigt „Verbunden“ nur, wenn Verbindungsdaten **und** der laufende Synchronisationsdienst vorhanden sind. Gespeicherte Daten allein reichen nicht.
 * **Übertragung:** Name, Laden oder Senden, Prozent (wenn die Gesamtgröße bekannt ist), bisherige und gesamte Menge, **Abbrechen**. Eine Übertragung wird nur gezeigt, solange der Dienst läuft und sein Zustand höchstens 20 Sekunden alt ist.
 * **Dateien vom PC:** bis zu zwei bis drei Dateien (nach Höhe) mit Größe und **Laden** (`SyncService.ACTION_FETCH`), dazu „Alle anzeigen“ (öffnet „Vom PC“ in der App).
@@ -40,5 +40,5 @@ Geändert: `SyncService.java` (Zustandsmarken, Aktualisierungsaufrufe, Schutz vo
 * **Alle Zustände mit PC-Verbindung:** Verbunden, Verbindung gestört, Dateien vom PC mit „Laden“, Fortschritt, Abbrechen, Senden und Trennen am Handy. Dafür braucht es einen verbundenen PC; ohne ihn lassen sie sich nicht ehrlich zeigen.
 * Verhalten nach hartem Beenden des Prozesses bei laufender Übertragung am Handy; Entfernen des Widgets; hell.
 * Fehlende Berechtigungen und Netzwerkfehler am Handy.
-* Größen zwischen kompakt und erweitert und andere Launcher als der von Xiaomi.
+* Das erweiterte Widget als eigener Eintrag auf dem Startbildschirm (auf der gerade offenen Seite war kein Platz mehr, deshalb habe ich es dort nicht hinzugefügt); gesehen habe ich beide Layouts nur über das vergrößerte erste Widget. Andere Launcher als der von Xiaomi.
 * Das Widget zeigt ohne Icons im Vorschaubild der Auswahl nur das App-Symbol.
