@@ -336,11 +336,45 @@ public class SyncService extends Service {
                     sleep(15000);
                     continue;
                 }
+                if (switchWay()) {
+                    continue;   // anderer Weg gefunden (Kabelnetz) oder zurück im WLAN: sofort neu versuchen
+                }
                 setStatus("PC nicht erreichbar, neuer Versuch …");
                 sleep(5000);
             } finally {
                 waiting = null;
             }
+        }
+    }
+
+    private long lastWayTry;
+
+    /**
+     * Der PC antwortet nicht: Gibt es ein USB-Kabelnetz, sucht die App den PC dort selbst (gleicher Schlüssel, gleiches
+     * Zertifikat, kein neuer QR-Code); ist das Kabel weg, geht sie zur Adresse aus dem QR-Code zurück. Höchstens alle 15 Sekunden.
+     */
+    private boolean switchWay() {
+        long now = System.currentTimeMillis();
+        if (now - lastWayTry < 15000) {
+            return false;
+        }
+        lastWayTry = now;
+        String cur = Conn.host(this);
+        java.util.List<CableNet.Nic> nics = CableProbe.nics();
+        switch (HostSwitch.decide(nics, cur, Conn.homeHost(this))) {
+            case RESTORE_HOME:
+                Conn.restoreHome(this);
+                return true;
+            case FIND_ON_CABLE:
+                setStatus("PC nicht erreichbar, suche im Kabelnetz …");
+                String found = CableFinder.find(CableNet.find(nics), HostSwitch.portOf(cur), Conn.token(this), Conn.pin(this));
+                if (found != null && !found.equals(cur)) {
+                    Conn.useAltHost(this, found);
+                    return true;
+                }
+                return false;
+            default:
+                return false;
         }
     }
 

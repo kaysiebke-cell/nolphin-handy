@@ -23,12 +23,20 @@ final class Connector {
             public void run() {
                 String failure = null;
                 String pcName = "";
+                String cable = null;
                 Link link = null;
                 try {
                     link = Link.parse(text, System.currentTimeMillis() / 1000);
                     PcCheck.Result r = PcCheck.check(link);
                     if (!r.ok) {
                         failure = r.message;
+                        // Adresse aus dem QR-Code nicht erreichbar (zum Beispiel WLAN aus): im Kabelnetz suchen, mit Schlüssel und Fingerabdruck aus dem Link
+                        CableNet.Nic nic = CableNet.find(CableProbe.nics());
+                        String found = nic == null ? null : CableFinder.find(nic, link.port, link.token, link.fingerprint);
+                        if (found != null) {
+                            cable = found;
+                            failure = null;
+                        }
                     } else {
                         pcName = r.pcName;
                     }
@@ -40,6 +48,9 @@ final class Connector {
                 final Link ok = link;
                 if (msg == null) {
                     Conn.save(app, ok, nameOfPc);
+                    if (cable != null) {
+                        Conn.useAltHost(app, cable);
+                    }
                 }
                 main.post(new Runnable() {
                     @Override

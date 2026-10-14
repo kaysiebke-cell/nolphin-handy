@@ -70,6 +70,17 @@ public class MainActivity extends Activity implements Host {
         super.attachBaseContext(base);
     }
 
+    /** Reiter, der vor einer Neuerstellung der Anzeige (zum Beispiel beim Wechsel des USB-Modus) offen war. */
+    private static final String KEY_TAB = "tab";
+
+    @Override
+    protected void onSaveInstanceState(Bundle out) {
+        super.onSaveInstanceState(out);
+        if (current >= 0 && current != TAB_SETTINGS) {
+            out.putInt(KEY_TAB, current);
+        }
+    }
+
     @Override
     protected void onCreate(Bundle state) {
         super.onCreate(state);
@@ -82,7 +93,8 @@ public class MainActivity extends Activity implements Host {
         if (Build.VERSION.SDK_INT >= 33) {
             requestPermissions(new String[] { Manifest.permission.POST_NOTIFICATIONS }, 1);
         }
-        show(TAB_HOME);
+        show(state != null && state.getInt(KEY_TAB, TAB_HOME) >= TAB_HOME && state.getInt(KEY_TAB, TAB_HOME) <= TAB_HISTORY
+                ? state.getInt(KEY_TAB, TAB_HOME) : TAB_HOME);
         updateSubtitle();
         handleIntent(getIntent());
     }
@@ -476,6 +488,7 @@ public class MainActivity extends Activity implements Host {
             return;
         }
         final String text = data.toString();
+        intent.setData(null);   // der Link gilt nur einmal: beim Drehen oder Neuerstellen der Anzeige nicht erneut fragen
         final Link link;
         try {
             link = Link.parse(text, System.currentTimeMillis() / 1000);

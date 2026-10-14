@@ -1,7 +1,8 @@
 /* Hilfsprogramm für test.sh und für Prüfungen am echten Handy: startet den ECHTEN Nolphin-Server
  * (src/nolphin-phone-server.c) auf einer Adresse (Vorgabe 127.0.0.1) und schreibt eine Zeile
  * "PORT TOKEN FINGERABDRUCK". Es läuft, bis die Standardeingabe schließt. Aufruf: phone-drv [Adresse [Ordner]]
- * Der Ordner enthält "eingang" (Empfang) und "frei" (zum Laden); ohne Angabe ein Temporärordner. */
+ * Der Ordner enthält "eingang" (Empfang) und "frei" (zum Laden); ohne Angabe ein Temporärordner.
+ * Mit der Umgebungsvariablen NOLPHIN_LISTEN_ALL hört der Server auf allen Netzen (wie Nolphin). */
 #include <gio/gio.h>
 #include <stdio.h>
 
@@ -32,7 +33,11 @@ main (int argc, char **argv)
 	gchar *token, *fp;
 
 	g_mkdir_with_parents (share, 0755);
-	s = nolphin_phone_server_start (address, in, sh, NULL, NULL, NULL, NULL, &error);
+	NolphinPhoneServerOptions opt = { 0 };
+
+	/* NOLPHIN_LISTEN_ALL=1: wie Nolphin am PC auf allen privaten Netzen hören (WLAN und USB-Kabelnetz) */
+	opt.listen_all = g_getenv ("NOLPHIN_LISTEN_ALL") != NULL;
+	s = nolphin_phone_server_start (address, in, sh, NULL, NULL, NULL, &opt, &error);
 	if (s == NULL) {
 		g_printerr ("Start fehlgeschlagen: %s\n", error->message);
 		return 1;

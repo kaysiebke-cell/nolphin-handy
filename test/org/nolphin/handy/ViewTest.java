@@ -168,6 +168,22 @@ public class ViewTest {
             }
         }
 
+        // Wechsel zwischen WLAN und Kabelnetz
+        java.util.List<CableNet.Nic> wl = java.util.Arrays.asList(new CableNet.Nic("wlan0", "192.168.100.50", 24));
+        java.util.List<CableNet.Nic> cb = java.util.Arrays.asList(new CableNet.Nic("wlan0", "192.168.100.50", 24), new CableNet.Nic("rndis0", "10.20.30.31", 24));
+        ok(HostSwitch.decide(wl, "192.168.100.20:40000", null) == HostSwitch.Action.NONE, "kein Kabelnetz, normale Verbindung: nichts tun");
+        ok(HostSwitch.decide(cb, "192.168.100.20:40000", null) == HostSwitch.Action.FIND_ON_CABLE, "Kabelnetz da, PC im WLAN nicht erreichbar: im Kabelnetz suchen");
+        ok(HostSwitch.decide(cb, "10.20.30.124:40000", "192.168.100.20:40000") == HostSwitch.Action.FIND_ON_CABLE, "auf der Kabeladresse und gestört: im Kabelnetz neu suchen");
+        ok(HostSwitch.decide(wl, "10.20.30.124:40000", "192.168.100.20:40000") == HostSwitch.Action.RESTORE_HOME, "Kabel weg: zurück zur Adresse aus dem QR-Code");
+        ok(HostSwitch.decide(wl, "192.168.100.20:40000", "192.168.100.20:40000") == HostSwitch.Action.NONE, "Heimadresse gleich der aktuellen: nichts zurückzusetzen");
+        ok(HostSwitch.decide(null, "192.168.100.20:40000", null) == HostSwitch.Action.NONE && HostSwitch.decide(new java.util.ArrayList<CableNet.Nic>(), "x", "") == HostSwitch.Action.NONE, "ohne Netzschnittstellen: nichts tun");
+        ok(HostSwitch.portOf("10.20.30.124:40000") == 40000 && HostSwitch.portOf("10.20.30.124") == -1 && HostSwitch.portOf("10.20.30.124:") == -1 && HostSwitch.portOf("a:b") == -1 && HostSwitch.portOf("1.2.3.4:70000") == -1 && HostSwitch.portOf(null) == -1, "Port aus der Adresse");
+        java.util.List<String> cand = HostSwitch.candidates(new CableNet.Nic("rndis0", "10.20.30.31", 24));
+        ok(cand.size() == 253 && cand.contains("10.20.30.1") && cand.contains("10.20.30.254") && !cand.contains("10.20.30.31") && !cand.contains("10.20.30.0") && !cand.contains("10.20.30.255"), "Kandidaten im /24: ohne eigene Adresse, Netz- und Sendeadresse: " + cand.size());
+        ok(HostSwitch.candidates(new CableNet.Nic("rndis0", "10.20.30.31", 16)).size() == 253, "größeres Netz: nur der eigene /24");
+        ok(HostSwitch.candidates(new CableNet.Nic("rndis0", "10.20.30.34", 28)).size() == 13 && HostSwitch.candidates(new CableNet.Nic("rndis0", "10.20.30.34", 28)).contains("10.20.30.33"), "kleineres Netz: nur dessen Adressen");
+        ok(HostSwitch.candidates(new CableNet.Nic("rndis0", "8.8.8.8", 24)).isEmpty() && HostSwitch.candidates(new CableNet.Nic("rndis0", "x", 24)).isEmpty() && HostSwitch.candidates(null).isEmpty() && HostSwitch.candidates(new CableNet.Nic("rndis0", "10.0.0.1", 31)).isEmpty(), "ungültige oder öffentliche Netze: keine Kandidaten");
+
         // Externe Apps: nur Dateien unterhalb der Speicher, nie private App-Ordner
         List<String> roots = Collections.singletonList("/storage");
         ok(FileUris.isAllowed("/storage/emulated/0/DCIM/foto.jpg", roots), "Foto im Speicher erlaubt");

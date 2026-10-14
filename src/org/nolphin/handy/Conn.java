@@ -34,14 +34,38 @@ final class Conn {
         return host(c) != null && token(c) != null && pin(c) != null;
     }
 
+    /** Adresse aus dem QR-Code, solange gerade eine andere (Kabelnetz) gilt; sonst null. */
+    static String homeHost(Context c) {
+        return prefs(c).getString("homehost", null);
+    }
+
+    /** Wechselt auf eine andere Adresse desselben PCs (zum Beispiel im Kabelnetz); die aus dem QR-Code bleibt gemerkt. */
+    static void useAltHost(Context c, String host) {
+        SharedPreferences.Editor e = prefs(c).edit();
+        if (homeHost(c) == null && host(c) != null) {
+            e.putString("homehost", host(c));
+        }
+        e.putString("host", host).apply();
+        NolphinWidget.refresh(c);
+    }
+
+    /** Zurück zur Adresse aus dem QR-Code. */
+    static void restoreHome(Context c) {
+        String home = homeHost(c);
+        if (home != null) {
+            prefs(c).edit().putString("host", home).remove("homehost").apply();
+            NolphinWidget.refresh(c);
+        }
+    }
+
     static void clear(Context c) {
-        prefs(c).edit().remove("host").remove("token").remove("pin").apply();
+        prefs(c).edit().remove("host").remove("homehost").remove("token").remove("pin").apply();
         NolphinWidget.refresh(c);
     }
 
     /** Speichert eine geprüfte Verbindung (siehe Connector). Ein neuer Schlüssel gilt ab sofort. */
     static void save(Context c, Link link, String pcName) {
-        prefs(c).edit().putString("host", link.authority()).putString("token", link.token).putString("pin", link.fingerprint)
+        prefs(c).edit().remove("homehost").putString("host", link.authority()).putString("token", link.token).putString("pin", link.fingerprint)
                 .putLong("expires", link.expires).putString("pcname", pcName == null ? "" : pcName).apply();
         NolphinWidget.refresh(c);
     }

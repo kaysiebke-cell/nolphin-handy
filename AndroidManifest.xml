@@ -3,8 +3,8 @@
      Nur das Android-Framework, keine Bibliotheken. -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="org.nolphin.handy"
-    android:versionCode="53"
-    android:versionName="4.35">
+    android:versionCode="54"
+    android:versionName="4.36">
 
     <uses-sdk android:minSdkVersion="29" android:targetSdkVersion="34" />
 
