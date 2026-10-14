@@ -59,6 +59,8 @@ final class FromPcScreen implements Screen {
     private final LinearLayout selectBar;
     private final TextView selCount;
     private final View selSave;
+    private View selShare;
+    private final SelectionMode selMode = new SelectionMode();
     private final LinearLayout actionBar;
     private final EditText search;
     private final Handler main = new Handler(Looper.getMainLooper());
@@ -232,10 +234,11 @@ final class FromPcScreen implements Screen {
         LinearLayout.LayoutParams ap = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, Ui.dp(c, 44));
         ap.leftMargin = Ui.dp(c, 8);
         actionRow.setPadding(0, Ui.dp(c, 2), Ui.dp(c, 0), 0);
+        // „Auswählen“ startet den Auswahl-Modus (Kästchen an jedem Eintrag, auch an Ordnern); „Alles auswählen“ steht dann oben
         actionRow.addView(Ui.actionButton(c, "Auswählen", false, new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                selectAll();
+                menuPicked(0);
             }
         }), ap);
         actionRow.addView(Ui.actionButton(c, "Alle laden", true, new View.OnClickListener() {
@@ -288,12 +291,13 @@ final class FromPcScreen implements Screen {
                 loadSelected();
             }
         }));
-        actionBar.addView(actionItem(R.drawable.ic_share, "Teilen", new View.OnClickListener() {
+        selShare = actionItem(R.drawable.ic_share, "Teilen", new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 shareSelected();
             }
-        }));
+        });
+        actionBar.addView(selShare);
         selSave = actionItem(R.drawable.ic_save, "Speichern", new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -324,10 +328,12 @@ final class FromPcScreen implements Screen {
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 Object o = adapter.getItem(position);
                 if (o instanceof String) {
-                    if (selected.isEmpty()) {
+                    if (selMode.taps(selected.size())) {
+                        toggleDir((String) o);
+                    } else {
                         go(dir.isEmpty() ? (String) o : dir + "/" + o);
                     }
-                } else if (!selected.isEmpty()) {
+                } else if (selMode.taps(selected.size())) {
                     toggle((RemoteFile) o);
                 } else {
                     open((RemoteFile) o);
@@ -340,6 +346,10 @@ final class FromPcScreen implements Screen {
                 Object o = adapter.getItem(position);
                 if (o instanceof RemoteFile) {
                     toggle((RemoteFile) o);
+                    return true;
+                }
+                if (o instanceof String) {
+                    toggleDir((String) o);
                     return true;
                 }
                 return false;
@@ -372,6 +382,7 @@ final class FromPcScreen implements Screen {
     private void go(String to) {
         overview = false;
         selected.clear();
+        selMode.end();
         if (!query.isEmpty()) {
             search.setText("");   // setzt query über den TextWatcher zurück
         }
@@ -841,13 +852,15 @@ final class FromPcScreen implements Screen {
             }
         }
         // Ausgewählte, die es nicht mehr gibt (z. B. am PC gelöscht), fallen heraus.
-        Set<String> keep = new LinkedHashSet<>();
+        List<String> fileKeys = new ArrayList<>();
         for (RemoteFile f : files) {
-            if (selected.contains(f.key())) {
-                keep.add(f.key());
-            }
+            fileKeys.add(f.key());
         }
-        selected.retainAll(keep);
+        List<String> dirKeys = new ArrayList<>();
+        for (String d : dirs) {
+            dirKeys.add(FolderFetch.dirKey(dirPath(d)));
+        }
+        selected.retainAll(FolderFetch.keep(selected, fileKeys, dirKeys));
     }
 
     /** Kästchen für die Auswahl. */
@@ -883,12 +896,17 @@ final class FromPcScreen implements Screen {
     }
 
     private void updateBars() {
-        boolean sel = !selected.isEmpty();
+        selMode.update(selected.size());
+        boolean sel = selMode.active(selected.size());
+        boolean folders = FolderFetch.countDirs(selected) > 0;
         normalBar.setVisibility(sel ? View.GONE : View.VISIBLE);
         selectBar.setVisibility(sel ? View.VISIBLE : View.GONE);
         selCount.setText(selected.size() + " gewählt");
         head.setVisibility(sel ? View.GONE : View.VISIBLE);
-        selSave.setVisibility(selected.size() == 1 ? View.VISIBLE : View.GONE);
+        selSave.setVisibility(selected.size() == 1 && !folders ? View.VISIBLE : View.GONE);   // Speichern unter: nur eine Datei
+        if (selShare != null) {
+            selShare.setVisibility(folders ? View.GONE : View.VISIBLE);   // Teilen: nur Dateien
+        }
         actionBar.setVisibility(sel ? View.VISIBLE : View.GONE);
         if (root.isShown()) {
             host.setNavVisible(!sel);
@@ -896,6 +914,12 @@ final class FromPcScreen implements Screen {
     }
 
     private void invertSelection() {
+        for (String d : shownDirs) {
+            String key = FolderFetch.dirKey(dirPath(d));
+            if (!selected.remove(key)) {
+                selected.add(key);
+            }
+        }
         for (RemoteFile f : shownFiles) {
             if (!selected.remove(f.key())) {
                 selected.add(f.key());
@@ -931,14 +955,33 @@ final class FromPcScreen implements Screen {
         refresh();
     }
 
+    @Override
+    public String[] menuLabels() {
+        return overview || !Conn.connected(c) ? new String[0] : new String[] { "Auswählen" };
+    }
+
+    @Override
+    public void menuPicked(int index) {
+        if (index == 0) {
+            selMode.begin();
+            signature = "";
+            refresh();
+            Toast.makeText(c, "Antippen wählt Dateien und Ordner aus", Toast.LENGTH_SHORT).show();
+        }
+    }
+
     private void clearSelection() {
         selected.clear();
+        selMode.end();
         signature = "";
         refresh();
     }
 
     /** Alle sichtbaren Dateien (nach Suche) auswählen. */
     private void selectAll() {
+        for (String d : shownDirs) {
+            selected.add(FolderFetch.dirKey(dirPath(d)));
+        }
         for (RemoteFile f : shownFiles) {
             selected.add(f.key());
         }
@@ -958,14 +1001,31 @@ final class FromPcScreen implements Screen {
 
     private void loadSelected() {
         int n = 0;
+        int folders = 0;
+        for (String key : new ArrayList<>(selected)) {
+            if (FolderFetch.isDirKey(key)) {
+                String path = FolderFetch.pathOf(key);
+                String name = path.substring(path.lastIndexOf('/') + 1);
+                if (FolderFetch.safeName(name)) {
+                    host.fetchFolder(path, name);
+                    folders++;
+                }
+            }
+        }
         for (RemoteFile f : selectedFiles()) {
             if (Store.uri(c, f.key()) == null) {
                 host.fetch(f);
                 n++;
             }
         }
-        Toast.makeText(c, n == 0 ? "Alles schon auf dem Handy" : n + " Dateien werden geladen …",
-                Toast.LENGTH_SHORT).show();
+        String msg;
+        if (folders > 0) {
+            msg = folders + (folders == 1 ? " Ordner" : " Ordner") + (n > 0 ? " und " + n + (n == 1 ? " Datei" : " Dateien") : "")
+                    + " werden geladen …";
+        } else {
+            msg = n == 0 ? "Alles schon auf dem Handy" : n + " Dateien werden geladen …";
+        }
+        Toast.makeText(c, msg, Toast.LENGTH_SHORT).show();
         clearSelection();
     }
 
@@ -1065,7 +1125,8 @@ final class FromPcScreen implements Screen {
     }
 
     private View folderTile(String name) {
-        return tile(folderTile48(), name, "Ordner", Ui.dim(c), false);
+        boolean picked = dirPicked(name);
+        return tile(folderTile48(), name, picked ? "Ordner gewählt" : "Ordner", picked ? Ui.primary(c) : Ui.dim(c), picked);
     }
 
     /** Dateisymbol mit Endung; bei geladenen Dateien ersetzt das Vorschaubild es, wenn es eines gibt. */
@@ -1123,8 +1184,31 @@ final class FromPcScreen implements Screen {
         return row;
     }
 
+    private String dirPath(String name) {
+        return dir.isEmpty() ? name : dir + "/" + name;
+    }
+
+    private boolean dirPicked(String name) {
+        return selected.contains(FolderFetch.dirKey(dirPath(name)));
+    }
+
+    private void toggleDir(String name) {
+        String key = FolderFetch.dirKey(dirPath(name));
+        if (!selected.remove(key)) {
+            selected.add(key);
+        }
+        signature = "";
+        refresh();
+    }
+
     private View folderRow(String name) {
-        LinearLayout row = rowShell(false);
+        boolean picked = dirPicked(name);
+        LinearLayout row = rowShell(picked);
+        if (selMode.active(selected.size())) {
+            LinearLayout.LayoutParams cp = new LinearLayout.LayoutParams(Ui.dp(c, 22), Ui.dp(c, 22));
+            cp.rightMargin = Ui.dp(c, 14);
+            row.addView(checkbox(picked), cp);
+        }
         row.addView(folderTile48(), new LinearLayout.LayoutParams(Ui.dp(c, 36), Ui.dp(c, 36)));
         TextView n = Ui.label(c, name, 16, Ui.text(c), false);
         n.setPadding(Ui.dp(c, 14), 0, Ui.dp(c, 6), 0);
@@ -1139,7 +1223,7 @@ final class FromPcScreen implements Screen {
         final String uri = Store.uri(c, f.key());
         boolean picked = selected.contains(f.key());
         LinearLayout row = rowShell(picked);
-        if (!selected.isEmpty()) {
+        if (selMode.active(selected.size())) {
             LinearLayout.LayoutParams cp = new LinearLayout.LayoutParams(Ui.dp(c, 22), Ui.dp(c, 22));
             cp.rightMargin = Ui.dp(c, 14);
             row.addView(checkbox(picked), cp);

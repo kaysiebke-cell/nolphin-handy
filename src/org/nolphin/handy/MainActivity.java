@@ -271,6 +271,13 @@ public class MainActivity extends Activity implements Host {
     }
 
     @Override
+    public void fetchFolder(String dir, String name) {
+        Intent i = new Intent(this, SyncService.class).setAction(SyncService.ACTION_FETCH_DIR)
+                .putExtra("dir", dir).putExtra("name", name);
+        startForegroundService(i);
+    }
+
+    @Override
     public String error() {
         return error;
     }
@@ -451,7 +458,9 @@ public class MainActivity extends Activity implements Host {
                 Toast.makeText(this, "Zuerst mit dem PC verbinden", Toast.LENGTH_LONG).show();
                 show(TAB_HOME);
             } else if (NolphinWidget.ACTION_PICK.equals(act)) {
-                pickFiles();   // Dateiauswahl, danach der vorhandene Versand über den Dienst
+                // „Senden“ im Widget öffnet den Dateimanager „Zum PC“: Dort lassen sich Dateien und auch Ordner auswählen
+                // (die Dateiauswahl von Android zeigt keine Ordner)
+                show(TAB_TO_PC);
             } else {
                 show(TAB_FROM_PC);
             }

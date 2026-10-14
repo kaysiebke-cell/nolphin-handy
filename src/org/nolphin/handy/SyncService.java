@@ -42,6 +42,7 @@ public class SyncService extends Service {
     static final String ACTION_ALL = "org.nolphin.handy.ALL";
     static final String ACTION_CANCEL = "org.nolphin.handy.CANCEL";
     static final String ACTION_FETCH = "org.nolphin.handy.FETCH";
+    static final String ACTION_FETCH_DIR = "org.nolphin.handy.FETCH_DIR";
 
     private static final String CH_STATE = "state";
     private static final String CH_FILES = "files";
@@ -139,6 +140,21 @@ public class SyncService extends Service {
                         }
                     }
                 }, "nolphin-fetch").start();
+            }
+        } else if (ACTION_FETCH_DIR.equals(action) && intent != null) {
+            final String fdir = intent.getStringExtra("dir");
+            final String fname = intent.getStringExtra("name");
+            if (fdir != null && FolderFetch.safeName(fname) && GUARD.beginFetch(FolderFetch.dirKey(fdir))) {
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            fetchFolder(fdir, fname);
+                        } finally {
+                            GUARD.endFetch(FolderFetch.dirKey(fdir));
+                        }
+                    }
+                }, "nolphin-fetch-folder").start();
             }
         } else if (ACTION_UPLOAD.equals(action) && intent != null) {
             final Intent in = intent;
@@ -419,6 +435,95 @@ public class SyncService extends Service {
         event("Bereit zum Laden: " + name);
     }
 
+    /** Liest einen Ordner am PC samt Unterordnern (über /dir) und sammelt alle Dateien mit ihrem Zielunterordner. */
+    private boolean listTree(String host, String token, String pcDir, String rel, int depth, List<FolderFetch.Item> out) {
+        if (depth > FolderFetch.MAX_DEPTH || out.size() > FolderFetch.MAX_FILES) {
+            return false;
+        }
+        try {
+            URL url = new URL("https://" + host + "/dir?t=" + Uri.encode(token) + RemoteFile.params(pcDir));
+            HttpURLConnection h = Secure.connect(url, Conn.pin(this));
+            h.setConnectTimeout(8000);
+            h.setReadTimeout(15000);
+            String body;
+            try {
+                if (h.getResponseCode() != 200) {
+                    return false;
+                }
+                java.io.ByteArrayOutputStream buf = new java.io.ByteArrayOutputStream();
+                try (InputStream in = h.getInputStream()) {
+                    byte[] b = new byte[8192];
+                    int n;
+                    while ((n = in.read(b)) > 0) {
+                        buf.write(b, 0, n);
+                    }
+                }
+                body = buf.toString("UTF-8");
+            } finally {
+                h.disconnect();
+            }
+            JSONObject o = new JSONObject(body);
+            JSONArray files = o.getJSONArray("files");
+            for (int i = 0; i < files.length(); i++) {
+                JSONObject f = files.getJSONObject(i);
+                String n = f.getString("n");
+                if (FolderFetch.safeName(n)) {
+                    out.add(new FolderFetch.Item(pcDir, n, f.getLong("s"), rel));
+                }
+            }
+            JSONArray dirs = o.getJSONArray("dirs");
+            boolean ok = true;
+            for (int i = 0; i < dirs.length() && !cancelRequested; i++) {
+                String n = dirs.getJSONObject(i).getString("n");
+                if (FolderFetch.safeName(n)) {
+                    ok &= listTree(host, token, FolderFetch.child(pcDir, n), rel.isEmpty() ? n : rel + "/" + n, depth + 1, out);
+                }
+            }
+            return ok;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /** Lädt einen ganzen Ordner vom PC in {@code Download/Nolphin/<Ordner>} (oder den gewählten Zielordner), mit Unterordnern. */
+    private void fetchFolder(String pcDir, String name) {
+        String host = Conn.host(this);
+        String token = Conn.token(this);
+        if (host == null || token == null) {
+            return;
+        }
+        cancelRequested = false;
+        List<FolderFetch.Item> items = new ArrayList<>();
+        boolean complete = listTree(host, token, pcDir, name, 0, items);
+        int ok = 0, failed = 0;
+        long bytes = 0;
+        boolean cancelled = false;
+        for (FolderFetch.Item it : items) {
+            if (cancelRequested) {
+                cancelled = true;
+                break;
+            }
+            Uri saved = download(host, token, it.pcDir, it.name, it.rel);
+            if (saved != null) {
+                ok++;
+                bytes += it.size;
+            } else if (cancelRequested) {
+                cancelled = true;
+                break;
+            } else {
+                failed++;
+            }
+        }
+        if (!complete && !cancelled) {
+            failed++;   // der Ordner ließ sich nicht ganz lesen (Fehler, zu tief oder zu viele Dateien)
+        }
+        endTransfer();
+        String sum = FolderFetch.summary(ok, failed, cancelled);
+        boolean good = failed == 0 && !cancelled;
+        Store.addHistory(this, true, name + "/" + (good ? " (" + sum + ")" : ""), bytes, good, good ? "" : sum);
+        notifyFile(good ? "Ordner vom PC empfangen" : "Ordner nicht ganz geladen", name + ": " + sum);
+    }
+
     private void fetchOne(String dir, String name, long size) {
         String host = Conn.host(this);
         String token = Conn.token(this);
@@ -439,6 +544,35 @@ public class SyncService extends Service {
     }
 
     private Uri download(String host, String token, String dir, String name) {
+        return download(host, token, dir, name, null);
+    }
+
+    /** Findet einen Unterordner im gewählten Zielordner oder legt ihn an. */
+    private Uri dirUnder(Uri treeUri, Uri parentDoc, String name) throws Exception {
+        Uri children = android.provider.DocumentsContract.buildChildDocumentsUriUsingTree(treeUri,
+                android.provider.DocumentsContract.getDocumentId(parentDoc));
+        try (android.database.Cursor cur = getContentResolver().query(children, new String[] {
+                android.provider.DocumentsContract.Document.COLUMN_DOCUMENT_ID,
+                android.provider.DocumentsContract.Document.COLUMN_DISPLAY_NAME,
+                android.provider.DocumentsContract.Document.COLUMN_MIME_TYPE }, null, null, null)) {
+            while (cur != null && cur.moveToNext()) {
+                if (name.equals(cur.getString(1)) && android.provider.DocumentsContract.Document.MIME_TYPE_DIR.equals(cur.getString(2))) {
+                    return android.provider.DocumentsContract.buildDocumentUriUsingTree(treeUri, cur.getString(0));
+                }
+            }
+        }
+        return android.provider.DocumentsContract.createDocument(getContentResolver(), parentDoc,
+                android.provider.DocumentsContract.Document.MIME_TYPE_DIR, name);
+    }
+
+    /**
+     * Lädt eine Datei vom PC. {@code sub} ist ein Unterordner unterhalb des Zielordners ("Ordner/Unter") oder null.
+     * Die Namen in {@code sub} müssen vorher mit {@link FolderFetch#safeRelative} geprüft sein.
+     */
+    private Uri download(String host, String token, String dir, String name, String sub) {
+        if (sub != null && !FolderFetch.safeRelative(sub)) {
+            return null;
+        }
         Uri target = null;
         try {
             URL url = new URL("https://" + host + "/dl?t=" + Uri.encode(token) + "&n=" + Uri.encode(name)
@@ -459,6 +593,11 @@ public class SyncService extends Service {
                     Uri treeUri = Uri.parse(tree);
                     Uri parent = android.provider.DocumentsContract.buildDocumentUriUsingTree(treeUri,
                             android.provider.DocumentsContract.getTreeDocumentId(treeUri));
+                    if (sub != null && !sub.isEmpty()) {
+                        for (String part : sub.split("/")) {
+                            parent = dirUnder(treeUri, parent, part);
+                        }
+                    }
                     target = android.provider.DocumentsContract.createDocument(getContentResolver(), parent,
                             mimeOf(name), name);
                     viaTree = target != null;
@@ -469,7 +608,7 @@ public class SyncService extends Service {
             if (!viaTree) {
                 cv.put(MediaStore.Downloads.DISPLAY_NAME, name);
                 cv.put(MediaStore.Downloads.MIME_TYPE, mimeOf(name));
-                cv.put(MediaStore.Downloads.RELATIVE_PATH, "Download/" + Conn.folder(this));
+                cv.put(MediaStore.Downloads.RELATIVE_PATH, "Download/" + Conn.folder(this) + (sub == null || sub.isEmpty() ? "" : "/" + sub));
                 cv.put(MediaStore.Downloads.IS_PENDING, 1);
                 target = getContentResolver().insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, cv);
             }

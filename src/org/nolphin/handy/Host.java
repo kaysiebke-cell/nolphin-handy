@@ -30,6 +30,9 @@ interface Host {
 
     void fetch(RemoteFile file);
 
+    /** Lädt einen ganzen Ordner vom PC (mit Unterordnern). {@code dir} ist der Pfad am PC, {@code name} der Ordnername. */
+    void fetchFolder(String dir, String name);
+
     void send(List<Uri> uris);
 
     void pickFiles();

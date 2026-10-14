@@ -79,6 +79,51 @@ public class ViewTest {
             ok(w <= 360 || w / f <= 360 + 0.01 || f == UiScale.MAX, "Breite nie über der Bezugsbreite, außer an der Obergrenze: " + w);
         }
 
+        // Auswahl-Modus
+        SelectionMode sm = new SelectionMode();
+        ok(!sm.active(0) && !sm.taps(0), "ohne Auswahl und ohne Modus: Antippen öffnet");
+        ok(sm.active(2) && sm.taps(1), "mit Auswahl: Antippen wählt");
+        sm.begin();
+        ok(sm.active(0) && sm.taps(0), "Modus über das Menü: schon ohne Auswahl aktiv");
+        sm.update(0);
+        ok(sm.active(0), "Modus bleibt, solange noch nie etwas gewählt wurde");
+        sm.update(1);
+        ok(sm.active(1), "nach der ersten Auswahl aktiv");
+        sm.update(0);
+        ok(!sm.active(0), "Modus endet von selbst, wenn nach einer Auswahl nichts mehr gewählt ist");
+        sm.begin();
+        sm.update(3);
+        sm.end();
+        ok(!sm.active(0) && sm.active(3), "✕: Modus aus; eine bestehende Auswahl bleibt eine Auswahl");
+        sm.begin();
+        sm.update(2);
+        sm.update(0);
+        sm.begin();
+        ok(sm.active(0), "erneutes Starten funktioniert");
+
+        // Ordner laden vom PC
+        ok(FolderFetch.safeName("Bilder") && FolderFetch.safeName("Ärger mit Umlauten.txt") && FolderFetch.safeName(".versteckt"), "normale Namen sind sicher");
+        ok(!FolderFetch.safeName("") && !FolderFetch.safeName(".") && !FolderFetch.safeName("..") && !FolderFetch.safeName(null), "leer, Punkt, Doppelpunkt und null sind unsicher");
+        ok(!FolderFetch.safeName("a/b") && !FolderFetch.safeName("../x") && !FolderFetch.safeName("a\\b") && !FolderFetch.safeName("a\u0000b"), "Pfadtrenner und Nullzeichen sind unsicher");
+        ok(FolderFetch.safeRelative("") && FolderFetch.safeRelative("A") && FolderFetch.safeRelative("A/B/C"), "relative Pfade aus sicheren Teilen sind sicher");
+        ok(!FolderFetch.safeRelative("A/../B") && !FolderFetch.safeRelative("/A") && !FolderFetch.safeRelative("A//B") && !FolderFetch.safeRelative("../A") && !FolderFetch.safeRelative(null), "Ausbruch aus dem Zielordner ist ausgeschlossen");
+        ok(FolderFetch.child("", "A").equals("A") && FolderFetch.child("A", "B").equals("A/B") && FolderFetch.child("~", "B").equals("~/B"), "Pfad am PC zusammensetzen");
+        ok(FolderFetch.dirKey("A/B").equals("d:A/B") && FolderFetch.isDirKey("d:A/B") && !FolderFetch.isDirKey("A/B|10") && FolderFetch.pathOf("d:A/B").equals("A/B"), "Ordner-Schlüssel");
+        ok(FolderFetch.countDirs(java.util.Arrays.asList("d:A", "x|1", "d:B")) == 2, "Ordner in der Auswahl zählen");
+        ok(FolderFetch.targetPath("Download/Nolphin", "Bilder", "").equals("Download/Nolphin/Bilder")
+                && FolderFetch.targetPath("Download/Nolphin", "Bilder", "Urlaub/2026").equals("Download/Nolphin/Bilder/Urlaub/2026"), "Zielpfad");
+        ok(FolderFetch.targetPath("Download/Nolphin", "..", "") == null && FolderFetch.targetPath("Download/Nolphin", "Bilder", "../etc") == null, "unsicherer Zielpfad wird abgelehnt");
+        ok(FolderFetch.summary(5, 0, false).equals("5 Dateien") && FolderFetch.summary(1, 0, false).equals("1 Datei")
+                && FolderFetch.summary(5, 2, false).equals("5 geladen, 2 fehlgeschlagen") && FolderFetch.summary(3, 0, true).equals("abgebrochen nach 3 Dateien"), "Zusammenfassung");
+
+        // Auswahl nach dem Neuladen: Ordner bleiben, wenn es sie noch gibt
+        java.util.List<String> fk = java.util.Arrays.asList("a.txt|1", "b.txt|2");
+        java.util.List<String> dk = java.util.Arrays.asList("d:Ordner1", "d:Ordner2");
+        java.util.Set<String> kept = FolderFetch.keep(java.util.Arrays.asList("a.txt|1", "d:Ordner1", "weg.txt|9", "d:Weg"), fk, dk);
+        ok(kept.size() == 2 && kept.contains("a.txt|1") && kept.contains("d:Ordner1"), "Neuladen: Datei und Ordner bleiben gewählt, Verschwundenes fällt heraus: " + kept);
+        ok(FolderFetch.keep(java.util.Arrays.asList("d:Ordner2"), fk, dk).size() == 1, "Neuladen: ein angehakter Ordner verschwindet nicht mehr sofort (Fehler gefunden am Handy)");
+        ok(FolderFetch.keep(new java.util.ArrayList<String>(), fk, dk).isEmpty(), "Neuladen: leere Auswahl bleibt leer");
+
         // Externe Apps: nur Dateien unterhalb der Speicher, nie private App-Ordner
         List<String> roots = Collections.singletonList("/storage");
         ok(FileUris.isAllowed("/storage/emulated/0/DCIM/foto.jpg", roots), "Foto im Speicher erlaubt");

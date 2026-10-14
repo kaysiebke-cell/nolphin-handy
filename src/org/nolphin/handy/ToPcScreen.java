@@ -113,6 +113,7 @@ final class ToPcScreen implements Screen {
     private final LinearLayout root;
     private final TextView title;
     private final ImageView menuBtn;
+    private final SelectionMode selMode = new SelectionMode();
     private boolean searchOpen;
     private final EditText search;
     private final LinearLayout crumbBar;
@@ -443,6 +444,7 @@ final class ToPcScreen implements Screen {
             @Override
             public void onClick(View v) {
                 selected.clear();
+                selMode.end();
                 render();
             }
         }));
@@ -525,7 +527,7 @@ final class ToPcScreen implements Screen {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int i, long id) {
                 Entry e = entries.get(i);
-                if (e.dir && selected.isEmpty()) {
+                if (e.dir && !selMode.taps(selected.size())) {
                     openFolder(e.file);
                 } else {
                     toggleSelect(e);
@@ -1390,6 +1392,16 @@ final class ToPcScreen implements Screen {
                     }
                 });
             }
+            if (mode == FOLDER || mode == CATEGORY) {
+                menuItem("Auswählen", new Runnable() {
+                    @Override
+                    public void run() {
+                        selMode.begin();
+                        render();
+                        Toast.makeText(c, "Antippen wählt Dateien und Ordner aus", Toast.LENGTH_SHORT).show();
+                    }
+                });
+            }
             if (mode == FOLDER) {
                 menuItem("Neuer Ordner", new Runnable() {
                     @Override
@@ -1605,8 +1617,9 @@ final class ToPcScreen implements Screen {
 
     @Override
     public boolean onBack() {
-        if (!selected.isEmpty()) {
+        if (selMode.active(selected.size())) {
             selected.clear();
+            selMode.end();
             render();
             return true;
         }
@@ -1886,6 +1899,20 @@ final class ToPcScreen implements Screen {
     // ---- Dateiverwaltung: Kopieren, Verschieben, Löschen, Umbenennen, Neuer Ordner ------------
 
     /** Knopf der unteren Aktionsleiste: Symbol mit Beschriftung darunter. */
+    /** Ohne gewählte Einträge sagt die App, was zu tun ist, statt stumm nichts zu tun. */
+    private View.OnClickListener needsSelection(final View.OnClickListener l) {
+        return new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (selected.isEmpty()) {
+                    Toast.makeText(c, "Zuerst Dateien oder Ordner antippen", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                l.onClick(v);
+            }
+        };
+    }
+
     private View actionItem(int icon, String label, View.OnClickListener l) {
         LinearLayout item = new LinearLayout(c);
         item.setOrientation(LinearLayout.VERTICAL);
@@ -1898,7 +1925,7 @@ final class ToPcScreen implements Screen {
         t.setGravity(Gravity.CENTER);
         t.setSingleLine(true);
         item.addView(t);
-        item.setOnClickListener(l);
+        item.setOnClickListener(needsSelection(l));
         item.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
         return item;
     }
@@ -1921,7 +1948,9 @@ final class ToPcScreen implements Screen {
         v.setLayoutParams(new LinearLayout.LayoutParams(Ui.dp(c, 44), Ui.dp(c, 44)));
         v.setContentDescription(description);
         v.setBackground(Ui.pressable(c));
-        v.setOnClickListener(l);
+        boolean free = description.equals("Auswahl beenden") || description.equals("Alles auswählen")
+                || description.equals("Auswahl umkehren");
+        v.setOnClickListener(free ? l : needsSelection(l));
         return v;
     }
 
@@ -3085,7 +3114,8 @@ final class ToPcScreen implements Screen {
     private void render() {
         boolean home = mode == HOME;
         boolean searching = !query.isEmpty();
-        boolean sel = !selected.isEmpty();
+        selMode.update(selected.size());
+        boolean sel = selMode.active(selected.size());
         if (!access) {
             title.setText("Zum PC");
             permCard.setVisibility(View.VISIBLE);
@@ -3494,7 +3524,28 @@ final class ToPcScreen implements Screen {
             n.setPadding(Ui.dp(c, 2), Ui.dp(c, 1), Ui.dp(c, 2), Ui.dp(c, 2));
             t.addView(n);
         }
+        if (!picked && selMode.active(selected.size())) {
+            return withRing(t);   // im Auswahl-Modus zeigt jede Kachel ein leeres Kästchen, damit klar ist, dass man wählen kann
+        }
         return picked ? withCheck(t) : t;
+    }
+
+    /** Leerer Ring oben rechts: „hier kann man auswählen“. */
+    private View withRing(View t) {
+        FrameLayout fl = new FrameLayout(c);
+        fl.setLayoutParams(t.getLayoutParams());
+        fl.addView(t, new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.WRAP_CONTENT));
+        View ring = new View(c);
+        android.graphics.drawable.GradientDrawable g = new android.graphics.drawable.GradientDrawable();
+        g.setShape(android.graphics.drawable.GradientDrawable.OVAL);
+        g.setColor(0x66000000);
+        g.setStroke(Ui.dp(c, 2), Color.WHITE);
+        ring.setBackground(g);
+        FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(Ui.dp(c, 22), Ui.dp(c, 22), Gravity.TOP | Gravity.END);
+        lp.setMargins(0, Ui.dp(c, 6), Ui.dp(c, 6), 0);
+        fl.addView(ring, lp);
+        return fl;
     }
 
     /** Legt ein Häkchen oben rechts über die Kachel. */
@@ -3522,7 +3573,7 @@ final class ToPcScreen implements Screen {
 
     private View entryRow(Entry e) {
         boolean picked = selected.containsKey(e.path());
-        boolean selecting = !selected.isEmpty();
+        boolean selecting = selMode.active(selected.size());
         LinearLayout row = new LinearLayout(c);
         row.setOrientation(LinearLayout.HORIZONTAL);
         row.setGravity(Gravity.CENTER_VERTICAL);
