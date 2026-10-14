@@ -594,6 +594,7 @@ final class ToPcScreen implements Screen {
             @Override
             public void onClick(View v) {
                 clip = null;
+                PcClip.clear();
                 render();
             }
         }), pb);
@@ -1984,6 +1985,7 @@ final class ToPcScreen implements Screen {
         if (selected.isEmpty()) {
             return;
         }
+        PcClip.clear();   // es gibt nur eine Zwischenablage
         clip = selectedFiles();
         clipMove = move;
         selected.clear();
@@ -1995,6 +1997,13 @@ final class ToPcScreen implements Screen {
     }
 
     private void pasteHere() {
+        if (mode == FOLDER && !PcClip.isEmpty()) {
+            host.pasteFromPc(PcClip.files(), PcClip.dirs(), dir.getAbsolutePath());
+            Toast.makeText(c, PcClip.count() + (PcClip.count() == 1 ? " Eintrag wird" : " Einträge werden") + " geladen …", Toast.LENGTH_SHORT).show();
+            PcClip.clear();
+            render();
+            return;
+        }
         if (clip == null || mode != FOLDER) {
             return;
         }
@@ -3103,11 +3112,20 @@ final class ToPcScreen implements Screen {
         render();
     }
 
+    private int seenFinished = SyncService.finished;
+
     @Override
     public void refresh() {
         boolean now = host.hasFilesAccess();
         if (!accessKnown || now != access) {
             onShow();
+        }
+        int done = SyncService.finished;
+        if (done != seenFinished) {
+            seenFinished = done;
+            if (mode == FOLDER && selected.isEmpty() && query.isEmpty()) {
+                loadList();   // etwas wurde vom PC eingefügt: die Liste zeigt es sofort
+            }
         }
     }
 
@@ -3170,8 +3188,11 @@ final class ToPcScreen implements Screen {
         selCount.setText(selected.size() + " gewählt");
         head.setVisibility(View.GONE);
         headLine.setVisibility(View.GONE);
-        pasteBar.setVisibility(clip != null && mode == FOLDER && !sel ? View.VISIBLE : View.GONE);
-        if (clip != null) {
+        boolean fromPc = !PcClip.isEmpty();
+        pasteBar.setVisibility((clip != null || fromPc) && mode == FOLDER && !sel ? View.VISIBLE : View.GONE);
+        if (fromPc) {
+            pasteText.setText(PcClip.label());
+        } else if (clip != null) {
             pasteText.setText(clip.size() + (clip.size() == 1 ? " Element " : " Elemente ") + (clipMove ? "verschieben" : "kopieren"));
         }
         boolean showStorage = hasCard() && (mode == CATEGORY || (mode == HOME && searching));

@@ -40,6 +40,7 @@ public class MainActivity extends Activity implements Host {
     private TextView subtitle;
     private final View[] navItems = new View[4];
     private View navBar;
+    private TextView strip;
     private final Screen[] screens = new Screen[5];
     private int current = -1;
     private String error;
@@ -51,6 +52,7 @@ public class MainActivity extends Activity implements Host {
                 screens[current].refresh();
             }
             updateSubtitle();
+            updateStrip();
             handler.postDelayed(this, 1000);
         }
     };
@@ -97,6 +99,29 @@ public class MainActivity extends Activity implements Host {
                 ? state.getInt(KEY_TAB, TAB_HOME) : TAB_HOME);
         updateSubtitle();
         handleIntent(getIntent());
+    }
+
+    /** Zeigt die laufende Übertragung oder die neueste Meldung; sonst ist die Zeile weg. */
+    private void updateStrip() {
+        if (strip == null) {
+            return;
+        }
+        String line = StatusNote.progressLine(SyncService.transfer);
+        boolean error = false;
+        if (line == null) {
+            StatusNote.Note n = StatusNote.current(System.currentTimeMillis());
+            if (n != null) {
+                line = n.text;
+                error = n.error;
+            }
+        }
+        boolean show = line != null && (navBar == null || navBar.getVisibility() == View.VISIBLE);
+        strip.setVisibility(show ? View.VISIBLE : View.GONE);
+        if (show) {
+            strip.setText(line);
+            strip.setTextColor(error ? Ui.danger(this) : Ui.text(this));
+            strip.setBackgroundColor(error ? Ui.surface(this) : Ui.chip(this));
+        }
     }
 
     private void updateSubtitle() {
@@ -158,6 +183,42 @@ public class MainActivity extends Activity implements Host {
 
         content = new FrameLayout(this);
         root.addView(content, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1));
+
+        // schmale Meldungszeile über den Reitern (siehe StatusNote)
+        strip = Ui.label(this, "", 13, Ui.text(this), false);
+        strip.setGravity(Gravity.CENTER_VERTICAL);
+        strip.setSingleLine(true);
+        strip.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        strip.setPadding(Ui.dp(this, 14), 0, Ui.dp(this, 14), 0);
+        strip.setVisibility(View.GONE);
+        strip.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                StatusNote.Note n = StatusNote.current(System.currentTimeMillis());
+                int tab = n != null ? n.tab : (SyncService.transfer.isEmpty() ? -1 : TAB_HISTORY);
+                StatusNote.dismiss();
+                updateStrip();
+                if (tab >= 0) {
+                    show(tab);
+                }
+            }
+        });
+        strip.setOnTouchListener(new View.OnTouchListener() {
+            private float downY;
+
+            @Override
+            public boolean onTouch(View v, android.view.MotionEvent e) {
+                if (e.getAction() == android.view.MotionEvent.ACTION_DOWN) {
+                    downY = e.getY();
+                } else if (e.getAction() == android.view.MotionEvent.ACTION_UP && e.getY() - downY > Ui.dp(MainActivity.this, 14)) {
+                    StatusNote.dismiss();   // nach unten wischen schließt die Meldung
+                    updateStrip();
+                    return true;
+                }
+                return false;
+            }
+        });
+        root.addView(strip, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, Ui.dp(this, 28)));
 
         // Reiter unten
         LinearLayout nav = new LinearLayout(this);
@@ -287,6 +348,18 @@ public class MainActivity extends Activity implements Host {
         Intent i = new Intent(this, SyncService.class).setAction(SyncService.ACTION_FETCH_DIR)
                 .putExtra("dir", dir).putExtra("name", name);
         startForegroundService(i);
+    }
+
+    @Override
+    public void pasteFromPc(List<RemoteFile> files, List<PcClip.Dir> dirs, String to) {
+        for (PcClip.Dir d : dirs) {
+            startForegroundService(new Intent(this, SyncService.class).setAction(SyncService.ACTION_FETCH_DIR)
+                    .putExtra("dir", d.path).putExtra("name", d.name).putExtra("to", to));
+        }
+        for (RemoteFile f : files) {
+            startForegroundService(new Intent(this, SyncService.class).setAction(SyncService.ACTION_FETCH)
+                    .putExtra("name", f.name).putExtra("size", f.size).putExtra("dir", f.dir).putExtra("to", to));
+        }
     }
 
     @Override

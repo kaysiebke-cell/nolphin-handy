@@ -60,6 +60,8 @@ public class SyncService extends Service {
     static volatile RemoteFile[] files = new RemoteFile[0];
     /** Läuft der Dienst in diesem Prozess? Das Widget zeigt „verbunden“ nur, solange das stimmt. */
     static volatile boolean running;
+    /** Zählt abgeschlossene Übertragungen vom PC; der Dateimanager lädt dann seine Liste neu (eingefügte Dateien erscheinen sofort). */
+    static volatile int finished;
     /** Wann sich der Zustand zuletzt geändert hat (für das Widget: veraltete Übertragungen nicht anzeigen). */
     static volatile long stateTime;
     private static final FetchGuard GUARD = new FetchGuard(3000);
@@ -128,13 +130,14 @@ public class SyncService extends Service {
             final String name = intent.getStringExtra("name");
             final long size = intent.getLongExtra("size", -1);
             final String dir = intent.getStringExtra("dir");
+            final String to = intent.getStringExtra("to");   // Zielordner im Handy (Einfügen) oder null
             final String fkey = new RemoteFile(dir == null ? "" : dir, name == null ? "" : name, size).key();
             if (name != null && GUARD.beginFetch(fkey)) {   // dieselbe Datei wird nicht doppelt geladen
                 new Thread(new Runnable() {
                     @Override
                     public void run() {
                         try {
-                            fetchOne(dir == null ? "" : dir, name, size);
+                            fetchOne(dir == null ? "" : dir, name, size, to);
                         } finally {
                             GUARD.endFetch(fkey);
                         }
@@ -144,12 +147,13 @@ public class SyncService extends Service {
         } else if (ACTION_FETCH_DIR.equals(action) && intent != null) {
             final String fdir = intent.getStringExtra("dir");
             final String fname = intent.getStringExtra("name");
+            final String fto = intent.getStringExtra("to");
             if (fdir != null && FolderFetch.safeName(fname) && GUARD.beginFetch(FolderFetch.dirKey(fdir))) {
                 new Thread(new Runnable() {
                     @Override
                     public void run() {
                         try {
-                            fetchFolder(fdir, fname);
+                            fetchFolder(fdir, fname, fto);
                         } finally {
                             GUARD.endFetch(FolderFetch.dirKey(fdir));
                         }
@@ -261,6 +265,7 @@ public class SyncService extends Service {
     private long lastWidget;
 
     private void endTransfer() {
+        finished++;
         transfer = "";
         transferName = "";
         transferDone = 0;
@@ -390,6 +395,8 @@ public class SyncService extends Service {
         }
         SyncService.files = list;
         touch();
+        int newOffers = 0;
+        String firstOffer = null;
         for (int i = 0; i < files.length() && !stop; i++) {
             JSONObject f = files.getJSONObject(i);
             String name = f.getString("n");
@@ -405,10 +412,17 @@ public class SyncService extends Service {
             if (!all && !Conn.autoLoad(this)) {
                 if (offered.add(key)) {
                     offer(name, size);
+                    newOffers++;
+                    if (firstOffer == null) {
+                        firstOffer = name;
+                    }
                 }
                 continue;
             }
             fetch(host, token, name, size, seen);
+        }
+        if (newOffers > 0) {
+            StatusNote.post(StatusNote.fresh(newOffers, firstOffer), false, Host.TAB_FROM_PC, System.currentTimeMillis());
         }
         if (first) {
             Conn.setSeeded(this);
@@ -418,15 +432,15 @@ public class SyncService extends Service {
 
     /** Lädt eine Datei und meldet das Ergebnis; merkt sich Erfolg und Abbruch, damit sie nicht erneut geladen wird. */
     private void fetch(String host, String token, String name, long size, Set<String> seen) {
-        fetch(host, token, "", name, size, seen);
+        fetch(host, token, "", name, size, seen, null);
     }
 
-    private void fetch(String host, String token, String dir, String name, long size, Set<String> seen) {
+    private void fetch(String host, String token, String dir, String name, long size, Set<String> seen, String to) {
         String key = new RemoteFile(dir, name, size).key();
         cancelRequested = false;
         Uri saved = null;
         try {
-            saved = download(host, token, dir, name);
+            saved = download(host, token, dir, name, null, to);
         } finally {
             boolean wasCancelled = cancelRequested;
             endTransfer();
@@ -439,14 +453,18 @@ public class SyncService extends Service {
             }
         }
         if (saved != null) {
-            seen.add(key);
-            Conn.saveSeen(this, seen);
-            Store.setUri(this, key, saved.toString());
+            if (to == null) {   // eingefügte Dateien gehören dem Nutzer im Zielordner, nicht der Liste „Vom PC“
+                seen.add(key);
+                Conn.saveSeen(this, seen);
+                Store.setUri(this, key, saved.toString());
+            }
             Store.addHistory(this, true, name, size, true, "");
             notifyFile("Vom PC empfangen", name);
+            StatusNote.post(StatusNote.arrived(name, to != null, 1), false, to != null ? Host.TAB_TO_PC : Host.TAB_FROM_PC, System.currentTimeMillis());
         } else {
             Store.addHistory(this, true, name, size, false, "fehlgeschlagen");
             notifyFile("Laden fehlgeschlagen", name);
+            StatusNote.post("Laden fehlgeschlagen: " + name, true, Host.TAB_HISTORY, System.currentTimeMillis());
         }
     }
 
@@ -474,6 +492,7 @@ public class SyncService extends Service {
         if (depth > FolderFetch.MAX_DEPTH || out.size() > FolderFetch.MAX_FILES) {
             return false;
         }
+        out.add(new FolderFetch.Item(pcDir, null, -1, rel));   // der Ordner selbst, damit auch leere Ordner entstehen
         try {
             URL url = new URL("https://" + host + "/dir?t=" + Uri.encode(token) + RemoteFile.params(pcDir));
             HttpURLConnection h = Secure.connect(url, Conn.pin(this));
@@ -520,7 +539,7 @@ public class SyncService extends Service {
     }
 
     /** Lädt einen ganzen Ordner vom PC in {@code Download/Nolphin/<Ordner>} (oder den gewählten Zielordner), mit Unterordnern. */
-    private void fetchFolder(String pcDir, String name) {
+    private void fetchFolder(String pcDir, String name, String to) {
         String host = Conn.host(this);
         String token = Conn.token(this);
         if (host == null || token == null) {
@@ -532,12 +551,22 @@ public class SyncService extends Service {
         int ok = 0, failed = 0;
         long bytes = 0;
         boolean cancelled = false;
+        String firstFailed = null;
         for (FolderFetch.Item it : items) {
             if (cancelRequested) {
                 cancelled = true;
                 break;
             }
-            Uri saved = download(host, token, it.pcDir, it.name, it.rel);
+            if (it.name == null) {   // ein Ordner: beim Einfügen in einen Handy-Ordner auch leer anlegen
+                if (to != null && FolderFetch.safeRelative(it.rel)) {
+                    java.io.File d = new java.io.File(to, it.rel);
+                    if (!d.isDirectory() && !d.mkdirs()) {
+                        failed++;
+                    }
+                }
+                continue;
+            }
+            Uri saved = download(host, token, it.pcDir, it.name, it.rel, to);
             if (saved != null) {
                 ok++;
                 bytes += it.size;
@@ -546,25 +575,32 @@ public class SyncService extends Service {
                 break;
             } else {
                 failed++;
+                if (firstFailed == null) {
+                    firstFailed = it.name;
+                }
             }
         }
         if (!complete && !cancelled) {
             failed++;   // der Ordner ließ sich nicht ganz lesen (Fehler, zu tief oder zu viele Dateien)
         }
         endTransfer();
-        String sum = FolderFetch.summary(ok, failed, cancelled);
+        String sum = FolderFetch.summary(ok, failed, cancelled) + (firstFailed != null ? " (zuerst: " + firstFailed + ")" : "");
         boolean good = failed == 0 && !cancelled;
         Store.addHistory(this, true, name + "/" + (good ? " (" + sum + ")" : ""), bytes, good, good ? "" : sum);
         notifyFile(good ? "Ordner vom PC empfangen" : "Ordner nicht ganz geladen", name + ": " + sum);
+        if (!cancelled) {
+            StatusNote.post(good ? StatusNote.arrived(name, to != null, ok) : name + " nicht ganz geladen: " + sum, !good,
+                    good ? (to != null ? Host.TAB_TO_PC : Host.TAB_FROM_PC) : Host.TAB_HISTORY, System.currentTimeMillis());
+        }
     }
 
-    private void fetchOne(String dir, String name, long size) {
+    private void fetchOne(String dir, String name, long size, String to) {
         String host = Conn.host(this);
         String token = Conn.token(this);
         if (name == null || host == null || token == null) {
             return;
         }
-        fetch(host, token, dir, name, size, Conn.seen(this));
+        fetch(host, token, dir, name, size, Conn.seen(this), to);
     }
 
     private static String humanSize(long b) {
@@ -577,9 +613,6 @@ public class SyncService extends Service {
         return String.format(Locale.ROOT, "%.1f MB", b / 1048576.0);
     }
 
-    private Uri download(String host, String token, String dir, String name) {
-        return download(host, token, dir, name, null);
-    }
 
     /** Findet einen Unterordner im gewählten Zielordner oder legt ihn an. */
     private Uri dirUnder(Uri treeUri, Uri parentDoc, String name) throws Exception {
@@ -603,9 +636,12 @@ public class SyncService extends Service {
      * Lädt eine Datei vom PC. {@code sub} ist ein Unterordner unterhalb des Zielordners ("Ordner/Unter") oder null.
      * Die Namen in {@code sub} müssen vorher mit {@link FolderFetch#safeRelative} geprüft sein.
      */
-    private Uri download(String host, String token, String dir, String name, String sub) {
+    private Uri download(String host, String token, String dir, String name, String sub, String to) {
         if (sub != null && !FolderFetch.safeRelative(sub)) {
             return null;
+        }
+        if (to != null) {
+            return downloadInto(host, token, dir, name, sub, new java.io.File(to));
         }
         Uri target = null;
         try {
@@ -673,6 +709,47 @@ public class SyncService extends Service {
         } catch (Exception e) {
             if (target != null) {
                 getContentResolver().delete(target, null, null);
+            }
+            return null;
+        }
+    }
+
+    /** Lädt eine Datei vom PC direkt in einen Ordner des Handys (Einfügen). Vorhandene Dateien werden nie überschrieben. */
+    private Uri downloadInto(String host, String token, String dir, String name, String sub, java.io.File base) {
+        java.io.File out = null;
+        try {
+            java.io.File folder = sub == null || sub.isEmpty() ? base : new java.io.File(base, sub);
+            if (!folder.isDirectory() && !folder.mkdirs()) {
+                return null;
+            }
+            URL url = new URL("https://" + host + "/dl?t=" + Uri.encode(token) + "&n=" + Uri.encode(name)
+                    + RemoteFile.params(dir));
+            HttpURLConnection c = Secure.connect(url, Conn.pin(this));
+            c.setConnectTimeout(8000);
+            c.setReadTimeout(30000);
+            if (c.getResponseCode() != 200) {
+                c.disconnect();
+                return null;
+            }
+            out = FileOps.uniqueIn(folder, name);
+            long total = c.getContentLengthLong();
+            try (InputStream in = c.getInputStream(); OutputStream os = new java.io.FileOutputStream(out)) {
+                byte[] buf = new byte[64 * 1024];
+                long done = 0;
+                int n;
+                progress("Lade", name, 0, total);
+                while ((n = in.read(buf)) > 0) {
+                    os.write(buf, 0, n);
+                    done += n;
+                    progress("Lade", name, done, total);
+                }
+                os.flush();
+            }
+            c.disconnect();
+            return Uri.fromFile(out);
+        } catch (Exception e) {
+            if (out != null) {
+                out.delete();
             }
             return null;
         }

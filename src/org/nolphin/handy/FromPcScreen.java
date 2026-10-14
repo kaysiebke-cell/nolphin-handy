@@ -285,6 +285,12 @@ final class FromPcScreen implements Screen {
         actionBar.setBackgroundColor(Ui.surface(c));
         actionBar.setElevation(Ui.dp(c, 8));
         actionBar.setVisibility(View.GONE);
+        actionBar.addView(actionItem(R.drawable.ic_copy, "Kopieren", new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                copySelected();
+            }
+        }));
         actionBar.addView(actionItem(R.drawable.ic_download, "Laden", new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -997,6 +1003,24 @@ final class FromPcScreen implements Screen {
             }
         }
         return out;
+    }
+
+    /** Merkt die Auswahl zum Einfügen vor; im Handy-Ordner erscheint „Hierher“ (siehe ToPcScreen). */
+    private void copySelected() {
+        List<PcClip.Dir> dirs = new ArrayList<>();
+        for (String key : new ArrayList<>(selected)) {
+            if (FolderFetch.isDirKey(key)) {
+                String path = FolderFetch.pathOf(key);
+                dirs.add(new PcClip.Dir(path, path.substring(path.lastIndexOf('/') + 1)));
+            }
+        }
+        PcClip.set(selectedFiles(), dirs);
+        if (PcClip.isEmpty()) {
+            return;
+        }
+        Toast.makeText(c, "Zielordner im Handy öffnen und „Hierher“ tippen", Toast.LENGTH_LONG).show();
+        clearSelection();
+        host.show(Host.TAB_TO_PC);
     }
 
     private void loadSelected() {

@@ -207,6 +207,36 @@ public class ViewTest {
         ok(FileUris.afterReturn(false, false, 10, 100, 0, 0).contains("nicht mehr"), "Datei weg");
         ok(FileUris.afterReturn(true, false, 10, 100, 0, 0).contains("nicht mehr"), "Datei weg beim Bearbeiten");
 
+        // Meldungszeile unten
+        StatusNote.dismiss();
+        ok(StatusNote.current(0) == null, "Zeile am Anfang leer");
+        StatusNote.post("2 neu am PC", false, 1, 1000);
+        ok(StatusNote.current(1000 + 7999) != null && StatusNote.current(1000 + 7999).tab == 1, "Info bleibt knapp 8 Sekunden");
+        ok(StatusNote.current(1000 + 8000) == null, "Info verschwindet nach 8 Sekunden");
+        StatusNote.post("x.py fehlgeschlagen", true, 3, 2000);
+        ok(StatusNote.current(2000 + 600000) != null && StatusNote.current(2000 + 600000).error, "Fehler bleibt, bis man ihn schließt");
+        StatusNote.post("Macros eingefügt", false, 2, 3000);
+        ok(StatusNote.current(3001).text.equals("Macros eingefügt"), "die neueste Meldung ersetzt die vorige");
+        StatusNote.dismiss();
+        ok(StatusNote.current(3002) == null, "Wegwischen schließt die Meldung");
+        StatusNote.post("", false, 0, 1);
+        ok(StatusNote.current(2) == null, "leere Meldung wird nicht gezeigt");
+        ok(StatusNote.arrived("Macros", true, 269).equals("Macros eingefügt, 269 Dateien") && StatusNote.arrived("a.txt", false, 1).equals("a.txt geladen"), "Text für Angekommenes");
+        ok(StatusNote.fresh(2, "a").equals("2 neu am PC") && StatusNote.fresh(1, "a.txt").equals("a.txt neu am PC"), "Text für Neues am PC");
+        ok(StatusNote.progressLine("") == null && StatusNote.progressLine("Lade a: 40 %").equals("Lade a: 40 %"), "Fortschritt nur während der Übertragung");
+
+        // Zwischenablage "Vom PC kopieren, im Handy einfügen"
+        PcClip.clear();
+        ok(PcClip.isEmpty() && PcClip.count() == 0, "Zwischenablage am Anfang leer");
+        PcClip.set(Collections.singletonList(new RemoteFile("~/Bilder", "strand.jpg", 100)),
+                java.util.Arrays.asList(new PcClip.Dir("~/Bilder/Urlaub", "Urlaub"), new PcClip.Dir("~/x", "..")));
+        ok(PcClip.count() == 2 && PcClip.files().size() == 1 && PcClip.dirs().size() == 1, "Datei und Ordner gemerkt, unsicherer Ordnername verworfen");
+        ok(PcClip.label().equals("2 Einträge vom PC einfügen"), "Beschriftung der Einfügeleiste");
+        PcClip.set(Collections.singletonList(new RemoteFile("a.txt", 1)), Collections.<PcClip.Dir>emptyList());
+        ok(PcClip.label().equals("1 Eintrag vom PC einfügen") && PcClip.dirs().isEmpty(), "ein Eintrag, alte Auswahl ersetzt");
+        PcClip.clear();
+        ok(PcClip.isEmpty(), "nach dem Einfügen leer");
+
         System.out.println((n - fails) + " von " + n + " Prüfungen bestanden");
         if (fails > 0) {
             System.exit(1);

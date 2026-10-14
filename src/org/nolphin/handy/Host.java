@@ -33,6 +33,9 @@ interface Host {
     /** Lädt einen ganzen Ordner vom PC (mit Unterordnern). {@code dir} ist der Pfad am PC, {@code name} der Ordnername. */
     void fetchFolder(String dir, String name);
 
+    /** Fügt vom PC kopierte Dateien und Ordner in einen Ordner des Handys ein ({@code to} ist der Pfad des Zielordners). */
+    void pasteFromPc(List<RemoteFile> files, List<PcClip.Dir> dirs, String to);
+
     void send(List<Uri> uris);
 
     void pickFiles();
