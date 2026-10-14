@@ -18,16 +18,18 @@ Der Schlüssel im Link gilt, solange der Austausch am PC läuft, höchstens eine
 
 ## Unterwegs ohne WLAN: per USB-Kabel
 
-Ohne gemeinsames WLAN (zum Beispiel in der Bahn) geht der Austausch auch über das **USB-Kabel**. Das Kabel bildet dann ein eigenes kleines Netz zwischen Handy und PC (USB-Tethering). Verschlüsselung und QR-Code bleiben wie sonst.
+Ohne gemeinsames WLAN (zum Beispiel in der Bahn) geht der Austausch auch über das **USB-Kabel**. Das Kabel bildet dann ein eigenes kleines Netz zwischen Handy und PC (USB-Tethering). Verschlüsselung und Schlüssel bleiben wie sonst.
 
 1. Kabel anstecken (ein Kabel, das Daten überträgt).
-2. Am Handy **USB-Tethering einschalten** (Einstellungen → Verbindung und Freigabe → USB-Tethering; bei Xiaomi oder per Tipp auf die USB-Meldung). Eine App darf das nicht selbst einschalten; „USB-Tethering öffnen“ auf der Startseite führt direkt zur Einstellung.
-3. Am PC in Nolphin links auf **Handy** klicken. Gibt es ein Kabelnetz, nimmt Nolphin **dessen Adresse zuerst**; die Meldung lautet dann „Läuft über das USB-Kabel“.
-4. Am Handy **QR-Code scannen und verbinden**. Die Startseite zeigt eine einzige Verbindungskarte mit dem Umschalter **WLAN | Kabel**: Er springt von selbst auf „Kabel“, sobald ein Kabelnetz da ist, und zeigt nach dem Verbinden den Weg, den die Verbindung nimmt. Steckt das Kabel, ist aber noch kein Tethering an, heißt der Hauptknopf „USB-Tethering einschalten“. „Link aus der Zwischenablage einfügen“ steht als kleine Zeile darunter, für den Fall, dass der QR-Code nicht klappt.
+2. Am Handy **USB-Tethering einschalten** (Einstellungen → Verbindung und Freigabe → USB-Tethering). Eine App darf das nicht selbst einschalten; „USB-Tethering einschalten“ auf der Startseite führt direkt zur Einstellung. **Das ist die einzige Handarbeit.**
+3. Am PC in Nolphin links auf **Handy** klicken. Nolphin hört auf allen privaten Netzen des PCs (WLAN und Kabel) und zeigt denselben QR-Code.
+4. Am Handy **QR-Code scannen und verbinden**, ein einziges Mal. Ist die Adresse aus dem QR-Code nicht erreichbar (zum Beispiel WLAN aus), **sucht die App den PC selbst im Kabelnetz**, mit dem Schlüssel und dem Fingerabdruck aus dem QR-Code. Ein fremdes Gerät im Kabelnetz kommt dabei nicht durch.
 
-Die App erkennt das Kabelnetz nur und zeigt es an; sie benutzt das Kabel nicht anders als das WLAN. Während USB-Tethering an ist, ist die USB-Dateiübertragung (MTP) für den Dateimanager am PC aus; beides zugleich geht nicht.
+**Später wechselt die App von selbst:** Fällt das WLAN aus, während die Verbindung steht, sucht sie den PC im Kabelnetz („PC nicht erreichbar, suche im Kabelnetz …“, höchstens alle 15 Sekunden). Kommt das WLAN zurück und das Kabel geht, kehrt sie zur Adresse aus dem QR-Code zurück. Ein neuer QR-Code ist dafür nicht nötig. Die Startseite zeigt eine Verbindungskarte mit dem Umschalter **WLAN | Kabel**, der den Weg anzeigt, den die Verbindung gerade nimmt. „Link aus der Zwischenablage einfügen“ steht als kleine Zeile darunter, falls der QR-Code nicht klappt.
 
-**Geprüft** (14.10.2026, Xiaomi Redmi Note 13, Linux Mint): USB-Tethering einschalten, der PC bekommt das Netz `enx…` mit einer privaten Adresse, die App verbindet sich über diese Adresse mit dem Nolphin-Server und lädt eine Datei, bei **ausgeschaltetem WLAN am Handy**. In der App am Handy gesehen: „Kabel erkannt: USB-Netz zum PC steht bereit“ (mit Tethering), „über Kabel“ (verbunden über das Kabel) und die Karte „Unterwegs ohne WLAN?“ (Kabel steckt, noch kein Tethering). Die App erkennt das Kabel aus dem USB-Zustand des Systems; die Ladeanzeige allein reicht nicht, weil manche Handys am PC „Ladegerät“ melden. Nicht angesehen: der Handy-Austausch in Nolphin selbst auf der Kabeladresse (der Test lief mit dem Prüfprogramm des Projekts, das denselben Server benutzt).
+Während USB-Tethering an ist, ist die USB-Dateiübertragung (MTP) für den Dateimanager am PC aus; beides zugleich geht nicht. Der PC sieht dann den Speicher des Handys nicht im Dateimanager, die App kommt dafür **auf den PC**.
+
+**Geprüft** (14.10.2026, Xiaomi Redmi Note 13, Linux Mint): Mit USB-Tethering an und **WLAN am Handy aus** scannt die App den QR-Code (der die WLAN-Adresse enthält), findet den PC im Kabelnetz und zeigt „Verbunden“ mit der Kabeladresse. Dateien und Ordner kommen über diesen Weg an. Die Regeln für den Wechsel (Kabel suchen, zum WLAN zurück) decken Tests ab; **nicht am echten Handy gesehen** ist das Zurückwechseln auf das WLAN.
 
 ## Aktualisieren
 
