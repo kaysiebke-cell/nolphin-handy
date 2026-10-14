@@ -995,20 +995,10 @@ final class ToPcScreen implements Screen {
         }, "nolphin-home").start();
     }
 
-    /** Bedingung der Kategorie mit dem Ordnerfilter aus den Einstellungen („Anzeige nach Art“). */
+    /** Bedingung der Kategorie ohne die ausgeblendeten Ordner (Einstellungen: „Ordner ausblenden“). */
     private String categoryWhere(int k) {
-        String base = categoryBase(k);
-        List<String> roots = StorageRoots.paths(c);
-        String only = CatFilter.where(MediaStore.Files.FileColumns.DATA, roots, Conn.catFolders(c, k));
-        String not = CatFilter.whereNot(MediaStore.Files.FileColumns.DATA, roots, Conn.catExclude(c, k));
-        String out = "(" + base + ")";
-        if (!only.isEmpty()) {
-            out += " AND " + only;
-        }
-        if (!not.isEmpty()) {
-            out += " AND " + not;
-        }
-        return out;
+        String not = CatFilter.whereNot(MediaStore.Files.FileColumns.DATA, StorageRoots.paths(c), Conn.hiddenFolders(c));
+        return not.isEmpty() ? categoryBase(k) : "(" + categoryBase(k) + ") AND " + not;
     }
 
     static String categoryBase(int k) {

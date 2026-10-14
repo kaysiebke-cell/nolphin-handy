@@ -207,24 +207,14 @@ public class ViewTest {
         ok(FileUris.afterReturn(false, false, 10, 100, 0, 0).contains("nicht mehr"), "Datei weg");
         ok(FileUris.afterReturn(true, false, 10, 100, 0, 0).contains("nicht mehr"), "Datei weg beim Bearbeiten");
 
-        // Anzeige nach Art und Galerie verstecken
+        // Ordner ausblenden und Galerie verstecken
         List<String> rts = java.util.Arrays.asList("/storage/emulated/0", "/storage/ABCD-1234");
-        ok("DCIM".equals(CatFilter.top(rts, "/storage/emulated/0/DCIM/Camera/a.jpg")), "oberster Ordner im internen Speicher");
-        ok("Pictures".equals(CatFilter.top(rts, "/storage/ABCD-1234/Pictures/x.png")), "oberster Ordner auf der SD-Karte");
-        ok(CatFilter.top(rts, "/storage/emulated/0/lose.jpg") == null && CatFilter.top(rts, "/data/x/y.jpg") == null && CatFilter.top(rts, null) == null, "ohne Ordner oder fremder Pfad: kein oberster Ordner");
-        ok(CatFilter.where("_data", rts, Collections.<String>emptyList()).isEmpty(), "ohne Auswahl gelten alle Ordner");
-        String w = CatFilter.where("_data", rts, Collections.singletonList("DCIM"));
-        ok(w.equals("(_data LIKE '/storage/emulated/0/DCIM/%' ESCAPE '\\' OR _data LIKE '/storage/ABCD-1234/DCIM/%' ESCAPE '\\')"), "Bedingung für einen Ordner auf beiden Speichern: " + w);
-        ok(CatFilter.where("_data", rts, java.util.Arrays.asList("..", "")).isEmpty(), "unsichere Ordnernamen fallen weg");
-        ok(CatFilter.where("_data", rts, Collections.singletonList("it's_50%")).contains("it''s\\_50\\%"), "Sonderzeichen im Namen sind entwertet");
-        ok(CatFilter.summary(Collections.<String>emptyList(), Collections.<String>emptyList()).equals("Alle Ordner")
-                && CatFilter.summary(java.util.Arrays.asList("pictures", "DCIM"), Collections.<String>emptyList()).equals("DCIM, pictures")
-                && CatFilter.summary(Collections.<String>emptyList(), Collections.singletonList("GidHub")).equals("ohne GidHub")
-                && CatFilter.summary(Collections.singletonList("DCIM"), Collections.singletonList("GidHub")).equals("DCIM, ohne GidHub"), "Zeile in den Einstellungen");
-        ok(CatFilter.whereNot("_data", rts, Collections.<String>emptyList()).isEmpty(), "nichts ausgeschlossen: keine Bedingung");
-        String wn = CatFilter.whereNot("_data", Collections.singletonList("/storage/emulated/0"), java.util.Arrays.asList("GidHub", "Pictures/Bearbeitet"));
-        ok(wn.equals("(_data NOT LIKE '/storage/emulated/0/GidHub/%' ESCAPE '\\' AND _data NOT LIKE '/storage/emulated/0/Pictures/Bearbeitet/%' ESCAPE '\\')")
-                || wn.equals("(_data NOT LIKE '/storage/emulated/0/Pictures/Bearbeitet/%' ESCAPE '\\' AND _data NOT LIKE '/storage/emulated/0/GidHub/%' ESCAPE '\\')"), "Ausschluss auch für tiefere Ordner: " + wn);
+        ok(CatFilter.whereNot("_data", rts, Collections.<String>emptyList()).isEmpty(), "nichts ausgeblendet: keine Bedingung");
+        String wn = CatFilter.whereNot("_data", Collections.singletonList("/storage/emulated/0"), Collections.singletonList("GidHub"));
+        ok(wn.equals("(_data NOT LIKE '/storage/emulated/0/GidHub/%' ESCAPE '\\')"), "Bedingung für einen Ordner: " + wn);
+        ok(CatFilter.whereNot("_data", rts, Collections.singletonList("Pictures/Bearbeitet")).contains("/storage/ABCD-1234/Pictures/Bearbeitet/%"), "auch tiefere Ordner, auf beiden Speichern");
+        ok(CatFilter.whereNot("_data", rts, java.util.Arrays.asList("..", "")).isEmpty(), "unsichere Ordnernamen fallen weg");
+        ok(CatFilter.whereNot("_data", Collections.singletonList("/storage/emulated/0"), Collections.singletonList("it's_50%")).contains("it''s\\_50\\%"), "Sonderzeichen im Namen sind entwertet");
         ok("GidHub".equals(CatFilter.clean("  GidHub ")) && "Pictures/Bearbeitet".equals(CatFilter.clean("/Pictures/Bearbeitet/")), "eingetippte Namen werden bereinigt");
         ok(CatFilter.clean("") == null && CatFilter.clean("..") == null && CatFilter.clean("a/../b") == null && CatFilter.clean("a//b") == null && CatFilter.clean(null) == null && CatFilter.clean(" / ") == null, "unsichere oder leere Eingaben abgelehnt");
         ok(CatFilter.mayHide("/storage/emulated/0/Download/Nolphin/GidHub") && CatFilter.mayHide("/storage/emulated/0/Dokumente"), "geladene Ordner dürfen aus der Galerie verschwinden");

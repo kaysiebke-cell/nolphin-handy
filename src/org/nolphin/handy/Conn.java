@@ -84,22 +84,13 @@ final class Conn {
         prefs(c).edit().putBoolean("autoload", value).apply();
     }
 
-    /** Nur Dateien aus diesen obersten Ordnern zeigt die Kategorie {@code kind} (0 Bilder, 1 Audio, 2 Videos, 3 Dokumente); leer = alle. */
-    static Set<String> catFolders(Context c, int kind) {
-        return new HashSet<>(prefs(c).getStringSet("catfolders" + kind, new HashSet<String>()));
+    /** Aus diesen Ordnern (Namen oder Pfade wie "Pictures/Bearbeitet", mit Unterordnern) zeigt „Zum PC“ in den Kategorien nichts. */
+    static Set<String> hiddenFolders(Context c) {
+        return new HashSet<>(prefs(c).getStringSet("hiddenfolders", new HashSet<String>()));
     }
 
-    static void setCatFolders(Context c, int kind, Set<String> folders) {
-        prefs(c).edit().putStringSet("catfolders" + kind, new HashSet<>(folders)).apply();
-    }
-
-    /** Aus diesen Ordnern (Namen oder Pfade wie "Pictures/Bearbeitet") zeigt die Kategorie {@code kind} nichts. */
-    static Set<String> catExclude(Context c, int kind) {
-        return new HashSet<>(prefs(c).getStringSet("catexclude" + kind, new HashSet<String>()));
-    }
-
-    static void setCatExclude(Context c, int kind, Set<String> folders) {
-        prefs(c).edit().putStringSet("catexclude" + kind, new HashSet<>(folders)).apply();
+    static void setHiddenFolders(Context c, Set<String> folders) {
+        prefs(c).edit().putStringSet("hiddenfolders", new HashSet<>(folders)).apply();
     }
 
     /** Vom PC geladene Ordner aus der Galerie des Handys ausblenden (Datei „.nomedia“); Vorgabe an. */
