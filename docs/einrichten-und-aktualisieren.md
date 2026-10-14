@@ -23,7 +23,7 @@ Ohne gemeinsames WLAN (zum Beispiel in der Bahn) geht der Austausch auch über d
 1. Kabel anstecken (ein Kabel, das Daten überträgt).
 2. Am Handy **USB-Tethering einschalten** (Einstellungen → Verbindung und Freigabe → USB-Tethering; bei Xiaomi oder per Tipp auf die USB-Meldung). Eine App darf das nicht selbst einschalten; „USB-Tethering öffnen“ auf der Startseite führt direkt zur Einstellung.
 3. Am PC in Nolphin links auf **Handy** klicken. Gibt es ein Kabelnetz, nimmt Nolphin **dessen Adresse zuerst**; die Meldung lautet dann „Läuft über das USB-Kabel“.
-4. Am Handy **QR-Code scannen und verbinden**. Die Startseite zeigt „Kabel erkannt“ und nach dem Verbinden „über Kabel“.
+4. Am Handy **QR-Code scannen und verbinden**. Die Startseite zeigt eine einzige Verbindungskarte mit dem Umschalter **WLAN | Kabel**: Er springt von selbst auf „Kabel“, sobald ein Kabelnetz da ist, und zeigt nach dem Verbinden den Weg, den die Verbindung nimmt. Steckt das Kabel, ist aber noch kein Tethering an, heißt der Hauptknopf „USB-Tethering einschalten“. „Link aus der Zwischenablage einfügen“ steht als kleine Zeile darunter, für den Fall, dass der QR-Code nicht klappt.
 
 Die App erkennt das Kabelnetz nur und zeigt es an; sie benutzt das Kabel nicht anders als das WLAN. Während USB-Tethering an ist, ist die USB-Dateiübertragung (MTP) für den Dateimanager am PC aus; beides zugleich geht nicht.
 

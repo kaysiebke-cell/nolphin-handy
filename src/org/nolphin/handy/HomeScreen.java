@@ -73,16 +73,30 @@ final class HomeScreen implements Screen {
 
     private CableNet.State cable = CableNet.State.NONE;
 
-    /** Kleine Marke „über Kabel“ in der Verbindungskarte. */
-    private TextView cableChip(String text) {
-        TextView t = Ui.label(c, text, 12, Ui.primary(c), true);
-        t.setBackground(Ui.round(c, Ui.chip(c), 8));
-        t.setPadding(Ui.dp(c, 10), Ui.dp(c, 4), Ui.dp(c, 10), Ui.dp(c, 4));
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT,
+    /** Umschalter WLAN | Kabel: zeigt den Weg an; der aktive Teil ist gefüllt. */
+    private View wayToggle(ConnCard.Way way) {
+        LinearLayout t = new LinearLayout(c);
+        t.setOrientation(LinearLayout.HORIZONTAL);
+        t.setBackground(Ui.round(c, Ui.line(c), 10));
+        t.setPadding(Ui.dp(c, 3), Ui.dp(c, 3), Ui.dp(c, 3), Ui.dp(c, 3));
+        LinearLayout.LayoutParams tp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT);
-        lp.topMargin = Ui.dp(c, 8);
-        t.setLayoutParams(lp);
+        tp.topMargin = Ui.dp(c, 14);
+        t.setLayoutParams(tp);
+        t.addView(wayPart("WLAN", way == ConnCard.Way.WIFI));
+        t.addView(wayPart("Kabel", way == ConnCard.Way.CABLE));
         return t;
+    }
+
+    private TextView wayPart(String text, boolean on) {
+        TextView v = Ui.label(c, text, 14, on ? (Ui.dark(c) ? 0xFF10200A : 0xFFFFFFFF) : Ui.dim(c), true);
+        v.setGravity(Gravity.CENTER);
+        v.setPadding(0, Ui.dp(c, 8), 0, Ui.dp(c, 8));
+        if (on) {
+            v.setBackground(Ui.round(c, Ui.primary(c), 8));
+        }
+        v.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
+        return v;
     }
 
     /** Öffnet die Einstellungsseite für USB-Tethering (die App kann es nicht selbst einschalten). */
@@ -103,7 +117,10 @@ final class HomeScreen implements Screen {
         col.removeAllViews();
         bar = null;
 
-        // Status
+        // Verbindungskarte: Zustand, Umschalter WLAN | Kabel, ein Hauptknopf, kleine Zeile für den Link
+        String st0 = SyncService.status;
+        boolean problem = connected && (st0.startsWith("PC nicht erreichbar") || st0.startsWith("Schlüssel"));
+        ConnCard.View cv = ConnCard.of(cable, connected, problem, Conn.pcName(c));
         LinearLayout status = Ui.card(c);
         LinearLayout row = new LinearLayout(c);
         row.setOrientation(LinearLayout.HORIZONTAL);
@@ -113,83 +130,52 @@ final class HomeScreen implements Screen {
         LinearLayout text = new LinearLayout(c);
         text.setOrientation(LinearLayout.VERTICAL);
         text.setPadding(Ui.dp(c, 14), 0, 0, 0);
-        if (connected) {
-            String st = SyncService.status;
-            boolean problem = st.startsWith("PC nicht erreichbar") || st.startsWith("Schlüssel");
-            text.addView(Ui.label(c, problem ? "Verbindung gestört" : "Verbunden", 20,
-                    problem ? Ui.danger(c) : Ui.text(c), true));
-            String name = Conn.pcName(c);
-            TextView pcName = Ui.label(c, name.isEmpty() ? Conn.host(c) : "PC: " + name, 14, Ui.dim(c), false);
-            pcName.setSingleLine(true);   // ein langer Rechnername kürzt sich, statt die Karte umzubrechen
-            pcName.setEllipsize(android.text.TextUtils.TruncateAt.END);
-            text.addView(pcName);
-            if (problem) {
-                text.addView(Ui.label(c, st, 13, Ui.danger(c), false));
-            } else if (!name.isEmpty()) {
-                text.addView(Ui.label(c, Conn.host(c), 12, Ui.dim(c), false));
-            }
-        } else {
-            text.addView(Ui.label(c, "Nicht verbunden", 20, Ui.text(c), true));
-            text.addView(Ui.label(c, "Mit deinem PC verbinden, um Dateien auszutauschen", 14, Ui.dim(c), false));
-        }
+        text.addView(Ui.label(c, !connected ? "Nicht verbunden" : problem ? "Verbindung gestört" : "Verbunden", 20,
+                problem ? Ui.danger(c) : Ui.text(c), true));
+        TextView sub = Ui.label(c, cv.subtitle, 14, problem ? Ui.danger(c) : Ui.dim(c), false);
+        sub.setSingleLine(true);   // ein langer Rechnername kürzt sich, statt die Karte umzubrechen
+        sub.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        text.addView(sub);
         row.addView(text, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
         status.addView(row);
+        status.addView(wayToggle(cv.way));
         if (host.error() != null && !connected) {
             TextView e = Ui.label(c, host.error(), 13, Ui.danger(c), false);
             e.setPadding(0, Ui.dp(c, 12), 0, 0);
             status.addView(e);
         }
-        if (connected) {
-            status.addView(Ui.button(c, "Verbindung trennen", false, new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
+        status.addView(Ui.button(c, ConnCard.mainLabel(cv.main), cv.main != ConnCard.Main.DISCONNECT, new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (Conn.connected(c)) {
                     host.disconnect();
-                }
-            }));
-        } else {
-            status.addView(Ui.button(c, "QR-Code scannen und verbinden", true, new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
+                } else if (cable == CableNet.State.CABLE_PLUGGED_NO_NET) {
+                    openTethering();
+                } else {
                     host.scan();
                 }
-            }));
-            status.addView(Ui.button(c, "Link aus der Zwischenablage einfügen", false, new View.OnClickListener() {
+            }
+        }));
+        if (cv.linkLine) {
+            TextView link = Ui.label(c, "oder Link aus der Zwischenablage einfügen", 13, Ui.primary(c), false);
+            link.setGravity(Gravity.CENTER);
+            link.setPadding(0, Ui.dp(c, 14), 0, Ui.dp(c, 4));
+            link.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
                     host.pasteLink();
                 }
-            }));
-        }
-        String st0 = SyncService.status;
-        boolean disturbed = st0.startsWith("PC nicht erreichbar") || st0.startsWith("Schlüssel");
-        if (cable == CableNet.State.CONNECTED_VIA_CABLE && !disturbed) {
-            status.addView(cableChip("über Kabel"));
-        } else if (cable == CableNet.State.CABLE_READY) {
-            status.addView(cableChip("Kabel erkannt: USB-Netz zum PC steht bereit"));
+            });
+            status.addView(link);
         }
         col.addView(status);
-
-        if (cable == CableNet.State.CABLE_PLUGGED_NO_NET && !connected) {
-            LinearLayout hint = Ui.card(c);
-            hint.addView(Ui.label(c, "Unterwegs ohne WLAN?", 16, Ui.text(c), true));
-            TextView t = Ui.label(c, "Das Kabel steckt, aber es ist noch kein Kabelnetz da. Schalte USB-Tethering ein (die USB-Dateiübertragung ist dann aus). Danach in Nolphin am PC den Handy-Austausch starten und den QR-Code scannen.", 14, Ui.dim(c), false);
-            t.setPadding(0, Ui.dp(c, 6), 0, 0);
-            hint.addView(t);
-            hint.addView(Ui.button(c, "USB-Tethering öffnen", false, new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    openTethering();
-                }
-            }));
-            col.addView(hint);
-        }
 
         if (!connected) {
             LinearLayout steps = Ui.card(c);
             steps.addView(Ui.label(c, "So geht es", 16, Ui.text(c), true));
             String[] lines = {
                 "1. Am PC in Nolphin links auf „Handy“ klicken",
-                "2. Hier auf „QR-Code scannen und verbinden“ tippen",
+                "2. Hier auf „QR-Code scannen“ tippen",
                 "3. Die Kamera auf den QR-Code halten, zum Scharfstellen aufs Bild tippen",
             };
             for (String l : lines) {

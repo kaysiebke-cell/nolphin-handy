@@ -145,6 +145,29 @@ public class ViewTest {
         ok(CableNet.state(java.util.Arrays.asList(new CableNet.Nic("wlan0", "192.168.100.50", 24)), false, false, null) == CableNet.State.NONE, "Zustand: kein Kabel, nichts anzeigen");
         ok(CableNet.state(new java.util.ArrayList<CableNet.Nic>(), true, true, "10.20.30.124") == CableNet.State.NONE, "Zustand: verbunden, aber kein Kabelnetz mehr: nichts");
 
+        // Verbindungskarte
+        ConnCard.View v1 = ConnCard.of(CableNet.State.NONE, false, false, "");
+        ok(v1.way == ConnCard.Way.WIFI && !v1.connected && v1.main == ConnCard.Main.SCAN && v1.linkLine && v1.steps && v1.subtitle.equals("Mit dem PC verbinden"), "Karte: nicht verbunden, WLAN, Scannen, Link-Zeile, Anleitung");
+        ConnCard.View v2 = ConnCard.of(CableNet.State.CABLE_READY, false, false, "");
+        ok(v2.way == ConnCard.Way.CABLE && v2.main == ConnCard.Main.SCAN && v2.subtitle.equals("USB-Netz zum PC steht bereit"), "Karte: Kabel erkannt: Umschalter springt auf Kabel");
+        ConnCard.View v3 = ConnCard.of(CableNet.State.CABLE_PLUGGED_NO_NET, false, false, "");
+        ok(v3.way == ConnCard.Way.CABLE && v3.main == ConnCard.Main.TETHERING && v3.linkLine && v3.subtitle.contains("Tethering"), "Karte: Kabel steckt, kein Netz: Hauptknopf Tethering");
+        ConnCard.View v4 = ConnCard.of(CableNet.State.NONE, true, false, "Mein-Laptop");
+        ok(v4.way == ConnCard.Way.WIFI && v4.connected && v4.main == ConnCard.Main.DISCONNECT && !v4.linkLine && !v4.steps && v4.subtitle.equals("PC: Mein-Laptop"), "Karte: verbunden im WLAN");
+        ConnCard.View v5 = ConnCard.of(CableNet.State.CONNECTED_VIA_CABLE, true, false, "Mein-Laptop");
+        ok(v5.way == ConnCard.Way.CABLE && v5.connected && v5.main == ConnCard.Main.DISCONNECT, "Karte: verbunden über Kabel");
+        ConnCard.View v6 = ConnCard.of(CableNet.State.NONE, true, true, "Mein-Laptop");
+        ok(v6.problem && v6.subtitle.equals("PC nicht erreichbar") && v6.way == ConnCard.Way.WIFI, "Karte: gestört, Weg WLAN");
+        ok(ConnCard.of(CableNet.State.NONE, true, false, "").subtitle.equals("PC: PC"), "Karte: ohne PC-Namen kein Absturz");
+        ok(ConnCard.of(CableNet.State.CABLE_READY, true, false, "x").way == ConnCard.Way.WIFI, "Karte: verbunden über WLAN, Kabel nur bereit: Weg bleibt WLAN");
+        ok(ConnCard.mainLabel(ConnCard.Main.SCAN).equals("QR-Code scannen") && ConnCard.mainLabel(ConnCard.Main.TETHERING).equals("USB-Tethering einschalten") && ConnCard.mainLabel(ConnCard.Main.DISCONNECT).equals("Verbindung trennen"), "Karte: Beschriftungen");
+        for (CableNet.State cs : CableNet.State.values()) {
+            for (int k = 0; k < 4; k++) {
+                ConnCard.View vv = ConnCard.of(cs, (k & 1) != 0, (k & 2) != 0, "");
+                ok(vv.main != null && vv.way != null && vv.subtitle != null && !vv.subtitle.isEmpty(), "Karte: jede Kombination ergibt eine vollständige Anzeige: " + cs + "/" + k);
+            }
+        }
+
         // Externe Apps: nur Dateien unterhalb der Speicher, nie private App-Ordner
         List<String> roots = Collections.singletonList("/storage");
         ok(FileUris.isAllowed("/storage/emulated/0/DCIM/foto.jpg", roots), "Foto im Speicher erlaubt");
