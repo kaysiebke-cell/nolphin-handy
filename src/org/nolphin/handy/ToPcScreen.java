@@ -998,8 +998,17 @@ final class ToPcScreen implements Screen {
     /** Bedingung der Kategorie mit dem Ordnerfilter aus den Einstellungen („Anzeige nach Art“). */
     private String categoryWhere(int k) {
         String base = categoryBase(k);
-        String only = CatFilter.where(MediaStore.Files.FileColumns.DATA, StorageRoots.paths(), Conn.catFolders(c, k));
-        return only.isEmpty() ? base : "(" + base + ") AND " + only;
+        List<String> roots = StorageRoots.paths(c);
+        String only = CatFilter.where(MediaStore.Files.FileColumns.DATA, roots, Conn.catFolders(c, k));
+        String not = CatFilter.whereNot(MediaStore.Files.FileColumns.DATA, roots, Conn.catExclude(c, k));
+        String out = "(" + base + ")";
+        if (!only.isEmpty()) {
+            out += " AND " + only;
+        }
+        if (!not.isEmpty()) {
+            out += " AND " + not;
+        }
+        return out;
     }
 
     static String categoryBase(int k) {

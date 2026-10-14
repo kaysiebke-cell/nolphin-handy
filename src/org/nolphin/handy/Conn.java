@@ -93,6 +93,15 @@ final class Conn {
         prefs(c).edit().putStringSet("catfolders" + kind, new HashSet<>(folders)).apply();
     }
 
+    /** Aus diesen Ordnern (Namen oder Pfade wie "Pictures/Bearbeitet") zeigt die Kategorie {@code kind} nichts. */
+    static Set<String> catExclude(Context c, int kind) {
+        return new HashSet<>(prefs(c).getStringSet("catexclude" + kind, new HashSet<String>()));
+    }
+
+    static void setCatExclude(Context c, int kind, Set<String> folders) {
+        prefs(c).edit().putStringSet("catexclude" + kind, new HashSet<>(folders)).apply();
+    }
+
     /** Vom PC geladene Ordner aus der Galerie des Handys ausblenden (Datei „.nomedia“); Vorgabe an. */
     static boolean hideGallery(Context c) {
         return prefs(c).getBoolean("hidegallery", true);
