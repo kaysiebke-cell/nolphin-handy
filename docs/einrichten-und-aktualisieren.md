@@ -27,7 +27,7 @@ Ohne gemeinsames WLAN (zum Beispiel in der Bahn) geht der Austausch auch über d
 
 Die App erkennt das Kabelnetz nur und zeigt es an; sie benutzt das Kabel nicht anders als das WLAN. Während USB-Tethering an ist, ist die USB-Dateiübertragung (MTP) für den Dateimanager am PC aus; beides zugleich geht nicht.
 
-**Geprüft** (14.10.2026, Xiaomi Redmi Note 13, Linux Mint): USB-Tethering einschalten, der PC bekommt das Netz `enx…` mit einer privaten Adresse, die App verbindet sich über diese Adresse mit dem Nolphin-Server und lädt eine Datei, bei **ausgeschaltetem WLAN am Handy**. Nicht angesehen: die neue Kabel-Anzeige in der App am Handy mit steckendem Kabel, und der Handy-Austausch in Nolphin selbst auf der Kabeladresse (der Test lief mit dem Prüfprogramm des Projekts, das denselben Server benutzt).
+**Geprüft** (14.10.2026, Xiaomi Redmi Note 13, Linux Mint): USB-Tethering einschalten, der PC bekommt das Netz `enx…` mit einer privaten Adresse, die App verbindet sich über diese Adresse mit dem Nolphin-Server und lädt eine Datei, bei **ausgeschaltetem WLAN am Handy**. In der App am Handy gesehen: „Kabel erkannt: USB-Netz zum PC steht bereit“ (mit Tethering), „über Kabel“ (verbunden über das Kabel) und die Karte „Unterwegs ohne WLAN?“ (Kabel steckt, noch kein Tethering). Die App erkennt das Kabel aus dem USB-Zustand des Systems; die Ladeanzeige allein reicht nicht, weil manche Handys am PC „Ladegerät“ melden. Nicht angesehen: der Handy-Austausch in Nolphin selbst auf der Kabeladresse (der Test lief mit dem Prüfprogramm des Projekts, das denselben Server benutzt).
 
 ## Aktualisieren
 

@@ -172,7 +172,7 @@ final class HomeScreen implements Screen {
         if (cable == CableNet.State.CABLE_PLUGGED_NO_NET && !connected) {
             LinearLayout hint = Ui.card(c);
             hint.addView(Ui.label(c, "Unterwegs ohne WLAN?", 16, Ui.text(c), true));
-            TextView t = Ui.label(c, "Kabel anstecken und USB-Tethering einschalten. Danach in Nolphin am PC den Handy-Austausch starten und den QR-Code scannen.", 14, Ui.dim(c), false);
+            TextView t = Ui.label(c, "Das Kabel steckt, aber es ist noch kein Kabelnetz da. Schalte USB-Tethering ein (die USB-Dateiübertragung ist dann aus). Danach in Nolphin am PC den Handy-Austausch starten und den QR-Code scannen.", 14, Ui.dim(c), false);
             t.setPadding(0, Ui.dp(c, 6), 0, 0);
             hint.addView(t);
             hint.addView(Ui.button(c, "USB-Tethering öffnen", false, new View.OnClickListener() {
