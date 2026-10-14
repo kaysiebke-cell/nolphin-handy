@@ -207,6 +207,20 @@ public class ViewTest {
         ok(FileUris.afterReturn(false, false, 10, 100, 0, 0).contains("nicht mehr"), "Datei weg");
         ok(FileUris.afterReturn(true, false, 10, 100, 0, 0).contains("nicht mehr"), "Datei weg beim Bearbeiten");
 
+        // Anzeige nach Art und Galerie verstecken
+        List<String> rts = java.util.Arrays.asList("/storage/emulated/0", "/storage/ABCD-1234");
+        ok("DCIM".equals(CatFilter.top(rts, "/storage/emulated/0/DCIM/Camera/a.jpg")), "oberster Ordner im internen Speicher");
+        ok("Pictures".equals(CatFilter.top(rts, "/storage/ABCD-1234/Pictures/x.png")), "oberster Ordner auf der SD-Karte");
+        ok(CatFilter.top(rts, "/storage/emulated/0/lose.jpg") == null && CatFilter.top(rts, "/data/x/y.jpg") == null && CatFilter.top(rts, null) == null, "ohne Ordner oder fremder Pfad: kein oberster Ordner");
+        ok(CatFilter.where("_data", rts, Collections.<String>emptyList()).isEmpty(), "ohne Auswahl gelten alle Ordner");
+        String w = CatFilter.where("_data", rts, Collections.singletonList("DCIM"));
+        ok(w.equals("(_data LIKE '/storage/emulated/0/DCIM/%' ESCAPE '\\' OR _data LIKE '/storage/ABCD-1234/DCIM/%' ESCAPE '\\')"), "Bedingung für einen Ordner auf beiden Speichern: " + w);
+        ok(CatFilter.where("_data", rts, java.util.Arrays.asList("..", "")).isEmpty(), "unsichere Ordnernamen fallen weg");
+        ok(CatFilter.where("_data", rts, Collections.singletonList("it's_50%")).contains("it''s\\_50\\%"), "Sonderzeichen im Namen sind entwertet");
+        ok(CatFilter.summary(Collections.<String>emptyList()).equals("Alle Ordner") && CatFilter.summary(java.util.Arrays.asList("pictures", "DCIM")).equals("DCIM, pictures"), "Zeile in den Einstellungen");
+        ok(CatFilter.mayHide("/storage/emulated/0/Download/Nolphin/GidHub") && CatFilter.mayHide("/storage/emulated/0/Dokumente"), "geladene Ordner dürfen aus der Galerie verschwinden");
+        ok(!CatFilter.mayHide("/storage/emulated/0/DCIM/Urlaub") && !CatFilter.mayHide("/storage/ABCD-1234/Pictures/x"), "in DCIM und Pictures bleiben sie sichtbar");
+
         // Meldungszeile unten
         StatusNote.dismiss();
         ok(StatusNote.current(0) == null, "Zeile am Anfang leer");

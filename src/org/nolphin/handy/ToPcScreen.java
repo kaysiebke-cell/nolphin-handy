@@ -995,7 +995,14 @@ final class ToPcScreen implements Screen {
         }, "nolphin-home").start();
     }
 
-    private static String categoryWhere(int k) {
+    /** Bedingung der Kategorie mit dem Ordnerfilter aus den Einstellungen („Anzeige nach Art“). */
+    private String categoryWhere(int k) {
+        String base = categoryBase(k);
+        String only = CatFilter.where(MediaStore.Files.FileColumns.DATA, StorageRoots.paths(), Conn.catFolders(c, k));
+        return only.isEmpty() ? base : "(" + base + ") AND " + only;
+    }
+
+    static String categoryBase(int k) {
         String t = MediaStore.Files.FileColumns.MEDIA_TYPE;
         String m = MediaStore.Files.FileColumns.MIME_TYPE;
         switch (k) {

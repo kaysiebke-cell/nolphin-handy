@@ -12,6 +12,11 @@ import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
 /** Einstellungen: Verbindung, automatisches Laden, Zielordner, Verlauf. */
 final class SettingsScreen implements Screen {
     private final Context c;
@@ -45,11 +50,116 @@ final class SettingsScreen implements Screen {
 
     @Override
     public void refresh() {
-        String sig = Conn.connected(c) + "|" + Conn.host(c) + "|" + Conn.targetTree(c);
+        String sig = Conn.connected(c) + "|" + Conn.host(c) + "|" + Conn.targetTree(c) + "|" + Conn.catFolders(c, 0) + Conn.catFolders(c, 1)
+                + Conn.catFolders(c, 2) + Conn.catFolders(c, 3);
         if (!sig.equals(signature)) {
             signature = sig;
             build();
         }
+    }
+
+    private static final String[] KIND_NAMES = { "Bilder", "Audio", "Videos", "Dokumente" };
+
+    /** Eine Zeile „Bilder – DCIM, Pictures“; Tippen öffnet die Ordnerauswahl. */
+    private View kindRow(final int kind) {
+        LinearLayout row = new LinearLayout(c);
+        row.setOrientation(LinearLayout.VERTICAL);
+        row.setPadding(0, Ui.dp(c, 10), 0, Ui.dp(c, 4));
+        row.addView(Ui.label(c, KIND_NAMES[kind], 15, Ui.text(c), false));
+        row.addView(Ui.label(c, CatFilter.summary(Conn.catFolders(c, kind)), 13, Ui.dim(c), false));
+        row.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                chooseFolders(kind);
+            }
+        });
+        return row;
+    }
+
+    /** Zählt je obersten Ordner die Dateien der Art und lässt die Ordner ankreuzen; nichts angekreuzt = alle Ordner. */
+    private void chooseFolders(final int kind) {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                final java.util.Map<String, Integer> counts = new java.util.HashMap<>();
+                List<String> roots = StorageRoots.paths();
+                try (android.database.Cursor cur = c.getContentResolver().query(android.provider.MediaStore.Files.getContentUri("external"),
+                        new String[] { android.provider.MediaStore.Files.FileColumns.DATA }, ToPcScreen.categoryBase(kind), null, null)) {
+                    while (cur != null && cur.moveToNext()) {
+                        String top = CatFilter.top(roots, cur.getString(0));
+                        if (top != null) {
+                            counts.put(top, counts.containsKey(top) ? counts.get(top) + 1 : 1);
+                        }
+                    }
+                } catch (Exception ignored) {
+                }
+                final Set<String> chosen = Conn.catFolders(c, kind);
+                for (String s : chosen) {
+                    if (!counts.containsKey(s)) {
+                        counts.put(s, 0);
+                    }
+                }
+                final List<String> names = new ArrayList<>(counts.keySet());
+                java.util.Collections.sort(names, new java.util.Comparator<String>() {
+                    @Override
+                    public int compare(String a, String b) {
+                        int d = counts.get(b) - counts.get(a);
+                        return d != 0 ? d : a.compareToIgnoreCase(b);
+                    }
+                });
+                root.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        showFolderDialog(kind, names, counts, chosen);
+                    }
+                });
+            }
+        }, "nolphin-folders").start();
+    }
+
+    private void showFolderDialog(final int kind, final List<String> names, java.util.Map<String, Integer> counts, Set<String> chosen) {
+        if (names.isEmpty()) {
+            Toast.makeText(c, "Keine Ordner mit " + KIND_NAMES[kind] + " gefunden", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        String[] labels = new String[names.size()];
+        final boolean[] on = new boolean[names.size()];
+        for (int i = 0; i < labels.length; i++) {
+            labels[i] = names.get(i) + "   (" + counts.get(names.get(i)) + ")";
+            on[i] = chosen.contains(names.get(i));
+        }
+        new android.app.AlertDialog.Builder(host.activity())
+                .setTitle(KIND_NAMES[kind] + " nur aus …")
+                .setMultiChoiceItems(labels, on, new android.content.DialogInterface.OnMultiChoiceClickListener() {
+                    @Override
+                    public void onClick(android.content.DialogInterface d, int which, boolean checked) {
+                        on[which] = checked;
+                    }
+                })
+                .setPositiveButton("Übernehmen", new android.content.DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(android.content.DialogInterface d, int w) {
+                        Set<String> out = new HashSet<>();
+                        for (int i = 0; i < on.length; i++) {
+                            if (on[i]) {
+                                out.add(names.get(i));
+                            }
+                        }
+                        Conn.setCatFolders(c, kind, out);
+                        signature = "";
+                        refresh();
+                    }
+                })
+                .setNeutralButton("Alle Ordner", new android.content.DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(android.content.DialogInterface d, int w) {
+                        Conn.setCatFolders(c, kind, new HashSet<String>());
+                        signature = "";
+                        refresh();
+                    }
+                })
+                .setNegativeButton("Abbrechen", null)
+                .show();
     }
 
     private void build() {
@@ -163,6 +273,58 @@ final class SettingsScreen implements Screen {
             }
         });
         col.addView(files);
+
+        // Anzeige nach Art
+        LinearLayout kinds = Ui.card(c);
+        kinds.addView(Ui.label(c, "Anzeige nach Art", 16, Ui.text(c), true));
+        for (int k = 0; k < KIND_NAMES.length; k++) {
+            kinds.addView(kindRow(k));
+        }
+        TextView kindHint = Ui.label(c, "Gilt für „Zum PC“. Die Ordner bleiben im Dateimanager erreichbar.", 12, Ui.dim(c), false);
+        kindHint.setPadding(0, Ui.dp(c, 8), 0, 0);
+        kinds.addView(kindHint);
+        col.addView(kinds);
+
+        // Galerie des Handys
+        LinearLayout gallery = Ui.card(c);
+        gallery.addView(Ui.label(c, "Galerie des Handys", 16, Ui.text(c), true));
+        Switch hide = new Switch(c);
+        hide.setText("Vom PC geladene Ordner in der Galerie verstecken");
+        hide.setTextSize(15);
+        hide.setTextColor(Ui.text(c));
+        hide.setChecked(Conn.hideGallery(c));
+        hide.setPadding(0, Ui.dp(c, 10), 0, 0);
+        Ui.tintSwitch(c, hide);
+        hide.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton b, boolean checked) {
+                Conn.setHideGallery(c, checked);
+            }
+        });
+        gallery.addView(hide);
+        TextView hideHint = Ui.label(c, "Ein Ordner bekommt die Datei „.nomedia“, die Galerie zeigt seine Bilder dann nicht. Die Dateien "
+                + "bleiben unverändert. Ordner, die du in DCIM oder Pictures einfügst, bleiben sichtbar.", 12, Ui.dim(c), false);
+        hideHint.setPadding(0, Ui.dp(c, 4), 0, Ui.dp(c, 4));
+        gallery.addView(hideHint);
+        gallery.addView(Ui.button(c, "Jetzt auch bei schon geladenen anwenden", false, new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        final int n = SyncService.hideLoadedFolders(c);
+                        root.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                Toast.makeText(c, n == 0 ? "Nichts zu tun" : n + (n == 1 ? " Ordner versteckt" : " Ordner versteckt"),
+                                        Toast.LENGTH_SHORT).show();
+                            }
+                        });
+                    }
+                }, "nolphin-nomedia").start();
+            }
+        }));
+        col.addView(gallery);
 
         // Dateimanager
         LinearLayout manager = Ui.card(c);

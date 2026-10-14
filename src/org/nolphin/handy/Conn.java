@@ -84,6 +84,24 @@ final class Conn {
         prefs(c).edit().putBoolean("autoload", value).apply();
     }
 
+    /** Nur Dateien aus diesen obersten Ordnern zeigt die Kategorie {@code kind} (0 Bilder, 1 Audio, 2 Videos, 3 Dokumente); leer = alle. */
+    static Set<String> catFolders(Context c, int kind) {
+        return new HashSet<>(prefs(c).getStringSet("catfolders" + kind, new HashSet<String>()));
+    }
+
+    static void setCatFolders(Context c, int kind, Set<String> folders) {
+        prefs(c).edit().putStringSet("catfolders" + kind, new HashSet<>(folders)).apply();
+    }
+
+    /** Vom PC geladene Ordner aus der Galerie des Handys ausblenden (Datei „.nomedia“); Vorgabe an. */
+    static boolean hideGallery(Context c) {
+        return prefs(c).getBoolean("hidegallery", true);
+    }
+
+    static void setHideGallery(Context c, boolean on) {
+        prefs(c).edit().putBoolean("hidegallery", on).apply();
+    }
+
     /** Unterordner in „Downloads“ für Dateien vom PC (Vorgabe „Nolphin“). */
     static String folder(Context c) {
         String name = prefs(c).getString("folder", "Nolphin");

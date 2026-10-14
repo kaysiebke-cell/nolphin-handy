@@ -583,6 +583,14 @@ public class SyncService extends Service {
         if (!complete && !cancelled) {
             failed++;   // der Ordner ließ sich nicht ganz lesen (Fehler, zu tief oder zu viele Dateien)
         }
+        if (!cancelled && Conn.hideGallery(this)) {
+            java.io.File top = to != null ? new java.io.File(to, name)
+                    : new java.io.File(android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS),
+                            Conn.folder(this) + "/" + name);
+            if (CatFilter.mayHide(top.getPath())) {
+                hideFromGallery(top);
+            }
+        }
         endTransfer();
         String sum = FolderFetch.summary(ok, failed, cancelled) + (firstFailed != null ? " (zuerst: " + firstFailed + ")" : "");
         boolean good = failed == 0 && !cancelled;
@@ -592,6 +600,32 @@ public class SyncService extends Service {
             StatusNote.post(good ? StatusNote.arrived(name, to != null, ok) : name + " nicht ganz geladen: " + sum, !good,
                     good ? (to != null ? Host.TAB_TO_PC : Host.TAB_FROM_PC) : Host.TAB_HISTORY, System.currentTimeMillis());
         }
+    }
+
+    /** Legt „.nomedia“ in den Ordner: die Galerie des Handys zeigt seine Bilder dann nicht mehr. Die Dateien bleiben unverändert. */
+    static boolean hideFromGallery(java.io.File folder) {
+        try {
+            java.io.File marker = new java.io.File(folder, ".nomedia");
+            return folder.isDirectory() && (marker.exists() || marker.createNewFile());
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /** Für schon geladene Ordner nachholen: jeder Unterordner von „Downloads/<Ordner>“ bekommt „.nomedia“. @return Anzahl neu versteckter Ordner */
+    static int hideLoadedFolders(android.content.Context c) {
+        java.io.File base = new java.io.File(android.os.Environment.getExternalStoragePublicDirectory(
+                android.os.Environment.DIRECTORY_DOWNLOADS), Conn.folder(c));
+        java.io.File[] subs = base.listFiles();
+        int n = 0;
+        if (subs != null) {
+            for (java.io.File d : subs) {
+                if (d.isDirectory() && !new java.io.File(d, ".nomedia").exists() && hideFromGallery(d)) {
+                    n++;
+                }
+            }
+        }
+        return n;
     }
 
     private void fetchOne(String dir, String name, long size, String to) {
