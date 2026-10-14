@@ -51,7 +51,7 @@ Die Erstinstallation der App erfolgt von Hand (APK aus dem Nolphin-Ordner `/usr/
 * **Startbildschirm-Widget** in drei Größen (klein, kompakt, erweitert): Verbindung, Übertragung mit Fortschritt und Abbrechen, Dateien vom PC mit „Laden“, Senden. Siehe [Widget](docs/widget.md).
 * **Auch per USB-Kabel:** unterwegs ohne WLAN verbindet das Kabel (USB-Tethering) Handy und PC; die App findet den PC im Kabelnetz selbst und wechselt zwischen WLAN und Kabel. Siehe [Einrichten](docs/einrichten-und-aktualisieren.md).
 * **Kopieren und Einfügen vom PC:** in „Vom PC“ kopieren, im gewünschten Handy-Ordner einfügen, wie im normalen Dateimanager; dazu eine schmale **Meldungszeile** („2 neu am PC“, „eingefügt“, Fehler).
-* **Aufgeräumte Galerie:** Bilder, Audio, Videos und Dokumente nur aus gewählten Ordnern zeigen; vom PC geladene Ordner bleiben aus der Galerie des Handys draußen.
+* **Aufgeräumte Galerie:** Ordner ausblenden, damit „Zum PC“ sie in den Kategorien nicht zeigt; vom PC geladene Ordner bleiben aus der Galerie des Handys draußen.
 * **Eigener QR-Scanner** ohne Fremd-App, der auch schräg gehaltene Codes liest.
 * **Hell und dunkel** in Mint-Grün, sachlich und ruhig.
 
