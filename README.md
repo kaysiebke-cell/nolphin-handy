@@ -49,6 +49,7 @@ Die Erstinstallation der App erfolgt von Hand (APK aus dem Nolphin-Ordner `/usr/
 * **Papierkorb (30 Tage)** und **Speicheranalyse** nur auf Wunsch, für den Bereich, in dem Sie gerade sind.
 * **Fotos, Videos und Musik:** Vorschaubilder, Albumbilder, Titel, Interpret und Album.
 * **Startbildschirm-Widget** in drei Größen (klein, kompakt, erweitert): Verbindung, Übertragung mit Fortschritt und Abbrechen, Dateien vom PC mit „Laden“, Senden. Siehe [Widget](docs/widget.md).
+* **Auch per USB-Kabel:** unterwegs ohne WLAN verbindet das Kabel (USB-Tethering) Handy und PC; die App erkennt es („Kabel erkannt“, „über Kabel“). Siehe [Einrichten](docs/einrichten-und-aktualisieren.md).
 * **Eigener QR-Scanner** ohne Fremd-App, der auch schräg gehaltene Codes liest.
 * **Hell und dunkel** in Mint-Grün, sachlich und ruhig.
 

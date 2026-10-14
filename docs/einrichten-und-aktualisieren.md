@@ -16,6 +16,19 @@ Das Handy mit Nolphin am PC verbinden und die App aktuell halten.
 
 Der Schlüssel im Link gilt, solange der Austausch am PC läuft, höchstens eine begrenzte Zeit. Nach einem Neustart von Nolphin oder bei einem neuen Code (der auch ein neues Zertifikat bringt) scannen Sie einfach erneut. Beim ersten Verbinden lädt die App vorhandene Dateien nicht. Neue Dateien landen in `Download/Nolphin`.
 
+## Unterwegs ohne WLAN: per USB-Kabel
+
+Ohne gemeinsames WLAN (zum Beispiel in der Bahn) geht der Austausch auch über das **USB-Kabel**. Das Kabel bildet dann ein eigenes kleines Netz zwischen Handy und PC (USB-Tethering). Verschlüsselung und QR-Code bleiben wie sonst.
+
+1. Kabel anstecken (ein Kabel, das Daten überträgt).
+2. Am Handy **USB-Tethering einschalten** (Einstellungen → Verbindung und Freigabe → USB-Tethering; bei Xiaomi oder per Tipp auf die USB-Meldung). Eine App darf das nicht selbst einschalten; „USB-Tethering öffnen“ auf der Startseite führt direkt zur Einstellung.
+3. Am PC in Nolphin links auf **Handy** klicken. Gibt es ein Kabelnetz, nimmt Nolphin **dessen Adresse zuerst**; die Meldung lautet dann „Läuft über das USB-Kabel“.
+4. Am Handy **QR-Code scannen und verbinden**. Die Startseite zeigt „Kabel erkannt“ und nach dem Verbinden „über Kabel“.
+
+Die App erkennt das Kabelnetz nur und zeigt es an; sie benutzt das Kabel nicht anders als das WLAN. Während USB-Tethering an ist, ist die USB-Dateiübertragung (MTP) für den Dateimanager am PC aus; beides zugleich geht nicht.
+
+**Geprüft** (14.10.2026, Xiaomi Redmi Note 13, Linux Mint): USB-Tethering einschalten, der PC bekommt das Netz `enx…` mit einer privaten Adresse, die App verbindet sich über diese Adresse mit dem Nolphin-Server und lädt eine Datei, bei **ausgeschaltetem WLAN am Handy**. Nicht angesehen: die neue Kabel-Anzeige in der App am Handy mit steckendem Kabel, und der Handy-Austausch in Nolphin selbst auf der Kabeladresse (der Test lief mit dem Prüfprogramm des Projekts, das denselben Server benutzt).
+
 ## Aktualisieren
 
 Hat Nolphin am PC eine neuere App (höhere `versionCode`), zeigt die Startseite **Neue Version**. Die neue App kommt über die verschlüsselte Verbindung. Ein Tipp auf **Aktualisieren** installiert sie über die alte, ohne Deinstallieren. Die Verbindung bleibt. Beim ersten Mal erlauben Sie der App einmal „Apps installieren“. Je nach Hersteller kommen dabei zusätzliche Warnungen: Bei Xiaomi zum Beispiel erscheint eine rote „Gefahr“-Seite, auf der Sie ein Kästchen abhaken und einige Sekunden warten müssen, bevor **OK** geht. Danach fragt Android noch einmal „Möchtest du diese App aktualisieren?“.

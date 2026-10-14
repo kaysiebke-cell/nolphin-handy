@@ -1,6 +1,7 @@
 package org.nolphin.handy;
 
 import android.content.Context;
+import android.content.Intent;
 import android.content.res.ColorStateList;
 import android.view.Gravity;
 import android.view.View;
@@ -50,7 +51,9 @@ final class HomeScreen implements Screen {
         boolean connected = Conn.connected(c);
         boolean active = !SyncService.transferName.isEmpty();
         List<Store.Entry> recent = Store.history(c);
-        String sig = connected + "|" + Conn.pcName(c) + "|" + Conn.host(c) + "|" + host.error() + "|" + active
+        List<CableNet.Nic> nics = CableProbe.nics();
+        cable = CableNet.state(nics, CableProbe.usbPlugged(c), connected, Conn.host(c));
+        String sig = cable + "|" + connected + "|" + Conn.pcName(c) + "|" + Conn.host(c) + "|" + host.error() + "|" + active
                 + "|" + SyncService.files.length + "|" + (recent.isEmpty() ? 0 : recent.get(0).time) + "|"
                 + SyncService.status + "|" + Updater.availableName + "|" + Updater.message;
         if (!sig.equals(signature)) {
@@ -65,6 +68,34 @@ final class HomeScreen implements Screen {
             percent.setText(total > 0 ? (value / 10) + " %  ·  " + Ui.size(SyncService.transferDone) + " von "
                     + Ui.size(total) : Ui.size(SyncService.transferDone));
             title.setText((SyncService.transferDown ? "Lade vom PC: " : "Sende an den PC: ") + SyncService.transferName);
+        }
+    }
+
+    private CableNet.State cable = CableNet.State.NONE;
+
+    /** Kleine Marke „über Kabel“ in der Verbindungskarte. */
+    private TextView cableChip(String text) {
+        TextView t = Ui.label(c, text, 12, Ui.primary(c), true);
+        t.setBackground(Ui.round(c, Ui.chip(c), 8));
+        t.setPadding(Ui.dp(c, 10), Ui.dp(c, 4), Ui.dp(c, 10), Ui.dp(c, 4));
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+        lp.topMargin = Ui.dp(c, 8);
+        t.setLayoutParams(lp);
+        return t;
+    }
+
+    /** Öffnet die Einstellungsseite für USB-Tethering (die App kann es nicht selbst einschalten). */
+    private void openTethering() {
+        Intent i = new Intent("android.settings.TETHER_SETTINGS");
+        i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        try {
+            c.startActivity(i);
+        } catch (RuntimeException e) {
+            try {
+                c.startActivity(new Intent(android.provider.Settings.ACTION_WIRELESS_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+            } catch (RuntimeException ignored) {
+            }
         }
     }
 
@@ -129,7 +160,29 @@ final class HomeScreen implements Screen {
                 }
             }));
         }
+        String st0 = SyncService.status;
+        boolean disturbed = st0.startsWith("PC nicht erreichbar") || st0.startsWith("Schlüssel");
+        if (cable == CableNet.State.CONNECTED_VIA_CABLE && !disturbed) {
+            status.addView(cableChip("über Kabel"));
+        } else if (cable == CableNet.State.CABLE_READY) {
+            status.addView(cableChip("Kabel erkannt: USB-Netz zum PC steht bereit"));
+        }
         col.addView(status);
+
+        if (cable == CableNet.State.CABLE_PLUGGED_NO_NET && !connected) {
+            LinearLayout hint = Ui.card(c);
+            hint.addView(Ui.label(c, "Unterwegs ohne WLAN?", 16, Ui.text(c), true));
+            TextView t = Ui.label(c, "Kabel anstecken und USB-Tethering einschalten. Danach in Nolphin am PC den Handy-Austausch starten und den QR-Code scannen.", 14, Ui.dim(c), false);
+            t.setPadding(0, Ui.dp(c, 6), 0, 0);
+            hint.addView(t);
+            hint.addView(Ui.button(c, "USB-Tethering öffnen", false, new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    openTethering();
+                }
+            }));
+            col.addView(hint);
+        }
 
         if (!connected) {
             LinearLayout steps = Ui.card(c);

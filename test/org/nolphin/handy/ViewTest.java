@@ -124,6 +124,27 @@ public class ViewTest {
         ok(FolderFetch.keep(java.util.Arrays.asList("d:Ordner2"), fk, dk).size() == 1, "Neuladen: ein angehakter Ordner verschwindet nicht mehr sofort (Fehler gefunden am Handy)");
         ok(FolderFetch.keep(new java.util.ArrayList<String>(), fk, dk).isEmpty(), "Neuladen: leere Auswahl bleibt leer");
 
+        // Kabelnetz (USB-Tethering)
+        ok(CableNet.isCableName("rndis0") && CableNet.isCableName("usb0") && CableNet.isCableName("ncm0") && CableNet.isCableName("RNDIS1") && CableNet.isCableName("enx1234"), "Kabel-Namen erkannt");
+        ok(!CableNet.isCableName("wlan0") && !CableNet.isCableName("rmnet_data0") && !CableNet.isCableName("lo") && !CableNet.isCableName("ap0") && !CableNet.isCableName("") && !CableNet.isCableName(null), "WLAN, Mobilfunk, Hotspot und Loopback sind kein Kabel");
+        ok(CableNet.ipv4("10.20.30.31") != null && CableNet.ipv4("1.2.3") == null && CableNet.ipv4("1.2.3.256") == null && CableNet.ipv4("a.b.c.d") == null && CableNet.ipv4("") == null && CableNet.ipv4(null) == null && CableNet.ipv4("1..2.3") == null, "IPv4-Adressen werden streng geprüft");
+        ok(CableNet.isPrivate(CableNet.ipv4("10.20.30.31")) && CableNet.isPrivate(CableNet.ipv4("192.168.42.129")) && CableNet.isPrivate(CableNet.ipv4("172.20.1.1")) && !CableNet.isPrivate(CableNet.ipv4("172.32.0.1")) && !CableNet.isPrivate(CableNet.ipv4("8.8.8.8")), "private Adressen");
+        java.util.List<CableNet.Nic> nics = java.util.Arrays.asList(new CableNet.Nic("wlan0", "192.168.100.50", 24), new CableNet.Nic("rndis0", "10.20.30.31", 24), new CableNet.Nic("lo", "127.0.0.1", 8));
+        ok(CableNet.find(nics) != null && CableNet.find(nics).name.equals("rndis0"), "Kabelnetz gefunden");
+        ok(CableNet.find(java.util.Arrays.asList(new CableNet.Nic("wlan0", "192.168.100.50", 24))) == null && CableNet.find(new java.util.ArrayList<CableNet.Nic>()) == null && CableNet.find(null) == null, "ohne Kabel: nichts gefunden");
+        ok(CableNet.find(java.util.Arrays.asList(new CableNet.Nic("rndis0", "8.8.8.8", 24))) == null, "ein Kabelname mit öffentlicher Adresse zählt nicht");
+        CableNet.Nic rn = new CableNet.Nic("rndis0", "10.20.30.31", 24);
+        ok(CableNet.inNet(rn, "10.20.30.124") && CableNet.inNet(rn, "10.20.30.124:41000") && !CableNet.inNet(rn, "10.20.40.124") && !CableNet.inNet(rn, "192.168.100.20:40000") && !CableNet.inNet(rn, "x") && !CableNet.inNet(null, "10.20.30.1"), "gleiches Netz");
+        ok(CableNet.inNet(new CableNet.Nic("usb0", "192.168.42.129", 16), "192.168.99.1") && !CableNet.inNet(new CableNet.Nic("usb0", "192.168.42.129", 24), "192.168.99.1"), "Netzanteil beachtet");
+        ok(!CableNet.inNet(new CableNet.Nic("usb0", "10.0.0.1", 0), "10.0.0.2") && !CableNet.inNet(new CableNet.Nic("usb0", "10.0.0.1", 5), "10.0.0.2"), "unsinnige Netzlänge wird abgelehnt");
+        ok(CableNet.viaCable(nics, "10.20.30.124:41000") && !CableNet.viaCable(nics, "192.168.100.20:40000"), "Verbindung über Kabel erkannt, WLAN nicht");
+        ok(CableNet.state(nics, true, true, "10.20.30.124:41000") == CableNet.State.CONNECTED_VIA_CABLE, "Zustand: verbunden über Kabel");
+        ok(CableNet.state(nics, true, true, "192.168.100.20:40000") == CableNet.State.NONE, "Zustand: verbunden über WLAN zeigt nichts");
+        ok(CableNet.state(nics, true, false, null) == CableNet.State.CABLE_READY, "Zustand: Kabel erkannt, nicht verbunden");
+        ok(CableNet.state(java.util.Arrays.asList(new CableNet.Nic("wlan0", "192.168.100.50", 24)), true, false, null) == CableNet.State.CABLE_PLUGGED_NO_NET, "Zustand: Kabel steckt, kein Kabelnetz");
+        ok(CableNet.state(java.util.Arrays.asList(new CableNet.Nic("wlan0", "192.168.100.50", 24)), false, false, null) == CableNet.State.NONE, "Zustand: kein Kabel, nichts anzeigen");
+        ok(CableNet.state(new java.util.ArrayList<CableNet.Nic>(), true, true, "10.20.30.124") == CableNet.State.NONE, "Zustand: verbunden, aber kein Kabelnetz mehr: nichts");
+
         // Externe Apps: nur Dateien unterhalb der Speicher, nie private App-Ordner
         List<String> roots = Collections.singletonList("/storage");
         ok(FileUris.isAllowed("/storage/emulated/0/DCIM/foto.jpg", roots), "Foto im Speicher erlaubt");

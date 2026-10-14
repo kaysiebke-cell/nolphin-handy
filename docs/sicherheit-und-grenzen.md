@@ -14,4 +14,5 @@ Wie die Verbindung geschützt ist und wo die Grenzen liegen.
 * Der Zugriff auf alle Dateien ist mächtig. Die App nutzt ihn nur für den Dateimanager, und nur nach Ihrer Aktion.
 * Die privaten Ordner anderer Apps (`Android/data`, `Android/obb`) kann Android keiner App zeigen. Cloud-Dateien und Dateien anderer Apps holen Sie über die Systemauswahl (siehe oben).
 * **Ordner vom PC laden:** Die Namen aus der Ordnerliste des PCs werden geprüft (kein `..`, kein Schrägstrich, kein leerer Name), bevor die App daraus Zielordner anlegt. Ein PC kann so keine Dateien außerhalb von `Download/Nolphin` anlegen lassen.
+* **USB-Kabel als Netz:** Das USB-Tethering ist ein eigenes, nur zwei Geräte großes Netz. Der Austausch läuft darüber genauso verschlüsselt und mit denselben Schlüsseln; es ist sogar enger als ein fremdes WLAN, weil niemand sonst in diesem Netz ist.
 * **USB-Kabel (MTP):** Die App braucht kein USB. Ob der Dateimanager am PC das Handy am Kabel sieht, hängt am Handy: In der USB-Benachrichtigung muss **Dateiübertragung** gewählt sein (steht es auf „nur Laden“ oder „nur ADB“, sieht der PC keine Dateien). Das ist eine Einstellung von Android, keine der App.
